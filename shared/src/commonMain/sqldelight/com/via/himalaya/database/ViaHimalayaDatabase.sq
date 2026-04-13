@@ -1,0 +1,63 @@
+-- Treks table
+CREATE TABLE Trek (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    guideId TEXT NOT NULL,
+    startTime INTEGER NOT NULL,
+    isSynced INTEGER NOT NULL DEFAULT 0
+);
+
+-- Points table
+CREATE TABLE Point (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    trekId TEXT NOT NULL,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL,
+    timestamp INTEGER NOT NULL,
+    altGps REAL,
+    altBaro REAL,
+    accuracyH REAL,
+    accuracyV REAL,
+    speed REAL,
+    bearing REAL,
+    battery INTEGER,
+    rawSensorsJson TEXT,
+    FOREIGN KEY (trekId) REFERENCES Trek(id) ON DELETE CASCADE
+);
+
+-- Queries for Trek table
+insertTrek:
+INSERT INTO Trek (id, name, guideId, startTime, isSynced)
+VALUES (?, ?, ?, ?, ?);
+
+getTrekById:
+SELECT * FROM Trek WHERE id = ?;
+
+getUnsyncedTreks:
+SELECT * FROM Trek WHERE isSynced = 0;
+
+getAllTreks:
+SELECT * FROM Trek ORDER BY startTime DESC;
+
+updateTrekSyncStatus:
+UPDATE Trek SET isSynced = ? WHERE id = ?;
+
+-- Queries for Point table
+insertPoint:
+INSERT INTO Point (trekId, lat, lon, timestamp, altGps, altBaro, accuracyH, accuracyV, speed, bearing, battery, rawSensorsJson)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getPointsByTrekId:
+SELECT * FROM Point WHERE trekId = ? ORDER BY timestamp ASC;
+
+getPointsForUnsyncedTreks:
+SELECT p.* FROM Point p
+INNER JOIN Trek t ON p.trekId = t.id
+WHERE t.isSynced = 0
+ORDER BY p.trekId, p.timestamp ASC;
+
+deletePointsByTrekId:
+DELETE FROM Point WHERE trekId = ?;
+
+getLatestPointForTrek:
+SELECT * FROM Point WHERE trekId = ? ORDER BY timestamp DESC LIMIT 1;
