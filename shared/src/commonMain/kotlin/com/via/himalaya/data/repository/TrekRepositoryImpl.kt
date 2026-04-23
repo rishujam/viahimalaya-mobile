@@ -85,7 +85,6 @@ class TrekRepositoryImpl(databaseDriverFactory: DatabaseDriverFactory) : TrekRep
                 }
                 
                 Point(
-                    id = pointEntity.id,
                     trekId = pointEntity.trekId,
                     lat = pointEntity.lat,
                     lon = pointEntity.lon,
@@ -135,7 +134,6 @@ class TrekRepositoryImpl(databaseDriverFactory: DatabaseDriverFactory) : TrekRep
                     }
                     
                     Point(
-                        id = pointEntity.id,
                         trekId = pointEntity.trekId,
                         lat = pointEntity.lat,
                         lon = pointEntity.lon,
@@ -190,7 +188,6 @@ class TrekRepositoryImpl(databaseDriverFactory: DatabaseDriverFactory) : TrekRep
             }
             
             Point(
-                id = it.id,
                 trekId = it.trekId,
                 lat = it.lat,
                 lon = it.lon,

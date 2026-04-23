@@ -1,7 +1,6 @@
 package com.via.himalaya.permissions
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -19,6 +18,7 @@ class PermissionHandler(private val activity: ComponentActivity) {
     
     data class PermissionStatus(
         val hasLocationPermission: Boolean = false,
+        val hasApproximateLocationPermission: Boolean = false,
         val hasBackgroundLocationPermission: Boolean = false,
         val permissionDenied: Boolean = false,
         val shouldShowRationale: Boolean = false
@@ -27,22 +27,19 @@ class PermissionHandler(private val activity: ComponentActivity) {
     private val locationPermissionLauncher = activity.registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        
-        val hasLocationPermission = fineLocationGranted || coarseLocationGranted
-        
+        val hasFineLocation = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val hasCoarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
         _permissionStatus.value = _permissionStatus.value.copy(
-            hasLocationPermission = hasLocationPermission,
-            permissionDenied = !hasLocationPermission,
-            shouldShowRationale = !hasLocationPermission && (
-                activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) ||
-                activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)
-            )
+            hasLocationPermission = hasFineLocation,
+            hasApproximateLocationPermission = hasCoarseLocation,
+            permissionDenied = !hasFineLocation && !hasCoarseLocation,
+            shouldShowRationale = !hasFineLocation &&
+                activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)
         )
         
-        // If basic location permission is granted and we're on Android 10+, request background location
-        if (hasLocationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        // If precise location permission is granted and we're on Android 10+, request background location
+        if (hasFineLocation && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             requestBackgroundLocationPermission()
         }
     }
@@ -61,6 +58,7 @@ class PermissionHandler(private val activity: ComponentActivity) {
         
         _permissionStatus.value = PermissionStatus(
             hasLocationPermission = hasLocationPermission,
+            hasApproximateLocationPermission = hasApproximateLocationPermission(),
             hasBackgroundLocationPermission = hasBackgroundLocationPermission
         )
         
@@ -75,12 +73,13 @@ class PermissionHandler(private val activity: ComponentActivity) {
     }
     
     private fun requestLocationPermissions() {
-        val permissions = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
+        // Request both together so Android 12+ can grant either precise or approximate location.
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
         )
-        
-        locationPermissionLauncher.launch(permissions.toTypedArray())
     }
     
     private fun requestBackgroundLocationPermission() {
@@ -93,8 +92,11 @@ class PermissionHandler(private val activity: ComponentActivity) {
         return ContextCompat.checkSelfPermission(
             activity,
             Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun hasApproximateLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
             activity,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
@@ -114,8 +116,10 @@ class PermissionHandler(private val activity: ComponentActivity) {
     fun getPermissionStatusText(): String {
         val status = _permissionStatus.value
         return when {
-            !status.hasLocationPermission -> "❌ Location permission required"
-            !status.hasBackgroundLocationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> 
+            !status.hasLocationPermission && status.hasApproximateLocationPermission ->
+                "⚠️ Precise location permission required for trek tracking"
+            !status.hasLocationPermission -> "❌ Precise location permission required for trek tracking"
+            !status.hasBackgroundLocationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
                 "⚠️ Background location recommended for continuous tracking"
             else -> "✅ All permissions granted"
         }

@@ -13,7 +13,5 @@ data class RawSensors(
     val magnetometerX: Double? = null,
     val magnetometerY: Double? = null,
     val magnetometerZ: Double? = null,
-    val pressure: Double? = null,
-    val temperature: Double? = null,
-    val humidity: Double? = null
+    val pressure: Double? = null
 )
