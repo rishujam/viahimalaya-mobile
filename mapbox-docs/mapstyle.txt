@@ -1,0 +1,1692 @@
+# Map Styles
+
+**Map styles** define the look and feel of a map, including its colors, background, roads, labels, points of interest, and other visual elements. The Mapbox Maps SDK for Android enables developers to apply predefined styles or load custom styles to fit their application's design needs. Once a style is loaded, developers can programmatically change the style's appearance at runtime, add and remove layers, change layer properties, and more.
+
+By default, the Maps SDK for Android will load the [Mapbox Standard](https://docs.mapbox.com/map-styles/standard/guides/) style, a versatile and visually appealing map style suitable for many applications. Mapbox Standard offers many [configuration options](https://docs.mapbox.com/map-styles/standard/api/#configuration-properties), allowing developers to customize the map's appearance to suit the needs of their application. With Mapbox Standard, developers can adjust the map's colors, feature visibility, and other properties to create a unique map experience. Additionally, developers can bring their own data to the style either through adding a [source and layer](https://docs.mapbox.com/android/maps/guides/styles/work-with-layers/) or by [importing a style fragment](https://docs.mapbox.com/map-styles/standard/guides/#style-imports).
+
+These guides explain core concepts of [loading and configuring styles](https://docs.mapbox.com/android/maps/guides/styles/set-a-style/), [adding sources and layers at runtime](https://docs.mapbox.com/android/maps/guides/styles/work-with-layers/), and [styling data with Mapbox expressions](https://docs.mapbox.com/android/maps/guides/styles/style-layers/) in the Maps SDK for Android. For a general introduction to map styles see this getting started guide:
+
+> **Related content (guide): [Getting started: Map styles](https://docs.mapbox.com/help/getting-started/map-design/)**
+>
+> Learn more about Map Styles in general, and how they are used in the Mapbox product ecosystem.
+
+> **Note: Mapbox Studio Manual**
+>
+> These guides cover working with the map style at runtime. For more information on how to create a custom map style in Mapbox Studio, see the [Mapbox Studio Manual](https://docs.mapbox.com/studio-manual/).
+
+---
+
+# Set a style
+
+When adding a map to an Android application using the Maps SDK, the map's style dictates the visual design of the map, including colors, labels, and feature visibility. It also includes information about data sources, and is used by the SDK to fetch the appropriate data necessary to render the map.
+
+![An Android application displaying a map using the Mapbox Standard style.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-eiffel-standard-style.b389168.480.png)
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-yosemite-outdoors-style.bd2e61e.480.png)
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-mountains-3d-terrain.992438e.480.png)
+
+By default the Maps SDK for Android uses the [Mapbox Standard](https://docs.mapbox.com/map-styles/standard/guides/) style, which is a versatile and visually appealing map style suitable for many applications. Mapbox Standard offers many [configuration options](https://docs.mapbox.com/map-styles/standard/api/#configuration-properties), allowing developers to customize the map's appearance to suit the needs of their application. If a completely unique look and feel is needed for the map, developers can create custom styles using [Mapbox Studio](https://docs.mapbox.com/studio-manual/), which can then be loaded into the map.
+
+Once a style is loaded, you can continue to manipulate it at runtime, changing the appearance of the map by changing style configurations, adding or removing layers, changing layer properties, and more. This guide explains how to set and configure a style when initializing a map and how to switch styles dynamically during runtime.
+
+## Load a style
+
+The Maps SDK provides an embeddable map interface using [`MapView`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-map-view/) or [`MapboxMap`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.compose/-mapbox-map.html). To render a map in the `MapView` or `MapboxMap`, you will need to determine which style the renderer should use. You can rely on the **Mapbox Standard** Style which is loaded by default, or you can specify another style.
+
+### Mapbox Standard
+
+[Mapbox Standard](https://docs.mapbox.com/map-styles/standard/) is our general-purpose map style that is designed to be used in a wide range of applications, suitable for most use cases and includes a variety of configuration options to customize the map's appearance.
+
+Mapbox Standard is the default style, and instantiating a [`MapView`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-map-view/) or [`MapboxMap`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.compose/-mapbox-map.html) without specifying any style means your map will use Mapbox Standard.
+
+**Android View**
+
+```kotlin
+// Loads Mapbox Standard Style by default
+mapView = MapView(context)
+```
+
+**Jetpack Compose**
+
+```kotlin
+// Loads Mapbox Standard Style by default
+MapboxMap()
+```
+
+You can explicitly set Mapbox Standard as the style for your map by using the `Style.STANDARD` constant or calling `MapboxStandardStyle()` if you are using Jetpack Compose:
+
+**Android View**
+
+```kotlin
+mapView = MapView(context, MapInitOptions(
+  context = context,
+  styleUri = Style.STANDARD
+))
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  style = { MapboxStandardStyle() }
+)
+```
+
+### Custom styles
+
+You can also create your own custom styles using the Mapbox Studio style editor. Custom styles can be used to create a unique look and feel for your map, tailored to your application's design needs. You can use Mapbox Standard edited in Mapbox Studio or any other style as a base—or start from scratch entirely. Learn how to customize Standard in [this tutorial](https://docs.mapbox.com/help/tutorials/aa-standard-in-studio/), how to build a style from scratch [in this guide](https://docs.mapbox.com/help/dive-deeper/map-design/#how-to-create-a-custom-style) or explore our style [gallery](https://www.mapbox.com/gallery).
+
+You can specify a style to use when you instantiate a map using a Style URL, a Style Constant, or a Style JSON string.
+
+#### Load a style using a Style URL
+
+All Mapbox styles and custom styles created in Mapbox Studio have a unique style URL starting with `mapbox://`. You can use this URL with the `styleUri` property of [`MapInitOptions`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-map-init-options/), or using `MapStyle` with Jetpack Compose.
+
+**Android View**
+
+```kotlin
+mapView = MapView(context, MapInitOptions(
+  context = context,
+  styleUri = "mapbox://styles/your-mapbox-username/your-custom-style-url"
+))
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  style = { MapStyle(style = "mapbox://styles/your-mapbox-username/your-custom-style-url") }
+)
+```
+
+#### Load a Mapbox style using a Style Constant
+
+If you are using a Mapbox-designed style, you can use [convenience variables](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-style/-companion/) instead of the full style URL. This will also make sure you're using the latest version of the style:
+
+| Style Name | SDK Constant |
+| --- | --- |
+| Mapbox Standard | `Style.STANDARD` |
+| Mapbox Standard Satellite | `Style.STANDARD_SATELLITE` |
+
+**Android View**
+
+```kotlin
+mapView = MapView(context, MapInitOptions(
+  context = context,
+  styleUri = Style.OUTDOORS
+))
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  style = { MapStyle(style = Style.OUTDOORS) }
+)
+```
+
+> **Note: Loading a Style using Style JSON**
+>
+> Though less common, you can also load a style from a JSON string, either loaded from a local file or downloaded over the network. See a minimal style JSON example in [Delay setting the style](#delay-setting-the-style) below.
+
+### Delay setting the style
+
+If you want to initialize the `MapView` but delay loading a style until after the MapView is displayed on the UI, you can set the `styleUri` to `null` in [`MapInitOptions`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-map-init-options/), or pass an empty string to `MapStyle` when using Jetpack Compose.
+
+**Android View**
+
+```kotlin
+// set styleUri to null method
+mapview = MapView(context, MapInitOptions(context = context, styleUri = null))
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  style = {
+    // load empty style
+    MapStyle(style = "")
+  }
+)
+```
+
+In the case above, `MapView` is rendered with solid black background color by default. But, if you want to adjust the color of the map's background to fit your design before your style is loaded to the `MapView`, you can create a minimal style JSON string with a `background` layer set to the desired color.
+
+**Android View**
+
+```kotlin
+@Language("JSON")
+    private const val BLANK_STYLE = """
+{
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {"background-color": "hsl(100, 50%, 50%)"}
+    }
+  ]
+}
+"""
+
+MapView(context, MapInitOptions(context = context, styleUri = BLANK_STYLE))
+// or
+mapboxMap.loadStyle(BLANK_STYLE)
+```
+
+**Jetpack Compose**
+
+```kotlin
+@Language("JSON")
+    private const val BLANK_STYLE = """
+{
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {"background-color": "hsl(100, 50%, 50%)"}
+    }
+  ]
+}
+"""
+
+MapboxMap(
+  style = {
+    // load custom blank style
+    MapStyle(style = BLANK_STYLE)
+  }
+)
+```
+
+### Set a style in an XML MapView
+
+If using Android Views, you can add a `MapView` to the layout with an XML attribute `mapbox_styleUri` to load a Mapbox-hosted style using a [style URL](https://docs.mapbox.com/help/glossary/style-url/).
+
+```XML
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mapbox="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- MapView for displaying the Mapbox map -->
+    <com.mapbox.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        mapbox:mapbox_styleUri="mapbox://styles/your-mapbox-username/your-custom-style-url" />
+
+</RelativeLayout>
+```
+
+## Configure a style
+
+Depending on which map style you choose, you have different configuration options available to customize aspects of your style such as fonts, colors, and more.
+
+### Mapbox Standard
+
+**Mapbox Standard** and **Mapbox Standard Satellite** are our default, all-purpose map styles, and are recommended for most use cases. These styles provide a limited set of configurations instead of allowing for full manipulation of the style.
+
+Each style can be configured with several options, including [light presets](https://docs.mapbox.com/map-styles/standard/guides/#light-presets), [label visibility](https://docs.mapbox.com/map-styles/standard/guides/#label-visibility), [feature visibility](https://docs.mapbox.com/map-styles/standard/guides/#feature-visibility), [color theming](https://docs.mapbox.com/map-styles/standard/guides/#theming), and [fonts](https://docs.mapbox.com/map-styles/standard/guides/#fonts), and more. You can set these at runtime using the [`setStyleImportConfigProperty`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-mapbox-style-manager/set-style-import-config-property.html) method.
+
+> **Related content (playground): [Mapbox Standard Style Playground](https://docs.mapbox.com/playground/standard-style/)**
+>
+> Using this interactive tool, you can see in real-time how different configuration options affect the Mapbox Standard or Mapbox Standard Satellite styles.
+
+All configuration properties for Mapbox Standard are also available for Mapbox Standard Satellite except for toggling 3D objects and color theming. To learn more about configuration options, refer to the [Mapbox Standard Guide](https://docs.mapbox.com/map-styles/standard/guides/#configuration) and the [Mapbox Standard API Reference Docs](https://docs.mapbox.com/map-styles/standard/api/#configuration-properties).
+
+The following sample code shows how to change the 3D lights from the default preset, `day`, to another preset, `dusk`, by setting the `lightPreset` property. The code also shows how to hide the point of interest labels by setting the `showPointOfInterestLabels` property to `false`.
+
+When using Android Views, these configurations can be applied after the map loads by calling `getStyle` and then using the `setStyleImportConfigProperty` method. The first parameter for this method is the import id, which is `basemap` when using Mapbox Standard.
+
+When using Jetpack Compose, you can set these configurations before the map loads using the `MapboxStandardStyle` block.
+
+**Android View**
+
+```kotlin
+mapView = MapView(context)
+mapView.mapboxMap.getStyle { style ->
+  style.setStyleImportConfigProperty(
+    "basemap", // Mapbox Standard's import id is "basemap"
+    "lightPreset",
+    Value.valueOf("dusk")
+  )
+
+  style.setStyleImportConfigProperty(
+    "basemap",
+    "showPointOfInterestLabels",
+    Value.valueOf(false)
+  )
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  style = {
+    MapboxStandardStyle(
+      standardStyleState = rememberStandardStyleState {
+        configurationsState.apply {
+          lightPreset = LightPresetValue.DUSK
+          showPointOfInterestLabels = BooleanValue(false)
+        }
+      }
+    )
+  }
+)
+```
+
+All configurations are also available in [Mapbox Studio](https://docs.mapbox.com/studio-manual/guides/map-styling/#the-style-editor), where you can create a custom style that imports Mapbox Standard or Mapbox Standard Satellite and adjust the configurations as needed.
+
+### Custom styles
+
+Custom styles can be configured by calling methods to update the properties of the style. The most common configurations are updates to layer properties, such as changing the color of a line or the visibility of a label.
+
+For example, you may want to hide an existing layer by setting its `visibility` to `none`, or change the color of a `fill` layer by setting its `fill-color` property. Learn more about updating layers in the [Work with sources and layers](https://docs.mapbox.com/android/maps/guides/styles/work-with-layers/#update-a-layer-at-runtime) guide.
+
+**Android View**
+
+```kotlin
+mapView.mapboxMap.getStyle { style ->
+  style.setStyleLayerProperty("water", "fill-color", Value.valueOf("#45d9ca"))
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+    style = { MapStyle(style = Style.MAPBOX_STREETS) },
+) {
+    MapEffect(Unit) { mapView ->
+        mapView.mapboxMap.getStyle { style ->
+            style.setStyleLayerProperty("water", "fill-color", Value.valueOf("#45d9ca"))
+        }
+    }
+}
+```
+
+This approach requires knowing the ids and types of layers in the style and understanding the properties that can be updated for each layer type. You can explore the properties available for a given layer type in the [Mapbox Style Specification](https://docs.mapbox.com/style-spec/reference/).
+
+An alternative approach to adding many runtime configuration changes for a style is to create a custom style in [Mapbox Studio](https://docs.mapbox.com/studio-manual/guides/map-styling/#the-style-editor). You can make the desired changes in the style editor and load the custom style in your application.
+
+## Change to a different style
+
+You can change the style any time after initializing the map using the `MapboxMap` [`loadStyle`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-mapbox-map/load-style.html) method.
+
+**Android View**
+
+```kotlin
+mapView.mapboxMap.loadStyle("mapbox://styles/mapbox/standard-satellite")
+```
+
+**Jetpack Compose**
+
+```kotlin
+mapView.mapboxMap.loadStyle("mapbox://styles/mapbox/standard-satellite")
+```
+
+If you added any layers after map initialized, you will need to re-add them after the new style is loaded *or* use the [`addPersistentLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-persistent-layer.html) method when adding any layers to the initial style.
+
+For Jetpack Compose users, you can change the whole `MapboxStyleComposable` block to switch between customized styles or strongly typed `MapboxStandardStyle` or `MapboxStandardSatelliteStyle`. Layers added to `slot` or `layer position` of the `MapboxStyleComposable` will be added as normal layers once the style is loaded and layers added to the `MapboxMap` content will be added as persistent layer across different styles.
+
+# Work with sources and layers
+
+Layers define how map features—such as roads, buildings, water, and points of interest—are visually represented in a Mapbox style. Each layer handles rendering specific data from a source, determining its appearance and behavior on the map. With the Mapbox Maps SDK for Android, developers can dynamically add, remove, and change layers to customize their map's design and functionality.
+
+This guide covers the fundamentals of working with layers, including:
+
+-   The relationship between sources and layers
+-   Adding and updating layers at runtime
+-   Controlling layer order and rendering behavior
+-   Using different layer types (such as fill, line, symbol, and raster layers)
+-   Understanding layers is essential for customizing a Mapbox-powered map and displaying data in a visually meaningful way.
+
+## Add and update layers
+
+You can use the Maps SDK to add more styled data to the map at runtime. There are two key concepts to understand when preparing to add a layer to a style at runtime: **layers** and **sources**. **Sources** contain geographic data. They determine the shape of the features you're adding to the map and where in the world they belong. **Layers** contain styling information. They determine how the data in a source should look on the map.
+
+> **Note: Layers in Mapbox Standard**
+>
+> For Mapbox Standard and Standard Satellite, you only have access to the layers that you add to the style yourself. To manipulate the Standard basemap, see the [Configure a Style](https://docs.mapbox.com/android/maps/guides/styles/set-a-style/#configure-a-style) section.
+
+A **layer** is a styled representation of data of a single type (for example polygons, lines, or points) that make up a map style. For example, roads, city labels, and rivers would be three separate layers in a map. There are several layer types (for example fill, line, and symbol). You can read more about [layers in the Mapbox Style Specification](https://docs.mapbox.com/style-spec/reference/layers/).
+
+Most layers also require a **source**. The source provides map data that the Maps SDK can use with a style document to render a visual representation of that data. There are several source types (for example vector tilesets, GeoJSON, and raster data). You can read more about [sources in the Mapbox Style Specification](https://docs.mapbox.com/style-spec/reference/sources/).
+
+In the Maps SDK, the [`Style`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-style/) class exposes the entry point for all methods related to the style object including sources and layers.
+
+### Rendering order
+
+Typically, layers are displayed in the order of their declaration, with later layers appearing on top of earlier ones as rendered by the SDK. When using the [Mapbox Standard](https://docs.mapbox.com/map-styles/standard/), the display order primarily depends on the layer's [slot](https://docs.mapbox.com/style-spec/reference/slots/), while the relative order determines their arrangement within the slot. Layers not associated with slots appear above the entire map, also maintaining their relative order.
+
+If the Globe projection or Terrain is active, the SDK optimizes performance by batching multiple layers together, which may cause layer rearrangements. Layers draped over the globe and terrain, including `fill`, `line`, `background`, `hillshade`, and `raster`, are rendered below symbols, regardless of slot placement or the absence of a designated slot.
+
+This means that layers placed with methods such as [`addLayerAbove()`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-layer-above.html), [`addLayerAt()`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-layer-at.html), and [`addLayerBelow()`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-layer-below.html) might not appear at the expected layer position for some layer types. If your layer is not positioned in the expected place, try disabling terrain and changing the map's projection to Mercator.
+
+### Style domain-specific language
+
+The Style domain-specific language (DSL) is a collection of functions that allows composition of a style in a block that is applied to a receiver class. DSL functions are provided to construct `Style`, `Layer`, `Source`, `Light`, and `Expression` classes. The DSL function names match the class name being created, but the first character in the name is lowercase (for example, the DSL function for the [`CircleLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-circle-layer/) class is [`circleLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/circle-layer.html)). In cases where there are mandatory constructor parameters of the class, assign the mandatory constructor parameters before the code block. Inside the DSL block, use code completion in Android Studio to find all available receiver functions.
+
+With the Style DSL, authoring or updating map styles is like writing [style JSON](https://docs.mapbox.com/help/glossary/style/) directly. The higher-level style API is exposed as DSL, allowing construction of a `StyleExtension` object using the same paradigm as creating `Layer`, `Source`, and `Light` classes using DSL and using the overloaded operator and inside the Style DSL closure to add layers, sources, or light to the `StyleExtension`.
+
+Below is an example using the Style DSL to add a [`GeoJsonSource`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources.generated/-geo-json-source/) and a circle layer:
+
+**Android View**
+
+```kotlin
+
+mapView.mapboxMap.subscribeMapLoadingError {
+  // Error occurred when loading the map, try to handle it gracefully here
+}
+mapView.mapboxMap.loadStyle(
+  style(style = Style.TRAFFIC_DAY) {
+    +geoJsonSource(id = "earthquakes") {
+      data(GEOJSON_URL)
+      cluster(false)
+    }
+    +circleLayer(layerId = "earthquakeCircle", sourceId = "earthquakes") {
+      circleRadius(get { literal("mag") })
+      circleColor(Color.RED)
+      circleOpacity(0.3)
+      circleStrokeColor(Color.WHITE)
+    }
+  }
+) { style ->
+  // Map is set up and the style has loaded. Now you can add data or make other map adjustments.
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+val coroutineScope = rememberCoroutineScope()
+val mapState = rememberMapState {
+  coroutineScope.launch {
+    mapLoadingErrorEvents.onEach {
+      // Error occurred when loading the map, try to handle it gracefully here
+    }
+  }
+  coroutineScope.launch {
+    styleLoadedEvents.first().let {
+      // Map is setup and style has loaded, Now you can add data or make other map adjustments.
+    }
+  }
+}
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+  mapState = mapState
+) {
+  CircleLayer(
+    sourceState = rememberGeoJsonSourceState {
+      data = GeoJSONData(GEOJSON_URL)
+      cluster = BooleanValue(false)
+    }
+  ) {
+    circleRadius = DoubleValue(get { literal("mag") })
+    circleColor = ColorValue(Color.Red)
+    circleOpacity = DoubleValue(0.3)
+    circleStrokeColor = ColorValue(Color.White)
+  }
+}
+```
+
+Sample code throughout this guide uses the Style DSL.
+
+### Add a layer at runtime
+
+To add a new layer to the map at runtime, start by adding a source using the `Style`'s [`addSource`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources/add-source.html) method. It is important that you add the source for a new layer *before* attempting to add the layer itself because the source is a required parameter for most layer types.
+
+Then, you'll use the [`addLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-layer.html) method to add the layer to the style. When adding the style layer, you will specify:
+
+-   A unique ID that you assign to the new layer
+-   The layer type (for example fill, line, or symbol)
+-   What data to use by referencing a source
+-   The appearance of the data by setting various properties (for example color, opacity, and language)
+
+The sample code below illustrates how to add a GeoJSON source and then add and style a line layer that uses the data in that source.
+
+**Android View**
+
+```kotlin
+
+// Get the style
+mapView.mapboxMap.getStyle { style ->
+  // Specify a unique string as the source ID (SOURCE_ID)
+  // and reference the location of source data
+  style.addSource(
+    geoJsonSource(SOURCE_ID) {
+      data("asset://from_crema_to_council_crest.geojson")
+    }
+  )
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and reference the source ID (SOURCE_ID) added above.
+  style.addLayer(
+    lineLayer(LAYER_ID, SOURCE_ID) {
+      lineColor(ContextCompat.getColor(context, R.color.black))
+      lineWidth(3.0)
+    }
+  )
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  LineLayer(
+    sourceState = rememberGeoJsonSourceState {
+      data = GeoJSONData("asset://from_crema_to_council_crest.geojson")
+    }
+  ) {
+    lineColor = ColorValue(Color.Black)
+    lineWidth = DoubleValue(3.0)
+  }
+}
+```
+
+The exact available properties available when adding a source and layer varies by source type and layer type. Read more about [source types](#source-types) and [layer types](#layer-types) below.
+
+### Update a layer at runtime
+
+You can also update the style of any layer at runtime using the layer's unique layer ID with `Style`'s [`getLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/get-layer.html) or [`getLayerAs`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/get-layer-as.html) method and defining style properties.
+
+The sample code below illustrates how to get an existing layer by referencing a layer ID and updating the value of the [`fillOpacity`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-layer/#com.mapbox.maps.extension.style.layers.generated/FillLayer/fillOpacity/#/PointingToDeclaration/)'s value.
+
+Note for Jetpack Compose extension, you can drive layer properties for runtime-added layer through mutable state, and for layers from style JSON, you can use imperative API within a `MapEffect`.
+
+**Android View**
+
+```kotlin
+
+// Get the style
+mapView.mapboxMap.getStyle { style ->
+  // Get an existing layer by referencing its
+  // unique layer ID (LAYER_ID)
+  val layer = style.getLayerAs<FillLayer>(LAYER_ID)
+  // Update layer properties
+  layer?.fillOpacity(0.7)
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+  style = {
+    MapStyle(style = MY_CUSTOMISE_STYLE)
+  }
+) {
+  // Updating a layer in style json can be done through MapEffect
+  MapEffect(Unit) { mapView ->
+    mapView.mapboxMap.styleLoadedEvents.first().let {
+      // Get an existing layer by referencing its
+      // unique layer ID (LAYER_ID)
+      val layer = mapView.mapboxMap.getLayerAs<FillLayer>(LAYER_ID)
+      // Update layer properties
+      layer?.fillOpacity(0.7)
+    }
+  }
+}
+```
+
+The exact available properties available when updating a layer varies by layer type. Read more about [layer types](#layer-types) below.
+
+### Specify order of a layer at runtime for Mapbox Standard and Standard Satellite
+
+Mapbox Standard and Standard Satellite uses [slots](https://docs.mapbox.com/style-spec/reference/slots/) to specify where custom data layers can be added. **Slots** are predefined locations in the Standard and Standard Satellite basemaps where your layer can be inserted. To add custom layers in the appropriate location in the Standard basemap layer stack, Standard and Standard Satellite offers 3 carefully designed slots that you can leverage to place your layer. These slots will stay stable, and you can be sure that your own map won't break even as the basemap updates over time.
+
+| Slot | Description |
+| --- | --- |
+| `bottom` | Above polygons (land, landuse, water, etc.) |
+| `middle` | Above lines (roads, etc.) and behind 3D buildings |
+| `top` | Above POI labels and behind Place and Transit labels. Designed to be used with the `symbol` layers. |
+| not specified | Above all existing layers in the style |
+
+Here's an example of how to assign a slot to a layer:
+
+**Android View**
+
+```kotlin
+
++lineLayer(layerId = "line-layer", sourceId = "line-layer") {
+  lineColor(rgb(255.0, 165.0, 0.0))
+  slot("middle")
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+  style = {
+    // For Jetpack Compose extension, you can put runtime added layers into slots
+    // defined in the strongly typed MapboxStandardStyle and MapboxStandardSatelliteStyle composable function.
+    MapboxStandardStyle(
+      middleSlot = {
+        LineLayer(
+          sourceState = rememberGeoJsonSourceState {
+            data = GeoJSONData("asset://line-source.geojson")
+          }
+        ) {
+          lineColor = ColorValue(Color(255, 156, 0))
+        }
+      }
+    )
+  }
+)
+```
+
+Make sure to use slots instead of layer [ids](https://docs.mapbox.com/style-spec/reference/layers/#id) when inserting a custom layer into the Standard or Standard Satellite basemap. If you want to order custom layers relative to each other, you can use the methods [`addLayerAbove`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-layer-above.html), [`addLayerAt`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-layer-at.html) and [`addLayerBelow`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/add-layer-below.html), or the [Style DSL](https://docs.mapbox.com/android/maps/guides/styles/style-layers/#syntax) method [`layerAtPosition`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style/-style-extension-impl/-builder/layer-at-position.html?query=fun%20layerAtPosition(layer:%20Layer,%20above:%20String?%20=%20null,%20below:%20String?%20=%20null,%20at:%20Int?%20=%20null):%20Pair%3CLayer,%20LayerPosition%3E).
+
+> **Note: Specifying position of a layer when adding it to a style**
+>
+> When importing the Standard Style, the `LayerPosition` is only applicable to custom layers you have added yourself. If you add two layers to the same slot with a specified layer position the latter will define the order of the layers in that slot.
+
+### Specify order of a layer at runtime for other styles
+
+Map styles contains many individual layers (for example, roads, buildings, labels, and more) that are stacked on top of each other. You can change the position of a layer at runtime using the [`moveStyleLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-style/move-style-layer.html) API. The sample code below illustrates how to move an existing layer with the ID `"population"` below the layer with the ID `"state-labels"`.
+
+**Android View**
+
+```kotlin
+
+// Get the style
+mapView.mapboxMap.getStyle { style ->
+  // Move position of the population layer
+  // below the state-labels layer
+  style.moveStyleLayer("population", LayerPosition(null, "state-labels", null))
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+  style = {
+    MapStyle(style = MY_CUSTOMISE_STYLE)
+  }
+) {
+  // Moving a layer defined in style json can be done through MapEffect
+  // Instead, if the layer to be moved is added through composable function, move it by adjusting the order of composable function
+  MapEffect(Unit) { mapView ->
+    mapView.mapboxMap.styleLoadedEvents.first().let {
+      // Move position of the population layer
+      // below the state-labels layer
+      mapView.mapboxMap.moveStyleLayer("population", LayerPosition(null, "state-labels", null))
+    }
+  }
+}
+```
+
+> **Note: Specify position of a layer when adding it to a style**
+>
+> By default, when you add a new layer to the style, it is placed on top of all the other layers. You can specify where the new layer is positioned relative to existing layers using `layerAtPosition` and specify if the layer should be positioned `below` or `above` another layer by referencing the layer ID (a string) or `at` a specific index (an integer).
+>
+> **Android View**
+>
+> ```kotlin
+> // Get the style
+> mapView.mapboxMap.getStyle { style ->
+>   style.addSource(
+>     vectorSource("terrain-data") {
+>       url("mapbox://mapbox.mapbox-terrain-v2")
+>      }
+>   )
+>   style.addLayerBelow(
+>     lineLayer("terrain-data", "terrain-data") {
+>       sourceLayer("contour")
+>       lineWidth(1.9)
+>     },
+>     below = "road-label"
+>   )
+> }
+> ```
+>
+> **Jetpack Compose**
+>
+> ```kotlin
+>
+> MapboxMap(
+>   Modifier.fillMaxSize(),
+>   style = {
+>     GenericStyle(
+>       style = Style.MAPBOX_STREETS,
+>       layerPositionedContent = layerPositionedContent {
+>         belowLayer("road-label") {
+>           LineLayer(
+>             sourceState = rememberVectorSourceState {
+>               url = StringValue("mapbox://mapbox.mapbox-terrain-v2")
+>             }
+>           ) {
+>             sourceLayer = StringValue("contour")
+>             lineWidth = DoubleValue(1.9)
+>           }
+>         }
+>       }
+>     )
+>   }
+> )
+> ```
+
+### Remove a layer at runtime
+
+You can remove a layer from a style using `Style`'s [`removeStyleLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-style/remove-style-layer.html).
+
+**Android View**
+
+```kotlin
+
+// Where LAYER_ID is a valid id of a layer that already
+// exists in the style
+mapView.mapboxMap.getStyle { style ->
+  // If a layer with a given layer ID exists in the
+  // style, remove the layer
+  if (style.styleLayerExists(LAYER_ID)) {
+    style.removeStyleLayer(LAYER_ID)
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+var shouldShowLayer by remember {
+  mutableStateOf(true)
+}
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+  style = {
+    MapStyle(style = MY_CUSTOMISE_STYLE)
+  }
+) {
+  // Removing a layer defined in style json can be done through MapEffect.
+  MapEffect(Unit) { mapView ->
+    mapView.mapboxMap.styleLoadedEvents.first().let {
+      // If a layer with a given layer ID exists in the
+      // style, remove the layer
+      if (mapView.mapboxMap.styleLayerExists(LAYER_ID)) {
+        mapView.mapboxMap.removeStyleLayer(LAYER_ID)
+      }
+    }
+  }
+  // Removing a layer added in runtime through composable function can be done through state driven condition.
+  if (shouldShowLayer) {
+    CircleLayer(...)
+  }
+}
+```
+
+## Source types
+
+### Vector
+
+A vector source, [`VectorSource`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources.generated/-vector-source/), is a vector tileset that conforms to the [Mapbox Vector Tile](https://docs.mapbox.com/vector-tiles/specification/) format. A vector source contains geographic features (and their data properties) that have already been tiled. Learn more about the benefits of vector tilesets and how they work in the [Vector tiles](https://docs.mapbox.com/vector-tiles/reference/) documentation. For vector tiles hosted by Mapbox, the "url" value should be of the form of `mapbox://tilesetid`.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the source ID (SOURCE_ID)
+  +vectorSource(SOURCE_ID) {
+    url("mapbox://mapbox.mapbox-terrain-v2")
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+// (Optional) Specify a unique string as the source ID (SOURCE_ID), or a random ID will be generated and used by default.
+val vectorSource = rememberVectorSourceState(sourceId = SOURCE_ID) {
+  url = StringValue("mapbox://mapbox.mapbox-terrain-v2")
+}
+```
+
+> **Note**
+>
+> All style layers that use a vector source must specify a `"source-layer"` value.
+
+### GeoJSON
+
+A GeoJSON source, [`GeoJsonSource`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources.generated/-geo-json-source/), is data in the form of a JSON object that conforms to the [GeoJSON specification](https://geojson.org/). A GeoJSON source is a collection of one or more geographic features, which may be points, lines, and polygons. Data must be provided via a `"data"` property, whose value can be a URL or inline GeoJSON.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the source ID (SOURCE_ID)
+  +geoJsonSource(SOURCE_ID) {
+    url("asset://from_crema_to_council_crest.geojson")
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+// (Optional) Specify a unique string as the source ID (SOURCE_ID), or a random ID will be generated and used by default.
+val geoJsonSource = rememberGeoJsonSourceState(sourceId = SOURCE_ID) {
+  data = GeoJSONData("asset://from_crema_to_council_crest.geojson")
+}
+```
+
+> **Note**
+>
+> See the format of the data used in the sample code above in the [Maps SDK example app on GitHub](https://github.com/mapbox/mapbox-maps-android/blob/v11.24.2/app/src/main/assets/from_crema_to_council_crest.geojson).
+
+### Raster
+
+A raster source, [`RasterSource`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources.generated/-raster-source/), is a raster tileset. For raster tiles hosted by Mapbox, the "url" value should be of the form `mapbox://tilesetid`.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the source ID (SOURCE_ID)
+  +rasterSource(SOURCE_ID) {
+    tileSize(256)
+    tileSet(TILESET_JSON, listOf(SOURCE_URL)) {}
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+// (Optional) Specify a unique string as the source ID (SOURCE_ID), or a random ID will be generated and used by default.
+val rasterSource = rememberRasterSourceState(sourceId = SOURCE_ID) {
+  tileSize = LongValue(256)
+  tiles = StringListValue(listOf(SOURCE_URL)))
+}
+```
+
+### Raster DEM
+
+A raster DEM source, [`RasterDemSource`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources.generated/-raster-dem-source/), refers to Mapbox Terrain-DEM (`mapbox://mapbox.mapbox-terrain-dem-v1`), which is the only supported raster DEM source.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the source ID (SOURCE_ID)
+  +rasterDemSource(SOURCE_ID) {
+    url("mapbox://mapbox.mapbox-terrain-dem-v1")
+    // 514 specifies padded DEM tile and provides better performance than 512 tiles.
+    tileSize(514)
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+// (Optional) Specify a unique string as the source ID (SOURCE_ID), or a random ID will be generated and used by default.
+val rasterDemSource = rememberRasterDemSourceState(sourceId = SOURCE_ID) {
+  url = StringValue("mapbox://mapbox.mapbox-terrain-dem-v1")
+  // 514 specifies padded DEM tile and provides better performance than 512 tiles.
+  tileSize = LongValue(514)
+}
+```
+
+### Image
+
+An image source, [`ImageSource`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources.generated/-image-source/), is an image that you supply along with geographic coordinates. Specify geographic coordinates in the `"coordinates"` array as `[longitude, latitude]` pairs so the SDK knows at what location in the world to place the image. Each coordinate pair in the `"coordinates"` array represents the image corners listed in clockwise order: top left, top right, bottom right, bottom left.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the source ID (SOURCE_ID)
+  +imageSource(SOURCE_ID) {
+    coordinates(
+      listOf(
+        listOf(-80.11725, 25.7836),
+        listOf(-80.1397431334, 25.783548),
+        listOf(-80.13964, 25.7680),
+        listOf(-80.11725, 25.76795)
+      )
+    )
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+// (Optional) Specify a unique string as the source ID (SOURCE_ID), or a random ID will be generated and used by default.
+val imageSource = rememberImageSourceState(sourceId = SOURCE_ID) {
+  coordinates = PointListValue(
+    listOf(
+      listOf(-80.11725, 25.7836),
+      listOf(-80.1397431334, 25.783548),
+      listOf(-80.13964, 25.7680),
+      listOf(-80.11725, 25.76795)
+    )
+  )
+}
+```
+
+## Layer types
+
+### Fill layer
+
+A fill style layer, [`FillLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-layer/), renders one or more filled (and optionally stroked) polygons on a map. You can use a fill layer to configure the visual appearance of polygon or multipolygon features.
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-fill-layer.4d81ac0.480.png)
+
+To add a fill layer you need to first add a vector or GeoJSON source that contains polygon data. Then you can use the available [properties in the `FillLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-layer/) class to customize the appearance of the layer (for example, the color, opacity, or pattern).
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +fillLayer(LAYER_ID, SOURCE_ID) {
+    fillColor(ContextCompat.getColor(context, R.color.black))
+    fillOpacity(0.5)
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  FillLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    fillColor = ColorValue(Color.Black)
+    fillOpacity = DoubleValue(0.5)
+  }
+}
+```
+
+> **Related content (related): [FillLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-layer/)**
+>
+> A filled polygon with an optional stroked border.
+
+> **Related content (example): [Tint a fill layer](https://docs.mapbox.com/android/maps/examples/android-view/tint-a-fill-layer/)**
+>
+> Add an image to a style and use it to display a pattern in the landuse `FillLayer` in the Mapbox Streets style.
+
+### Line layer
+
+A line style layer, [`LineLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-line-layer/), renders one or more stroked polylines on the map. You can use a line layer to configure the visual appearance of polyline or multipolyline features.
+
+![Map with a light gray line along a trail.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-line-layer.668ee70.480.png)
+
+To add a line layer, you need to first add a vector or GeoJSON source that contains line data. Then you can use the available [properties in the `LineLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-line-layer/) class to customize the appearance of the layer (for example, the `color`, `width`, or `dasharray`).
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +lineLayer(LAYER_ID, SOURCE_ID) {
+    lineColor(ContextCompat.getColor(this@DrawPolygonActivity, R.color.black))
+    lineWidth(3.0)
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  LineLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    lineColor = ColorValue(Color.Black)
+    lineWidth = DoubleValue(3.0)
+  }
+}
+```
+
+> **Related content (related): [LineLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-line-layer/)**
+>
+> A stroked line.
+
+> **Related content (example): [Draw a GeoJSON line](https://docs.mapbox.com/android/maps/examples/android-view/draw-a-geojson-line/)**
+>
+> Load a polyline to a style using `GeoJsonSource` and display it on a map using `LineLayer`.
+
+### Symbol layer
+
+A symbol style layer, [`SymbolLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-symbol-layer/), renders icon and text labels at points or along lines on a map. You can use a symbol layer to configure the visual appearance of labels for features in vector tiles.
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-symbol-layer-label.d056d67.480.png)
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-symbol-layer-icon.09b3dde.480.png)
+
+To add a symbol layer, you need to first add a vector or GeoJSON source that contains point data. If you want to use icons in this layer, you also need to add images to the style before adding the layer. Then you can use the available [properties in the `SymbolLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-symbol-layer/) class to customize the appearance of the layer.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +symbolLayer(LAYER_ID, SOURCE_ID) {
+    // set a few properties
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  SymbolLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    // set a few properties
+  }
+}
+```
+
+> **Related content (related): [SymbolLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-symbol-layer/)**
+>
+> An icon or a text label.
+
+> **Related content (example): [Display multiple icon images in a symbol layer](https://docs.mapbox.com/android/maps/examples/android-view/display-multiple-icon-images-in-a-symbol-layer/)**
+>
+> Add point data and several images to a style and use the `switchCase` and get expressions to choose which image to display at each point in a `SymbolLayer` based on a data property.
+
+### Circle layer
+
+A circle style layer, [`CirleLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-circle-layer/), renders one or more filled circles on a map. You can use a circle layer to configure the visual appearance of point or point collection features in vector tiles. A circle layer renders circles whose radii are measured in screen units.
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-circle-layer.3a8751c.480.png)
+
+To add a circle layer, you need to first add a vector or GeoJSON source that contains point data. Then you can use the available [properties in the `CircleLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-circle-layer/) class to customize the appearance of the layer (for example, radius, color, or offset).
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +circleLayer(LAYER_ID, SOURCE_ID) {
+    // set a few properties
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  CircleLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    // set a few properties
+  }
+}
+```
+
+> **Related content (related): [CircleLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-circle-layer/)**
+>
+> A filled circle.
+
+> **Related content (example): [Style circles categorically](https://docs.mapbox.com/android/maps/examples/android-view/style-circles-categorically/)**
+>
+> Add point data to a style from a vector tileset and use the match and get expressions to assign the color of each point in a `CircleLayer` based on a data property.
+
+### Fill extrusion layer
+
+A fill-extrusion, [`FillExtrusionLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-extrusion-layer/), style layer renders one or more filled (and optionally stroked) extruded (3D) polygons on a map. You can use a fill-extrusion layer to configure the extrusion and visual appearance of polygon or multipolygon features.
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-fill-extrusion-layer.61db04e.480.png)
+
+To add a fill extrusion layer, you need to first add a vector or GeoJSON source that contains polygon data. Often you will want the data to contain a data property that you will use to determine the height of extrusion of each feature. This may be a physical height in meters or a way to illustrate a non-physical attribute of the area like population in Census blocks. Once you've added an appropriate source, you can use the available [properties in the `FillExtrusionLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-extrusion-layer/) class to customize the appearance of the layer (for example, the height, opacity, or color).
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +fillExtrusionLayer(LAYER_ID, SOURCE_ID) {
+    fillExtrusionHeight(
+      get("height")
+    )
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  FillExtrusionLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    fillExtrusionHeight = DoubleValue(Expression.get("height"))
+  }
+}
+```
+
+> **Note**
+>
+> This example uses expressions to assign a value based on a data property. Read more about expressions in the [Use expressions](https://docs.mapbox.com/android/maps/guides/styles/style-layers/) guide.
+
+> **Related content (related): [FillExtrusionLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-extrusion-layer/)**
+>
+> An extruded (3D) polygon.
+
+> **Related content (example): [Display building extrusions](https://docs.mapbox.com/android/maps/examples/android-view/display-3d-buildings/)**
+>
+> Extrude the building layer in the Mapbox Light style using `FillExtrusionLayer` and set up the light position.
+
+### Hillshade layer
+
+A hillshade style layer, [`HillshadeLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-hillshade-layer/), renders digital elevation model (DEM) data on the client-side.
+
+The implementation only supports Mapbox Terrain RGB and Mapzen Terrarium tiles. You must add either Mapbox Terrain RGB or Mapzen Terrarium as a source before adding a hillshade layer. Once you've added an appropriate source, you can use the available [properties in the `HillshadeLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-hillshade-layer/) class to customize the appearance of the layer.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +hillshadeLayer(LAYER_ID, SOURCE_ID) {
+    // set a few properties
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  HillshadeLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    // set a few properties
+  }
+}
+```
+
+> **Related content (related): [HillshadeLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-hillshade-layer/)**
+>
+> Client-side hillshading visualization based on DEM data. The implementation only supports Mapbox Terrain RGB and Mapzen Terrarium tiles.
+
+### Heatmap layer
+
+A heatmap style layer, [`HeatmapLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-heatmap-layer/), renders a range of colors to represent the density of points in an area.
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-heatmap-layer.c8925cb.480.png)
+
+To add a heatmap layer, you need to first add a vector or GeoJSON source that contains point data. Then you can use the available [properties in the `HeatmapLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-heatmap-layer/) class to customize the appearance of the layer.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +heatmapLayer(LAYER_ID, SOURCE_ID) {
+    // set a few properties
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  HeatmapLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    // set a few properties
+  }
+}
+```
+
+> **Related content (related): [HeatmapLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-heatmap-layer/)**
+>
+> A heatmap.
+
+> **Related content (example): [Visualize data as a heatmap](https://docs.mapbox.com/android/maps/examples/android-view/visualize-data-as-a-heatmap/)**
+>
+> Add earthquake frequency data to a style from a GeoJSON file and render it on a map using a `HeatmapLayer`.
+
+### Raster layer
+
+A raster style layer, [`RasterLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-raster-layer/), renders raster tiles on a map. You can use a raster layer to configure the color parameters of raster tiles.
+
+To add a raster layer, you need to first add a raster source. Then you can use the available [properties in the `RasterLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-raster-layer/) class to customize the appearance of the layer.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  // and assign the source ID added above.
+  +rasterLayer(LAYER_ID, SOURCE_ID) {
+    // set a few properties
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  // and assign the source state created above.
+  RasterLayer(
+    layerId = LAYER_ID,
+    sourceState = geoJsonSource
+  ) {
+    // set a few properties
+  }
+}
+```
+
+> **Related content (related): [RasterLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-raster-layer/)**
+>
+> Raster map textures such as satellite imagery.
+
+> **Related content (example): [Add animated weather data](https://docs.mapbox.com/android/maps/examples/android-view/add-animated-weather-data/)**
+>
+> Load a raster image to a style using `ImageSource` and display it on a map as animated weather data using `RasterLayer`
+
+> **Related content (example): [(Compose) Add animated weather data](https://docs.mapbox.com/android/maps/examples/compose/add-animated-weather-data/)**
+>
+> Load a raster image to a style using `ImageSource` and display it on a map as animated weather data using `RasterLayer`
+
+### Sky layer
+
+A sky style layer, [`SkyLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-sky-layer/), renders a stylized spherical dome that encompasses the entire map and is automatically rendered behind all layers. This can be used to fill the area above the horizon with a simulated sky that illustrates a particular time-of-day, or stylized custom gradients.
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-sky-layer.ba4f273.480.png)
+
+You can use the available [properties in the `SkyLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-sky-layer/) class to customize the appearance of the layer.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  +skyLayer(LAYER_ID) {
+    // set a few properties
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  SkyLayer(
+    layerId = LAYER_ID
+  ) {
+    // set a few properties
+  }
+}
+```
+
+> **Related content (related): [SkyLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-sky-layer/)**
+>
+> A spherical dome around the map that is always rendered behind all other layers.
+
+### Background layer
+
+The background style layer, [`BackgroundLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-background-layer/), covers the entire map. Use a background style layer to configure a color or pattern to show below all other map content. If the background layer is transparent or omitted from the style, any part of the map view that does not show another style layer is transparent.
+
+You can use the available [properties in the `BackgroundLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-background-layer/) class to customize the appearance of the layer.
+
+**Android View**
+
+```kotlin
+
+style {
+  // Specify a unique string as the layer ID (LAYER_ID)
+  +backgroundLayer(LAYER_ID) {
+    // set a few properties
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  // (Optional) Specify a unique string as the layer ID (LAYER_ID), or by default a random generated ID will be used.
+  BackgroundLayer(
+    layerId = LAYER_ID
+  ) {
+    // set a few properties
+  }
+}
+```
+
+> **Related content (related): [BackgroundLayer](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-background-layer/)**
+>
+> The background color or pattern of the map.
+
+# Styling layers with expressions
+
+In the Maps SDK, you can specify the value for any layout property, paint property, or filter as an expression. Expressions define how one or more feature property value or the current zoom level are combined using logical, mathematical, string, or color operations to produce the appropriate style property value or filter decision.
+
+A **property expression** is any expression defined using a reference to feature property data. Property expressions allow the appearance of a feature to change with its properties. They can be used to visually differentiate types of features within the same layer or create data visualizations.
+
+A **camera expression** is any expression defined using `['zoom']`. Such expressions allow the appearance of a layer to change with the map's zoom level. Zoom expressions can be used to create the illusion of depth and control data density.
+
+There are countless ways to apply property expressions to your application, including:
+
+-   **Data-driven styling**: Specify style rules based on one or more data attribute.
+-   **Arithmetic**: Do arithmetic on source data, for example performing calculations to convert units.
+-   **Conditional logic**: Use if-then logic, for example to decide exactly what text to display for a label based on which properties are available in the feature or even the length of the name.
+-   **String manipulation**: Take control over label text with things like uppercase, lowercase, and title case transforms without having to edit, re-prepare and re-upload your data.
+
+> **Related content (related): [Mapbox Style Specification: Expressions](https://docs.mapbox.com/style-spec/reference/expressions/)**
+>
+> An expression defines a formula for computing the value of the property using the operators described in this section.
+
+### Syntax
+
+The Maps SDK's `Style` domain-specific language (DSL) allows you to write expressions in a block that is applied to a receiver class. DSL functions for expressions are provided to construct the instances. Expressions follow this format:
+
+```kotlin
+expression_name {
+  argument_0
+  argument_1
+}
+```
+
+The `expression_name` is the **expression operator**, for example, you would use [`product`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//product/#kotlin.DoubleArray/PointingToDeclaration/) to multiply two arguments or [`switchCase`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//switchCase/#kotlin.Function1%5Bcom.mapbox.maps.extension.style.expressions.generated.Expression.ExpressionBuilder,kotlin.Unit%5D/PointingToDeclaration/) to create conditional logic.
+
+The **arguments** are either *literal* (numbers, strings, or boolean values) or else themselves expressions. The number of arguments varies based on the expression.
+
+Here's one example using an expression to calculate an arithmetic expression (π * 32):
+
+```kotlin
+product {
+  pi()
+  pow {
+    literal(3)
+    literal(2)
+  }
+}
+```
+
+This example uses a [`product`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//product/#kotlin.DoubleArray/PointingToDeclaration/) expression to multiply two arguments. The first argument is [`pi`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//pi/#/PointingToDeclaration/), which is an expression that returns the mathematical constant pi. The second arguement is another expression: a [`pow`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//pow/#kotlin.Function1%5Bcom.mapbox.maps.extension.style.expressions.generated.Expression.ExpressionBuilder,kotlin.Unit%5D/PointingToDeclaration/) expression with two arguments of its own. It will return 32, and the result will be multiplied by π.
+
+### Expression types
+
+-   **Mathematical operators** for performing arithmetic and other operations on numeric values
+-   **Logical operators** for manipulating boolean values and making conditional decisions
+-   **String operators** for manipulating strings
+-   **Data operators** for providing access to the properties of source features
+-   **Camera operators** for providing access to the parameters defining the current map view
+
+## Data-driven styling at runtime
+
+You can use expressions to determine the style of features in a layer based on data properties in the source data. For example, if you have a source containing point data from individual responses to the 2010 U.S. Census and each point has an "ethnicity" data property, you can use expressions to specify the color of each circle based on reported ethnicity.
+
+The example below uses the [`match`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//match/#kotlin.Function1%5Bcom.mapbox.maps.extension.style.expressions.generated.Expression.ExpressionBuilder,kotlin.Unit%5D/PointingToDeclaration/) expression to compare the value of the `"ethnicity"` data property for each point in the source to several possible values. The first argument of the `match` expression is the value of the `"ethnicity"` data property. There are several arguments that specify what to do if the value of the data property matches a given string and a final argument that specifies what to do if the value of the data property does not match any of the strings provided.
+
+To read the values of the `"ethnicity"` data property, this example uses the [`get`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//get/#kotlin.Function1%5Bcom.mapbox.maps.extension.style.expressions.generated.Expression.ExpressionBuilder,kotlin.Unit%5D/PointingToDeclaration/) expression with `"ethnicity"` as the sole argument.
+
+Then, it uses `stop` expressions for the next several arguments for the `match` expression. Each `stop` has two arguments: the first is the value to compare to the value of the `"ethnicity"` data property and the second is the value that should be applied to the layer's `circleColor` property if the value of the data property matches the first argument.
+
+The second argument of the `stop` expression is a color, which is constructed using the [`rgb`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//rgb/#kotlin.Function1%5Bcom.mapbox.maps.extension.style.expressions.generated.Expression.ExpressionBuilder,kotlin.Unit%5D/PointingToDeclaration/) expression.
+
+The final argument of the `match` expression is a fallback value that should be applied to `circleColor` if the value of the `"ethnicity"` data property does not match any of the strings provided.
+
+**Android View**
+
+```kotlin
+
+style {
+  +circleLayer("population", "ethnicity-source") {
+    sourceLayer("sf2010")
+    ...
+    circleColor(
+      // Compare value of the "ethnicity" data property
+      // to several possible values
+      match {
+        // Read the value of the "ethnicity" data property
+        get("ethnicity")
+        // If the value of the data property
+        // matches "white", then apply this color.
+        stop {
+          literal("white")
+          rgb(251.0, 176.0, 59.0)
+        }
+        // If the value of the data property
+        // matches "Black", then apply this color.
+        stop {
+          literal("Black")
+          rgb(34.0, 59.0, 83.0)
+        }
+        // If the value of the data property
+        // matches "Hispanic", then apply this color.
+        stop {
+          literal("Hispanic")
+          rgb(229.0, 94.0, 94.0)
+        }
+        // If the value of the data property
+        // matches "Asian", then apply this color.
+        stop {
+          literal("Asian")
+          rgb(59.0, 59.0, 208.0)
+        }
+        // If the value of the data property
+        // matches "Other", then apply this color.
+        stop {
+          literal("Other")
+          rgb(204.0, 204.0, 204.0)
+        }
+        // If the value of the "ethnicity" property does
+        // not match any of the above strings, use this color
+        rgb(0.0, 0.0, 0.0)
+      }
+    )
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  CircleLayer(
+    sourceState = rememberGeoJsonSourceState {
+      data = GeoJSONData("asset://ethnicity-source.geojson")
+    }
+  ) {
+    sourceLayer = StringValue("sf2010")
+    circleColor = ColorValue(
+      // Compare value of the "ethnicity" data property
+      // to several possible values
+      match {
+        // Read the value of the "ethnicity" data property
+        get("ethnicity")
+        // If the value of the data property
+        // matches "white", then apply this color.
+        stop {
+          literal("white")
+          rgb(251.0, 176.0, 59.0)
+        }
+        // If the value of the data property
+        // matches "Black", then apply this color.
+        stop {
+          literal("Black")
+          rgb(34.0, 59.0, 83.0)
+        }
+        // If the value of the data property
+        // matches "Hispanic", then apply this color.
+        stop {
+          literal("Hispanic")
+          rgb(229.0, 94.0, 94.0)
+        }
+        // If the value of the data property
+        // matches "Asian", then apply this color.
+        stop {
+          literal("Asian")
+          rgb(59.0, 59.0, 208.0)
+        }
+        // If the value of the data property
+        // matches "Other", then apply this color.
+        stop {
+          literal("Other")
+          rgb(204.0, 204.0, 204.0)
+        }
+        // If the value of the "ethnicity" property does
+        // not match any of the above strings, use this color
+        rgb(0.0, 0.0, 0.0)
+      }
+    )
+  }
+}
+```
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-examples-style-circles-categorically.24a7f00.480.png)
+
+> **Related content (example): [Style circles categorically](https://docs.mapbox.com/android/maps/examples/android-view/style-circles-categorically/)**
+>
+> Add point data to a style from a vector tileset and use the match and get expressions to assign the color of each point in a `CircleLayer` based on a data property.
+
+For more examples of expressions for data-driven styling, see the Maps SDK test application on [GitHub](https://github.com/mapbox/mapbox-maps-android/tree/main/app).
+
+## Zoom-driven styling at runtime
+
+You can use expressions to determine the style of features in a layer based on the camera position, including the zoom level. For example, if you have dense point data displayed using a circle layer, you may want to adjust the radius of circles based on the zoom level to make the data more readable at low zoom levels.
+
+The example below uses the [`interpolate`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//interpolate/#kotlin.Function1%5Bcom.mapbox.maps.extension.style.expressions.generated.Expression.InterpolatorBuilder,kotlin.Unit%5D/PointingToDeclaration/) expression to produce a continuous, smooth series of values between pairs of input and output values ("stops"). Its first argument sets the interpolation type, the second is the value of the zoom level, and the remaining arguments specify the size of the circle radius that should be applied based on the value of the zoom level.
+
+"Exponential" is one of a few types of interpolation available Mapbox expressions. The `exponential` expression has one argument: the `base`, which controls the rate at which the output increases.
+
+The [`zoom`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.expressions.dsl.generated/#com.mapbox.maps.extension.style.expressions.dsl.generated//zoom/#/PointingToDeclaration/) expression does not require any arguments. It will return the value of the current zoom level of the map.
+
+The remaining arguments of the `interpolate` expression are `stop`s. They represent points along the exponential curve. When a user is viewing the map at zoom level `12` or below, the circles will have a radius of `2`. When viewing it at zoom level `22` and above, the circles will have a radius of `180`. For all zoom levels between, the radius will be determined by an exponential function and the value will fall somewhere between `2` and `180`.
+
+**Android View**
+
+```kotlin
+
+style {
+  +circleLayer("population", "ethnicity-source") {
+    sourceLayer("sf2010")
+    ...
+    circleRadius(
+      // Produce a continuous, smooth series of values
+      // between pairs of input and output values
+      interpolate {
+        // Set the interpolation type
+        exponential {
+          literal(1.75)
+        }
+        // Get current zoom level
+        zoom()
+        // If the map is at zoom level 12 or below,
+        // set circle radius to 2
+        stop {
+          literal(12)
+          literal(2)
+        }
+        // If the map is at zoom level 22 or above,
+        // set circle radius to 180
+        stop {
+          literal(22)
+          literal(180)
+        }
+      }
+    )
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+) {
+  CircleLayer(
+    sourceState = rememberGeoJsonSourceState {
+      data = GeoJSONData("asset://ethnicity-source.geojson")
+    }
+  ) {
+    sourceLayer = StringValue("sf2010")
+    circleRadius = DoubleValue(
+      // Produce a continuous, smooth series of values
+      // between pairs of input and output values
+      interpolate {
+        // Set the interpolation type
+        exponential {
+          literal(1.75)
+        }
+        // Get current zoom level
+        zoom()
+        // If the map is at zoom level 12 or below,
+        // set circle radius to 2
+        stop {
+          literal(12)
+          literal(2)
+        }
+        // If the map is at zoom level 22 or above,
+        // set circle radius to 180
+        stop {
+          literal(22)
+          literal(180)
+        }
+      }
+    )
+  }
+}
+```
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-expressions-zoom-low.adb4f2f.480.png)
+
+![](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-expressions-zoom-high.9c45608.480.png)
+
+For more examples of expressions for zoom-driven styling, see the Maps SDK test application on [GitHub](https://github.com/mapbox/mapbox-maps-android/tree/main/app/src/main/java/com/mapbox/maps/testapp/examples).
+
+## Light-driven styling in Standard
+
+Mapbox Standard and Mapbox Standard Satellite uses 3D lighting which affects the entire map, like lighting in the real world. This means that when you switch to dark lights, for example to the "night" preset, your layers will also be dark. If you want to change how light affects the layers you have created, you will need to configure [`*-emissive-strength`](https://docs.mapbox.com/style-spec/reference/light/#-emissive-strength-paint-property), a property which controls how light is being emitted. `*-emissive-strength` applies to [`background`](https://docs.mapbox.com/style-spec/reference/layers/#background), [`fill`](https://docs.mapbox.com/style-spec/reference/layers/#fill), [`circle`](https://docs.mapbox.com/style-spec/reference/layers/#circle), [`symbol`](https://docs.mapbox.com/style-spec/reference/layers/#symbol) and [`line`](https://docs.mapbox.com/style-spec/reference/layers/#line) [layer types](https://docs.mapbox.com/style-spec/reference/layers/#type).
+
+Here's an example how you would set [`*-emissive-strength`](https://docs.mapbox.com/style-spec/reference/light/#-emissive-strength-paint-property) for a [line](https://docs.mapbox.com/style-spec/reference/layers/#line) layer:
+
+**Android View**
+
+```kotlin
+
+mapView.mapboxMap.getStyle { style ->
+  style.addSource(
+    vectorSource("vector-source") {
+      url("mapbox://mapbox.mapbox-streets-v8")
+    }
+  )
+  style.addLayer(
+    lineLayer("my-line-layer", "vector-source") {
+      sourceLayer("road")
+      lineEmissiveStrength(1.0)
+      slot("middle")
+    }
+  )
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  modifier = Modifier.fillMaxSize(),
+  style = {
+    MapboxStandardStyle(
+      middleSlot = {
+        LineLayer(
+          sourceState = rememberVectorSourceState {
+            url = StringValue("mapbox://mapbox.mapbox-streets-v8")
+          }
+        ) {
+          sourceLayer = StringValue("road")
+          lineEmissiveStrength = DoubleValue(1.0)
+        }
+      }
+    )
+  }
+)
+```
+
+This image illustrates how different `line-emissive-strength` values are impacting the visual appearance of a line layer:
+
+![Comparison of different values of emissive strengths](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-layers-emissive-light.146f00e.480.png)

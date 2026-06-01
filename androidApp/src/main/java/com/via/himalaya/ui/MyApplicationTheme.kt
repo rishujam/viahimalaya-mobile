@@ -21,16 +21,38 @@ fun MyApplicationTheme(
     content: @Composable () -> Unit
 ) {
     val colors = if (darkTheme) {
+        // Dark theme using ViaHimalaya colors with adjustments
         darkColorScheme(
-            primary = Color(0xFFBB86FC),
-            secondary = Color(0xFF03DAC5),
-            tertiary = Color(0xFF3700B3)
+            primary = Color(0xFF466638),        // PIN_START green
+            secondary = Color(0xFF8A5C1A),      // MOD_FG brown
+            tertiary = Color(0xFF9C4032),       // PIN_END/HARD_FG red
+            background = Color(0xFF1A1F1A),     // Dark version of TEXT
+            surface = Color(0xFF2A2F2A),        // Darker surface
+            onBackground = Color(0xFFF5F4EE),   // BG as text on dark
+            onSurface = Color(0xFFF5F4EE),      // BG as text on dark
+            onPrimary = Color(0xFFFFFFFF),      // WHITE
+            onSecondary = Color(0xFFFFFFFF),    // WHITE
+            surfaceVariant = Color(0xFF3A3F3A), // Darker variant
+            onSurfaceVariant = Color(0xFFAAA89E), // TEXT_3
+            outline = Color(0xFF7A7A6E)         // TEXT_2
         )
     } else {
+        // Light theme using ViaHimalaya colors from Figma
         lightColorScheme(
-            primary = Color(0xFF6200EE),
-            secondary = Color(0xFF03DAC5),
-            tertiary = Color(0xFF3700B3)
+            primary = Color(0xFF1A1F14),        // PRIMARY - dark sage
+            secondary = Color(0xFF466638),      // PIN_START green
+            tertiary = Color(0xFF9C4032),       // PIN_END/HARD_FG red
+            background = Color(0xFFF5F4EE),     // BG - cream background
+            surface = Color(0xFFFFFFFF),        // WHITE
+            onBackground = Color(0xFF1A1F1A),   // TEXT - dark text
+            onSurface = Color(0xFF1A1F1A),      // TEXT - dark text
+            onPrimary = Color(0xFFFFFFFF),      // WHITE
+            onSecondary = Color(0xFFFFFFFF),    // WHITE
+            surfaceVariant = Color(0xFFF0EEE6), // CHIP_BG/SECONDARY_BG
+            onSurfaceVariant = Color(0xFF7A7A6E), // TEXT_2 - secondary text
+            outline = Color(0xFFEBE9E2),        // DIVIDER
+            primaryContainer = Color(0xFFDCE8D2), // EASY_BG
+            onPrimaryContainer = Color(0xFF466638) // EASY_FG
         )
     }
     val typography = Typography(

@@ -1,5 +1,5 @@
 -- Treks table
-CREATE TABLE Trek (
+CREATE TABLE NavigatorTrek (
     id TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
     guideId TEXT NOT NULL,
@@ -22,25 +22,25 @@ CREATE TABLE Point (
     bearing REAL,
     battery INTEGER,
     rawSensorsJson TEXT,
-    FOREIGN KEY (trekId) REFERENCES Trek(id) ON DELETE CASCADE
+    FOREIGN KEY (trekId) REFERENCES NavigatorTrek(id) ON DELETE CASCADE
 );
 
--- Queries for Trek table
+-- Queries for NavigatorTrek table
 insertTrek:
-INSERT INTO Trek (id, name, guideId, startTime, isSynced)
+INSERT INTO NavigatorTrek (id, name, guideId, startTime, isSynced)
 VALUES (?, ?, ?, ?, ?);
 
-getTrekById:
-SELECT * FROM Trek WHERE id = ?;
+getNavigatorTrekById:
+SELECT * FROM NavigatorTrek WHERE id = ?;
 
 getUnsyncedTreks:
-SELECT * FROM Trek WHERE isSynced = 0;
+SELECT * FROM NavigatorTrek WHERE isSynced = 0;
 
-getAllTreks:
-SELECT * FROM Trek ORDER BY startTime DESC;
+getAllNavigatorTreks:
+SELECT * FROM NavigatorTrek ORDER BY startTime DESC;
 
 updateTrekSyncStatus:
-UPDATE Trek SET isSynced = ? WHERE id = ?;
+UPDATE NavigatorTrek SET isSynced = ? WHERE id = ?;
 
 -- Queries for Point table
 insertPoint:
@@ -52,7 +52,7 @@ SELECT * FROM Point WHERE trekId = ? ORDER BY timestamp ASC;
 
 getPointsForUnsyncedTreks:
 SELECT p.* FROM Point p
-INNER JOIN Trek t ON p.trekId = t.id
+INNER JOIN NavigatorTrek t ON p.trekId = t.id
 WHERE t.isSynced = 0
 ORDER BY p.trekId, p.timestamp ASC;
 

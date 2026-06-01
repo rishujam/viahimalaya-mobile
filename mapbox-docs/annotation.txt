@@ -1,0 +1,355 @@
+# Annotations
+
+Annotations are images or individually-styled circle, line, or polygon features that are rendered above the map and fixed to specific geographic coordinates.
+
+> **Note: Looking for a simpler option?**
+>
+> If you need basic pin-style markers in Jetpack Compose, consider using **[Markers](https://docs.mapbox.com/android/maps/guides/add-your-data/markers/)** instead. Markers provide a quick way to add default-styled markers without requiring custom image assets.
+
+**Benefits:**
+
+-   Available in both Jetpack Compose and traditional Android Views.
+-   Built-in interaction support like selecting and dragging annotations around the map.
+-   No external data file necessary.
+-   No specific data format other than geographic coordinates (longitude and latitude).
+-   Every annotation can be individually styled.
+-   Every annotation layer can be adjusted to be above or below another layer.
+-   Same performance benefits as using style layers.
+
+**Limitations:**
+
+-   No default image available.
+-   (use [Markers](https://docs.mapbox.com/android/maps/guides/add-your-data/markers/) for built-in markers).
+-   Inefficient for adding many features (> 250) to the map.
+
+**Android View**
+
+In Android View, add annotations to the map with the [`MapView`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-map-view/)'s [`AnnotationPlugin`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation/-annotation-plugin/). Use the `AnnotationPlugin` to create **annotation managers** based on the type of annotation that you're interested in. Every annotation manager handles a collection of annotations. Once a manager has been created, you can create and add individually styled instances of the corresponding annotation type.
+
+**Jetpack Compose**
+
+In Jetpack Compose, add annotations to the map by including them in the `MapboxMap` composable function. You can create and add individual instances of different annotation types, such as `PointAnnotation`, `CircleAnnotation`, `PolylineAnnotation`, and `PolygonAnnotation`.
+
+## Point annotations
+
+A [`PointAnnotation`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/-point-annotation/) can display an image at any geographic coordinate. A common use case is to display a marker or pin representing a location that a user can tap on to get more information.
+
+`PointAnnotation` works with any image format supported by Android, including PNG, JPEG, GIF, WebP, and vector drawables.
+
+The Maps SDK for Android does not provide a default image for point annotations. You must provide your own image asset. If you're using Jetpack Compose and need pin-style markers, consider using **[Markers](https://docs.mapbox.com/android/maps/guides/add-your-data/markers/)** instead.
+
+The code snippet below shows how to add a point annotation to the map using an image asset named `red_marker`. You can download a PDF containing a red map marker to try out the `PointAnnotation` example.
+
+[Download red marker image](https://docs.mapbox.com/android/maps/examples/red_marker.png)
+
+**Android View**
+
+```kotlin
+// Create an instance of the Annotation API and get the PointAnnotationManager.
+val annotationApi = mapView?.annotations
+val pointAnnotationManager = annotationApi?.createPointAnnotationManager(mapView)
+// Set options for the resulting symbol layer.
+val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
+    // Define a geographic coordinate.
+    .withPoint(Point.fromLngLat(18.06, 59.31))
+    // Specify the bitmap you assigned to the point annotation
+    // The bitmap will be added to map style automatically.
+    .withIconImage(YOUR_ICON_BITMAP)
+// Add the resulting pointAnnotation to the map.
+pointAnnotationManager?.create(pointAnnotationOptions)
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // Create and remember the icon image to be used for the point annotation
+  // The icon image will be added to map automatically when associated with a PointAnnotation.
+  val marker = rememberIconImage(key = "red-marker", painter = painterResource(id = R.drawable.red_marker))
+  // Insert a PointAnnotation composable function with the geographic coordinate to the content of MapboxMap composable function.
+  PointAnnotation(point = Point.fromLngLat(18.06, 59.31)) {
+    // specify the marker image
+    iconImage = marker
+  }
+}
+```
+
+> **Related content (example): [Add a marker to the map](https://docs.mapbox.com/android/maps/examples/compose/add-point-annotations/)**
+>
+> Use the Annotations API to add a single red marker pin to the map using the Maps SDK for Android.
+
+![Android application showing a map with a blue marker pin in the center.](https://docs.mapbox.com/android/assets/ideal-img/maps-compose-examples-point-annotation.ca4699d.480.png)
+
+## Other shapes
+
+The Annotation API also supports putting other shapes on the map including circles using [`CircleAnnotationManager`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/-circle-annotation-manager/), polylines using [`PolylineAnnotationManager`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/-polyline-annotation-manager/), and polygons using [`PolygonAnnotationManager`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/-polygon-annotation-manager/). These annotations work like the point annotations described above, but do not require an image. The options available for each type of annotation varies and you can find a full list in the [API reference documentation](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/).
+
+### Circle annotation
+
+A **circle annotation** ([`CircleAnnotation`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/-circle-annotation/)) places a circle at a point on the map.
+
+**Android View**
+
+```kotlin
+// Create an instance of the Annotation API and get the CircleAnnotationManager.
+val annotationApi = mapView?.annotations
+val circleAnnotationManager = annotationApi?.createCircleAnnotationManager(mapView)
+// Set options for the resulting circle layer.
+val circleAnnotationOptions: CircleAnnotationOptions = CircleAnnotationOptions()
+    // Define a geographic coordinate.
+    .withPoint(Point.fromLngLat(18.06, 59.31))
+    // Style the circle that will be added to the map.
+    .withCircleRadius(8.0)
+    .withCircleColor("#ee4e8b")
+    .withCircleStrokeWidth(2.0)
+    .withCircleStrokeColor("#ffffff")
+// Add the resulting circle to the map.
+circleAnnotationManager?.create(circleAnnotationOptions)
+```
+
+**Jetpack Compose**
+
+```kotlin
+
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // Insert a CircleAnnotation composable function with the geographic coordinate to the content of MapboxMap composable function.
+  CircleAnnotation(point = Point.fromLngLat(18.06, 59.31)) {
+    // Style the circle that will be added to the map.
+    circleRadius = 8.0
+    circleColor = Color(0xffee4e8b)
+    circleStrokeWidth = 2.0
+    circleStrokeColor = Color(0xffffffff)
+  }
+}
+```
+
+> **Related content (example): [Add circle annotations](https://docs.mapbox.com/android/maps/examples/compose/add-circle-annotations/)**
+>
+> Use the Annotations API to add many colored circles to the map using the Maps SDK for Android.
+
+![Android application showing a map with circle annotations.](https://docs.mapbox.com/android/assets/ideal-img/maps-compose-examples-circle-annotation.8dfaa2d.480.png)
+
+### Polyline annotation
+
+A **polyline annotation** ([`PolylineAnnotation`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/-polyline-annotation/)) connects a list of coordinates on the map with a polyline. The order of the coordinates in the list will determine the order in which to connect the points, in the same way that coordinates are handled in the GeoJSON specification.
+
+**Android View**
+
+```kotlin
+// Create an instance of the Annotation API and get the polyline manager.
+val annotationApi = mapView?.annotations
+polylineAnnotationManager = annotationApi.createPolylineAnnotationManager(mapView)
+// Define a list of geographic coordinates to be connected.
+val points = listOf(
+    Point.fromLngLat(17.94, 59.25),
+    Point.fromLngLat(18.18, 59.37)
+)
+// Set options for the resulting line layer.
+val polylineAnnotationOptions: PolylineAnnotationOptions = PolylineAnnotationOptions()
+    .withPoints(points)
+    // Style the line that will be added to the map.
+    .withLineColor("#ee4e8b")
+    .withLineWidth(5.0)
+// Add the resulting line to the map.
+polylineAnnotationManager?.create(polylineAnnotationOptions)
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // Insert a PolylineAnnotation composable function with the geographic coordinates to the content of MapboxMap composable function.
+  PolylineAnnotation(
+    points = listOf(
+      Point.fromLngLat(17.94, 59.25),
+      Point.fromLngLat(18.18, 59.37)
+    )
+  ) {
+    // Set options for the resulting line layer.
+    lineColor = Color(0xffee4e8b)
+    lineWidth = 5.0
+  }
+}
+```
+
+> **Related content (example): [Add polyline annotations](https://docs.mapbox.com/android/maps/examples/compose/add-polyline-annotations/)**
+>
+> Use the Annotations API to add many polylines to the map using the Maps SDK for Android.
+
+![Android application showing a map with polyline annotations.](https://docs.mapbox.com/android/assets/ideal-img/maps-compose-examples-polyline-annotation.98f4c20.480.png)
+
+### Polygon annotation
+
+A **polygon annotation** ([`PolygonAnnotation`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.plugin.annotation.generated/-polygon-annotation/)) takes a list of coordinates and will try to connect those coordinates and add the resulting polygonal shape to the map. The order of the coordinates in the list matters and works the same way as in the GeoJSON specification.
+
+**Android View**
+
+```kotlin
+// Create an instance of the Annotation API and get the polygon manager.
+val annotationApi = mapView?.annotations
+val polygonAnnotationManager = annotationApi?.createPolygonAnnotationManager(mapView)
+// Define a list of geographic coordinates to be connected.
+val points = listOf(
+    listOf(
+        Point.fromLngLat(17.94, 59.25),
+        Point.fromLngLat(18.18, 59.25),
+        Point.fromLngLat(18.18, 59.37),
+        Point.fromLngLat(17.94, 59.37)
+    )
+)
+// Set options for the resulting fill layer.
+val polygonAnnotationOptions: PolygonAnnotationOptions = PolygonAnnotationOptions()
+    .withPoints(points)
+    // Style the polygon that will be added to the map.
+    .withFillColor("#ee4e8b")
+    .withFillOpacity(0.4)
+// Add the resulting polygon to the map.
+polygonAnnotationManager?.create(polygonAnnotationOptions)
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // Insert a PolygonAnnotation composable function with the geographic coordinates to the content of MapboxMap composable function.
+  PolygonAnnotation(
+    points = listOf(
+      listOf(
+        Point.fromLngLat(17.94, 59.25),
+        Point.fromLngLat(18.18, 59.25),
+        Point.fromLngLat(18.18, 59.37),
+        Point.fromLngLat(17.94, 59.37)
+      )
+    )
+  ) {
+    // Style the polygon that will be added to the map.
+    fillColor = Color(0xffee4e8b)
+    fillOpacity = 0.4
+  }
+}
+```
+
+> **Related content (example): [Add a polygon to the map](https://docs.mapbox.com/android/maps/examples/compose/add-polygon-annotations/)**
+>
+> Use the Annotations API to add a single red polygon annotation to the map using the Maps SDK for Android.
+
+![Android application showing a map with polygon annotations.](https://docs.mapbox.com/android/assets/ideal-img/maps-compose-examples-polygon-annotation.ca0f5ae.480.png)
+
+## Interactivity
+
+The Annotation API includes the ability make annotations draggable and handles drag gestures for you. You can specify that annotations should be draggable when adding the annotation to the map initially.
+
+**Android View**
+
+```kotlin
+val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
+    .withPoint(Point.fromLngLat(18.06, 59.31))
+    .withIconImage(YOUR_ICON_BITMAP)
+    // Make the annotation draggable.
+    .withDraggable(true)
+// Add the draggable pointAnnotation to the map.
+pointAnnotationManager?.create(pointAnnotationOptions)
+```
+
+**Jetpack Compose**
+
+```kotlin
+val image = rememberIconImage(resourceId = R.drawable.ic_red_marker)
+PointAnnotation(point = Point.fromLngLat(18.06, 59.31)) {
+  iconImage = image
+  interactionsState.onClicked {
+    // do something when clicked
+    true
+  }.onLongClicked {
+    // do something when long clicked
+    true
+  }.onDragged {
+    // do something when dragged
+  }.also {
+    // make the annotation draggable
+    it.isDraggable = true
+  }
+}
+```
+
+Or, you can update an annotation that's already been added to the map to be draggable.
+
+**Android View**
+
+```kotlin
+// When a user clicks on a draggable menu item defined in the layout,
+// then toggle whether all point annotations are draggable.
+R.id.menu_action_draggable -> {
+  pointAnnotationManager?.annotations?.forEach {
+    it.isDraggable = !it.isDraggable
+  }
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+// Create a PointAnnotationInteractionsState to handle interactions with the PointAnnotation.
+val pointAnnotationInteractionsState = remember {
+  PointAnnotationInteractionsState().onClicked {
+    // do something when clicked
+    true
+  }.onDragged {
+    // do something when dragged
+  }.also { it.isDraggable = true }
+}
+
+...
+
+// When a user clicks on button defined in the layout,
+// then toggle whether point annotations are draggable.
+FloatingActionButton(
+  modifier = Modifier.padding(bottom = 10.dp),
+  onClick = {
+    pointAnnotationInteractionsState.isDraggable = !pointAnnotationInteractionsState.isDraggable
+  },
+  shape = RoundedCornerShape(16.dp),
+) {
+  Text(modifier = Modifier.padding(10.dp), text = "Toggle draggable")
+}
+
+...
+
+val image = rememberIconImage(resourceId = R.drawable.ic_red_marker)
+PointAnnotation(point = Point.fromLngLat(18.06, 59.31)) {
+  iconImage = image
+  // assign the pointAnnotationInteractionsState to this point annotation
+  interactionsState = pointAnnotationInteractionsState
+}
+```
+
+## Removing Annotations
+
+**Android View**
+
+To completely remove an annotation manager, call `annotationApi.removeAnnotationManager()`, passing the annotation manager that you want to remove. This removes the backing source and layer. The removed annotation manager will not be useful after it is removed.
+
+Annotation managers are removed implicitly if another annotation manager is created with the same ID.
+
+**Jetpack Compose**
+
+When using Jetpack Compose, annotations conform to `MapContent`. Removing them from the `MapboxMap` composable will also remove them from the visual map. This also works for conditional rendering. The code snippet below uses an `if` statement and a boolean state variable to control the visibility of a `PointAnnotation`.
+
+```kotlin
+var showAnnotation by remember { mutableStateOf(false) }
+MapboxMap(Modifier.fillMaxSize()) {
+    if (showAnnotation) {
+        PointAnnotation(point = Point.fromLngLat(12.4, -89.4)) {
+            iconImage = rememberIconImage(resourceId = R.drawable.your_marker)
+        }
+    }
+}
+```

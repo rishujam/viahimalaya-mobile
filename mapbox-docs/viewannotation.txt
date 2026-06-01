@@ -1,0 +1,477 @@
+# View annotations
+
+View annotations are Android [`View`](https://developer.android.com/reference/android/view/View)s that the SDK draws on top of a Mapbox [`MapView`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-map-view/). They can be bound to a [`Geometry`](https://docs.mapbox.com/android/java/api/libjava-geojson/5.8.0/com/mapbox/geojson/Geometry.html) or to a feature rendered on a Layer. This can be helpful for achieving common patterns used in maps in mobile applications, such as showing an information window when tapping a point of interest (POI), or providing estimated time of arrival (ETA) for navigation purposes along a route.
+
+> **Note: Supported Layer types**
+>
+> The following layer types are supported for binding a view annotation to a feature:
+>
+> -   [`LineLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-line-layer/)
+> -   [`FillLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-layer/)
+> -   [`FillExtrusionLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-fill-extrusion-layer/)
+> -   [`CircleLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-circle-layer/)
+> -   [`SymbolLayer`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers.generated/-symbol-layer/)
+
+> **Note: Looking for a simpler option?**
+>
+> If you need basic pin-style markers in Jetpack Compose, consider using **[Markers](https://docs.mapbox.com/android/maps/guides/add-your-data/markers/)** instead. Markers provide a quick way to add default-styled markers with minimal code. Use View Annotations when you need completely custom UI elements or complex layouts.
+
+**Benefits:**
+
+-   Straight-forward API that allows adding an Android [`View`](https://developer.android.com/reference/android/view/View) as a view annotation, integrating with your existing Android UI code.
+-   High rendering performance when using a reasonable number of views (generally below 100, but may vary based on the view's content and the user's device model).
+-   Wide number of options including allowing overlap between view annotations, selected state, connecting to a map feature, and more.
+
+**Limitations:**
+
+-   Inefficient and poor performance when adding many features (> 250) to the map if allow overlap is turned on.
+-   Low-level API that requires adding code on the user's end for advanced cases.
+-   No built-in support for clustering
+
+## Create a view annotation
+
+**Android View**
+
+Start by creating a new layout that contains the contents of the view annotation. This can include anything from text to images to interactive elements.
+
+For example, to create a minimal layout containing text:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="100dp"
+    android:layout_height="60dp"
+    android:background="@android:color/white"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+<TextView
+        android:id="@+id/annotation"
+        android:text="hello world"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="20sp"
+        android:padding="3dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+```
+
+To add the view annotation on top of the `MapView`, start by getting a [`ViewAnnotationManager`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.viewannotation/-view-annotation-manager/) instance:
+
+```kotlin
+val viewAnnotationManager = binding.mapView.viewAnnotationManager
+```
+
+Then use the manager's [`addViewAnnotation`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.viewannotation/-view-annotation-manager/add-view-annotation.html) method to create the view annotation. Three overloaded methods are available:
+
+1.  Taking a [`View`](https://developer.android.com/reference/android/view/View) that is already inflated.
+2.  Taking an XML identifier `resId` and returning a synchronously inflated [`View`](https://developer.android.com/reference/android/view/View).
+3.  Taking an XML identifier `resId` and returning an inflated [`View`](https://developer.android.com/reference/android/view/View) in `asyncInflateCallback`. If using this method, you must add [`async inflater dependency`](https://mvnrepository.com/artifact/androidx.asynclayoutinflater/asynclayoutinflater/1.0.0) to your project explicitly (any `1.x.x` version should work).
+
+All methods above also require [`ViewAnnotationOptions`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-view-annotation-options/) with at least `annotatedFeature` field specified. `AnnotatedFeature` can be either a direct `Geometry` instance or a `LayerFeature`. The latter allows to bind the view annotation to the specific feature on the map, and to update the view annotation with the feature automatically. `ViewAnnotationOptions.geometry` and `ViewAnnotationOptions.annotatedLayerFeature` extension functions are available in Kotlin to simplify the `annotatedFeature` setting.
+
+You can also specify other options for the view annotation within `viewAnnotationOptions`.
+
+```kotlin
+private fun addViewAnnotationToPoint(point: Point) {
+    // Define the view annotation
+    val viewAnnotation = viewAnnotationManager.addViewAnnotation(
+        // Specify the layout resource id
+        resId = R.layout.annotation_view,
+        // Set any view annotation options
+        options = viewAnnotationOptions {
+            // View annotation is placed at the specific geo coordinate
+            geometry(point)
+        }
+    )
+}
+```
+
+**Jetpack Compose**
+
+To create and add a view annotation to the map in Jetpack Compose, you will need to insert the `ViewAnnotation` composable function to the content of `MapboxMap` composable function, and define your view annotation content as a `Composable` and place it as the content of the `ViewAnnotation` composable function.
+
+First, define the `ViewAnnotation` content using composable function, for example, to create a minimal Text composable function:
+
+```kotlin
+// Define the content of the ViewAnnotation, for example create a minimal Text composable function:
+@Composable
+public fun ViewAnnotationContent() {
+    Text(
+        text = "Hello world",
+        modifier = Modifier
+            .padding(3.dp)
+            .width(100.dp)
+            .height(60.dp)
+            .background(
+                Color.White
+            ),
+        textAlign = TextAlign.Center,
+        fontSize = 20.sp
+    )
+}
+```
+
+You can add `ViewAnnotation` composable function with [`ViewAnnotationOptions`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-view-annotation-options/) to the content of `MapboxMap` composable function to insert the view annotation to the map. Note that [`ViewAnnotationOptions`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-view-annotation-options/) need to be provided with at least `annotatedFeature` field specified. `AnnotatedFeature` can be either a direct `Geometry` instance or a `LayerFeature`. The latter allows to bind the view annotation to the specific feature on the map, and to update the view annotation with the feature automatically. `ViewAnnotationOptions.geometry` and `ViewAnnotationOptions.annotatedLayerFeature` extension functions are available to simplify setting `annotatedFeature`.
+
+You can also specify other options for the view annotation within `viewAnnotationOptions`.
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+    ViewAnnotation(
+        options = viewAnnotationOptions {
+            // View annotation is placed at the specific geo coordinate
+            geometry(Point.fromLngLat(18.06, 59.31))
+        }
+    ) {
+        // Insert the content of the ViewAnnotation
+        ViewAnnotationContent()
+    }
+}
+```
+
+![Add a simple view annotation containing text to the map.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-view-annotation-simple.e99bfaf.480.png)
+
+> **Note: More view annotation options**
+>
+> There are many more options available when adding or updating the view annotation. See the complete list of options in the[`ViewAnnotationOptions`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-view-annotation-options/-builder/) documentation.
+
+## Customize the appearance
+
+### Specify order
+
+The z-index of view annotations is based on the order in which they are added. This allows you to control which view is visible when multiple views intersect on the screen.
+
+To bring a view annotation on top of others regardless of the order in which it was added, use the `priority` property:
+
+**Android View**
+
+```kotlin
+// specify the priority when inserting a new view annotation
+val newViewAnnotation = viewAnnotationManager.addViewAnnotation(
+  resId = R.layout.some_layout,
+  options = viewAnnotationOptions {
+    geometry(point)
+    priority(10)
+  }
+)
+
+// update an existing view annotation's priority
+viewAnnotationManager.updateViewAnnotation(
+  existingViewAnnotation,
+  viewAnnotationOptions {
+    priority(10)
+  }
+)
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // Insert view annotation with priority
+  ViewAnnotation(
+    options = viewAnnotationOptions {
+      geometry(Point.fromLngLat(18.06, 59.31))
+      priority(10)
+      allowOverlap(true)
+    }
+  ) {
+    ViewAnnotationContent()
+  }
+}
+```
+
+![View annotations with z-index based on the order in which they were added: Hello world!, Прывітанне Сусвет!, Hallo Welt!, Hei maailma!](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-view-annotation-z-index.f5c8c12.480.png)
+
+Default order
+
+View annotations with z-index based on the order in which they were added: Hello world!, Прывітанне Сусвет!, Hallo Welt!, Hei maailma!
+
+![Use the priority property to bring the Hello world! annotation on top of others regardless of the order in which they were added.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-view-annotation-selected.413e462.480.png)
+
+Override order
+
+Use the priority property to bring the Hello world! annotation on top of others regardless of the order in which they were added.
+
+### Control anchor
+
+To update the anchor position and the offset of the view annotation you can specify single or multiple anchors. When you set multiple anchors, the system uses the first one that fits the view annotation within the viewport:
+
+**Android View**
+
+```kotlin
+// set single anchor
+viewAnnotationManager.updateViewAnnotation(
+  existingViewAnnotation,
+  viewAnnotationOptions {
+    annotationAnchor {
+      // bottom of the view annotation is placed on the geometry
+      anchor(ViewAnnotationAnchor.BOTTOM)
+      offsetX(-10.0)
+      offsetY(20.0)
+    }
+  }
+)
+
+// set multiple anchors
+viewAnnotationManager.updateViewAnnotation(
+  existingViewAnnotation,
+  viewAnnotationOptions {
+    annotationAnchors(
+      {
+        anchor(ViewAnnotationAnchor.TOP_RIGHT)
+      },
+      {
+        anchor(ViewAnnotationAnchor.TOP_LEFT)
+      },
+      {
+        anchor(ViewAnnotationAnchor.BOTTOM_RIGHT)
+      },
+    )
+  }
+)
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // Insert view annotation with single anchor
+  ViewAnnotation(
+    options = viewAnnotationOptions {
+      geometry(Point.fromLngLat(18.06, 59.31))
+      annotationAnchor {
+        // bottom of the view annotation is placed on the geometry
+        anchor(ViewAnnotationAnchor.BOTTOM)
+        offsetX(-10.0)
+        offsetY(20.0)
+      }
+    }
+  ) {
+    ViewAnnotationContent()
+  }
+  // Insert view annotation with multiple anchors
+  ViewAnnotation(
+    options = viewAnnotationOptions {
+      geometry(Point.fromLngLat(18.06, 59.31))
+      annotationAnchors(
+        {
+          anchor(ViewAnnotationAnchor.TOP_RIGHT)
+        },
+        {
+          anchor(ViewAnnotationAnchor.TOP_LEFT)
+        },
+        {
+          anchor(ViewAnnotationAnchor.BOTTOM_RIGHT)
+        },
+      )
+    }
+  ) {
+    ViewAnnotationContent()
+  }
+}
+```
+
+### Handle visibility
+
+When a view annotation is added or updated, visibility can be specified explicitly:
+
+**Android View**
+
+```kotlin
+viewAnnotationManager.addViewAnnotation(
+  R.layout.some_layout,
+  viewAnnotationOptions {
+    geometry(point)
+    // hide view annotation initially, even if the android view is visible
+    visible(false)
+  }
+)
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // Insert view annotation
+  ViewAnnotation(
+    options = viewAnnotationOptions {
+      geometry(Point.fromLngLat(18.06, 59.31))
+      // hide view annotation initially, even if the underlying ComposeView is visible
+      visible(false)
+    }
+  ) {
+    ViewAnnotationContent()
+  }
+}
+```
+
+For most use cases there is no need to specify `visibility` for `viewAnnotationOptions` explicitly. Instead, you can update the visibility of the actual view, or guard the `ViewAnnotation` composable function with a condition:
+
+**Android View**
+
+```kotlin
+val view = viewAnnotationManager.addViewAnnotation(
+  // Inflated view is visible by default
+  R.layout.some_layout,
+  viewAnnotationOptions {
+    // Do not set visibility explicitly
+    geometry(point)
+  }
+)
+// Simply hide the view when needed
+view.visibility = View.GONE
+```
+
+**Jetpack Compose**
+
+```kotlin
+// define mutable state to drive the visibility of ViewAnnotation
+var visible by remember {
+  mutableStateOf(true)
+}
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // guard the ViewAnnotation with if condition
+  if (visible) {
+    ViewAnnotation(
+      options = viewAnnotationOptions {
+        geometry(Point.fromLngLat(18.06, 59.31))
+      }
+    ) {
+      ViewAnnotationContent()
+    }
+  }
+}
+```
+
+## Common uses
+
+The flexibility of view annotations means that there are countless ways to use this feature, but there are a few common uses outlined below to help you get started.
+
+### Display on map click
+
+You can add view annotations when a user interacts with the map.
+
+When the user clicks on the map, you can get information from the map camera, position (like in the example linked below), or data in the map to determine the contents of the view annotation using one of `MapboxMap`'s map feature [query methods](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-mapbox-map/#868335599%2FFunctions%2F540127926).
+
+> **Related content (example): [View annotations: basic example](https://docs.mapbox.com/android/maps/examples/android-view/view-annotations-basic-example/)**
+>
+> Add view annotation to the map
+
+> **Related content (example): [(Compose) View annotations: basic example](https://docs.mapbox.com/android/maps/examples/compose/add-view-annotations/)**
+>
+> Show view annotations on a map
+
+### Attach to a geometry
+
+You can tie a view annotation to a geometry, for example, a line string, this allows the annotation to stay visible on screen along with the visible part of the line string.
+
+#### Dynamic view annotations
+
+When a view annotation is added to the complex geometry (for example, line or polygon), it becomes dynamic and is displayed at some coordinate belonging to the geometry. It updates its position automatically if the camera viewport changes and the view annotation is going out of the visible scope.
+
+> **Related content (example): [Dynamic view annotations](https://docs.mapbox.com/android/maps/examples/android-view/dynamic-view-annotations/)**
+>
+> Add several dynamic view annotations to line and polygon features
+
+> **Related content (example): [(Compose) Dynamic view annotations](https://docs.mapbox.com/android/maps/examples/compose/dynamic-view-annotations/)**
+>
+> Add several dynamic view annotations to line and polygon features
+
+### Attach to an existing map feature
+
+You can tie a view annotation's visibility to another feature on the map using the layer/feature id. For example, you can position a `ViewAnnotation` relative to a point feature in a `SymbolLayer` to make a marker pop-up. You could also use a line or polygon feature to show additional information about that feature when it is visible.
+
+To attach the view annotation to the layer feature, use [`ViewAnnotationOptions.annotatedFeature`](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps/-view-annotation-options/annotated-feature.html) and specify the feature to use by its [layer id](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/-layer/layer-id.html) and [feature id](https://docs.mapbox.com/android/java/api/libjava-geojson/7.10.0/com/mapbox/geojson/Feature.html#id--).
+
+The visibility of the feature will then determine the visibility of the view annotation. For example, if the feature collides with another feature, the associated view annotation will also disappear.
+
+**Android View**
+
+```kotlin
+// add point annotation
+val annotationPlugin = mapView.annotations
+val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
+  .withPoint(POINT)
+  .withIconImage(iconBitmap)
+  .withIconAnchor(IconAnchor.BOTTOM)
+val pointAnnotationManager = annotationPlugin.createPointAnnotationManager(AnnotationConfig(layerId = LAYER_ID))
+val pointAnnotation = pointAnnotationManager.create(pointAnnotationOptions)
+
+val viewAnnotationManager = mapView.viewAnnotationManager
+// add view annotation attached to the point
+val viewAnnotation = viewAnnotationManager.addViewAnnotation(
+  resId = R.layout.item_callout_view,
+  options = viewAnnotationOptions {
+    annotatedLayerFeature(LAYER_ID) {
+      featureId(annotation.id)
+    }
+  }
+)
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  val layerId = "layer-id"
+  val featureId = "feature-id"
+  val image = rememberStyleImage(imageId = "image-id", resourceId = R.drawable.ic_red_marker)
+  // Insert a point using symbol layer
+  // Note in compose it's currently not possible to get the feature id from PointAnnotation, we use symbol layer here for more flexibility
+  SymbolLayer(
+    layerId = layerId,
+    sourceState = rememberGeoJsonSourceState {
+      data = GeoJSONData(
+        Feature.fromGeometry(
+          /* geometry = */ Point.fromLngLat(18.06, 59.31),
+          /* properties = */ null,
+          /* id = */ featureId
+        )
+      )
+    }
+  ) {
+    iconImage = ImageValue(image)
+    iconAnchor = IconAnchorValue.BOTTOM
+  }
+  // Insert view annotation
+  ViewAnnotation(
+    options = viewAnnotationOptions {
+      annotatedLayerFeature(layerId) {
+        featureId(featureId)
+      }
+    }
+  ) {
+    ViewAnnotationContent()
+  }
+}
+```
+
+![Attach a view annotation to a marker symbol and add it to the map.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-view-annotation-marker-popup.830337f.480.png)
+
+> **Related content (example): [View annotations: attach to a point annotation](https://docs.mapbox.com/android/maps/examples/android-view/view-annotation-with-point-annotation/)**
+>
+> Add view annotation anchored to a point annotation and update its position when point annotation is dragging
+
+> **Note**
+>
+> While the View Annotation API does not come with built-in logic for handling opening and closing a callout attached to a symbol layer feature when the feature is click, you can see one possible way to implement that functionality in the [View annotations: advanced example](https://docs.mapbox.com/android/maps/examples/android-view/view-annotations-advanced-example/).
+
+> **Related content (example): [View annotations: advanced example](https://docs.mapbox.com/android/maps/examples/android-view/view-annotations-advanced-example/)**
+>
+> Add view annotation anchored to a symbol layer feature

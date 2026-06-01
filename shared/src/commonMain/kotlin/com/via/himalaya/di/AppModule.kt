@@ -1,8 +1,8 @@
 package com.via.himalaya.di
 
 import com.via.himalaya.data.database.DatabaseDriverFactory
-import com.via.himalaya.data.repository.TrekRepository
-import com.via.himalaya.data.repository.TrekRepositoryImpl
+import com.via.himalaya.data.repository.NavigatorRepository
+import com.via.himalaya.data.repository.NavigatorRepositoryImpl
 
 /**
  * Simple dependency injection container for the app
@@ -11,8 +11,8 @@ import com.via.himalaya.data.repository.TrekRepositoryImpl
 class AppModule(private val databaseDriverFactory: DatabaseDriverFactory) {
     
     // Lazy initialization of repository
-    val trekRepository: TrekRepository by lazy {
-        TrekRepositoryImpl(databaseDriverFactory)
+    val navigatorRepository: NavigatorRepository by lazy {
+        NavigatorRepositoryImpl(databaseDriverFactory)
     }
 }
 

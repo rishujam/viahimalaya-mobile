@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.skie)
@@ -38,6 +40,8 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(libs.androidx.lifecycle.viewmodel)
+            implementation(compose.components.resources)
+            implementation(compose.runtime)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.kotlinx.coroutines.core)

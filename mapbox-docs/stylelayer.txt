@@ -1,0 +1,392 @@
+# Style layers
+
+While Annotations and View Annotations provide a convenient way to add elements to a map, there may be cases where you want to add many elements or have greater control. In such cases, Style Layers offer a more performant approach to displaying these map elements.
+
+**Benefits:**
+
+-   Style Layers are more efficient and performant, especially when dealing with a large number of features on the map from `vector` or `geojson` sources.
+-   Style Layers offer extensive customization options, allowing developers to precisely control the appearance of map elements. This includes options such as the color, opacity, size and many other visual attributes listed in the [Layers section](https://docs.mapbox.com/style-spec/reference/layers/) of the Mapbox Style Spec.
+
+**Limitations:**
+
+-   No default image available. You will need to provide your own image assets and add them to your project.
+-   Style Layers require a developer to learn specific Mapbox APIs and usage patterns associated with Layers. In contrast, Annotations and View Annotations use higher-level abstractions.
+-   Using the lower-level APIs of Style Layers may take more time, especially if you are new to the Maps SDK or mapping technologies.
+-   To achieve more sophisticated data-driven styling, developers will need to learn how to use [Mapbox Expressions](https://docs.mapbox.com/style-spec/reference/expressions/) to control the appearance of map features based on the underlying data. This adds complexity to the development process.
+
+This guide covers the basics of adding your own data to a map using sources and layers. To learn more about working with sources and layers, see the full guide:
+
+> **Related content (related): [Map styles: Work with sources and layers](https://docs.mapbox.com/android/maps/guides/styles/work-with-layers/)**
+>
+> See the full guide on working with sources and layers in the Maps SDK for Android.
+
+## Add your data as a source
+
+Before you can add a Style Layer, you need to add a data source to the map. Sources provide the geographic data that the Style Layer will render. The most commonly used source types are `vector` and `geojson` sources, each requiring different data formats and handling.
+
+### `vector` sources
+
+Vector sources retrieve data from a server in the form of [vector tiles](https://docs.mapbox.com/data/tilesets/guides/vector-tiles-introduction/), or chunks of geographic data representing small areas of the earth's surface. Using vector tiles means you don't have to load all the data at once, which is ideal for large datasets that cover wide geographic areas.
+
+To add your own data as a vector source, you must first process the data into a vector tileset. There are several options available for creating and hosting vector tilesets:
+
+-   Use Mapbox's [Data manager](https://console.mapbox.com/studio/tilesets/) to upload data and generate vector tiles using an intuitive graphical user interface.
+-   Use [Mapbox Tiling Service (MTS)](https://docs.mapbox.com/mapbox-tiling-service/guides/) to build a data pipeline for continuous updates to a vector tileset from source data.
+-   Use [third party tools](https://github.com/mapbox/awesome-vector-tiles?tab=readme-ov-file#parsers--generators) to create vector tiles from your source data and host them on your own infrastructure.
+
+Vector tilesets hosted on your Mapbox account are accessible using the tileset URL following the format `mapbox://{username}.{tilesetname}`.
+
+The following snippet shows how to add a Mapbox-hosted vector source to the Jetpack Compose `MapboxMap` or by using `addSource` for Android Views.
+
+**Android View**
+
+```kotlin
+// Create a vector source
+val vectorSource = vectorSource("my-vector-source") {
+    url("mapbox://{username}.{tilesetname}")
+}
+
+val circleLayer = circleLayer(
+    layerId = "my-circle-layer",
+    sourceId = "my-vector-source"
+) {
+    sourceLayer("some-source-layer")
+    circleColor("#FF0000")
+}
+
+// Add the source to the map
+mapView.mapboxMap.getStyle { style ->
+    style.addSource(vectorSource)
+    style.addLayer(circleLayer)
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+// Create a vector source
+val vectorSource = rememberVectorSourceState(sourceId = "my-vector-source")
+vectorSource.url = StringValue("mapbox://{username}.{tilesetname}")
+
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+    CircleLayer(
+        sourceState = vectorSource,
+        layerId = "my-circle-layer"
+    ) {
+        // specify the source layer within the vector tileset
+        sourceLayer = StringValue("some-source-layer")
+        circleColor = ColorValue(Color(0xffff0000))
+    }
+}
+
+
+```
+
+### `geojson` sources
+
+`geojson` sources contain the same type of data as vector sources, but the data is loaded from a GeoJSON string or file. This allows for more flexibility as developers can change and host GeoJSON data without needing to regenerate and serve vector tiles.
+
+A limitation of `geojson` sources is that they may not perform as well as vector tiles when rendering large datasets, as the entire dataset must be added to the map at once regardless of what features are visible on the map's current location and zoom level.
+
+Developers will often source data from a custom API endpoint that serves GeoJSON data live from a database, or they may use static GeoJSON files hosted on the web or bundled with their app.
+
+#### Add a `geojson` source from a URL
+
+**Android View**
+
+```kotlin
+// Create a geojson source
+val geojsonSource = geoJsonSource("my-geojson-source") {
+    data("https://some-geojson-url.com/data.geojson")
+}
+
+// add a circle layer that uses this source
+val circleLayer = circleLayer(
+    layerId = "my-circle-layer",
+    sourceId = "my-geojson-source"
+) {
+    circleColor("#FF0000")
+}
+
+// Add the source and layer to the map
+mapView.mapboxMap.getStyle { style ->
+    style.addSource(geojsonSource)
+    style.addLayer(circleLayer)
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+val geoJsonSource = rememberGeoJsonSourceState("my-geojson-source")
+geoJsonSource.data = GeoJSONData("https://some-geojson-url.com/data.geojson")
+
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+    CircleLayer(
+        layerId = "my-circle-layer",
+        sourceState = geoJsonSource
+    ) {
+        circleColor = ColorValue(Color(0xffff0000))
+    }
+}
+```
+
+#### Add a `geojson` source from a file in the app assets
+
+**Android View**
+
+```kotlin
+// import geojson from a file in assets
+val geoJsonString = this.assets.open("somefile.geojson").bufferedReader().use { it.readText() }
+
+// add a geojson source
+val geojsonSource = geoJsonSource("my-geojson-source") {
+    data(geoJsonString)
+}
+
+// add a circle layer that uses the source
+val circleLayer = circleLayer(
+    layerId = "my-circle-layer",
+    sourceId = "my-geojson-source"
+) {
+    circleColor("#FF0000")
+}
+
+// Add the source to the map
+mapView.mapboxMap.getStyle { style ->
+    style.addSource(geojsonSource)
+    style.addLayer(circleLayer)
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+val context = LocalContext.current
+            var geoJsonString by remember { mutableStateOf("") }
+
+            // Read GeoJSON from assets
+            LaunchedEffect(Unit) {
+                geoJsonString = context.assets.open("somefile.geojson").bufferedReader().use { it.readText() }
+            }
+
+            val geoJsonSource = rememberGeoJsonSourceState(sourceId = "my-geojson-source")
+
+            // Set data when geoJsonString is loaded
+            if (geoJsonString.isNotEmpty()) {
+                geoJsonSource.data = GeoJSONData(geoJsonString)
+            }
+
+            MapboxMap(
+              Modifier.fillMaxSize()
+            ) {
+                CircleLayer(
+                    sourceState = geoJsonSource,
+                    layerId = "my-circle-layer",
+                ) {
+                  circleColor = ColorValue(Color(0xffff0000))
+                }
+            }
+```
+
+#### Add a `geojson` source from a string
+
+**Android View**
+
+```kotlin
+// import geojson from a file in assets
+val geoJsonString = """
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-74.0060, 40.7128]
+            },
+            "properties": {
+                "title": "New York City"
+            }
+        }
+    ]
+}
+"""
+
+// add a geojson source
+val geojsonSource = geoJsonSource("my-geojson-source") {
+    data(geoJsonString)
+}
+
+// add a circle layer that uses the source
+val circleLayer = circleLayer(
+    layerId = "my-circle-layer",
+    sourceId = "my-geojson-source"
+) {
+    circleColor("#FF0000")
+}
+
+// Add the source to the map
+mapView.mapboxMap.getStyle { style ->
+    style.addSource(geojsonSource)
+    style.addLayer(circleLayer)
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+// Create a GeoJSON source with inline data
+  val geoJsonString = """
+  {
+      "type": "FeatureCollection",
+      "features": [
+          {
+              "type": "Feature",
+              "geometry": {
+                  "type": "Point",
+                  "coordinates": [-74.0060, 40.7128]
+              },
+              "properties": {
+                  "title": "New York City"
+              }
+          }
+      ]
+  }
+  """
+
+  val geoJsonSource = rememberGeoJsonSourceState("my-geojson-source")
+  geoJsonSource.data = GeoJSONData(geoJsonString)
+
+  MapboxMap(
+    Modifier.fillMaxSize()
+  ) {
+      CircleLayer(
+          layerId = "my-circle-layer",
+          sourceState = geoJsonSource
+      ) {
+        circleColor = ColorValue(Color(0xffff0000))
+    }
+  }
+```
+
+### Other source types
+
+For a complete list of source types supported by the Maps SDK for Android, see the [Work with sources and layers guide](https://docs.mapbox.com/android/maps/guides/styles/work-with-layers/) or consult the references listed below.
+
+> **Related content (related): [Sources API reference](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.sources/)**
+>
+> API reference documentation for adding sources using the Maps SDK.
+
+> **Related content (related): [Mapbox Style Specification - Sources](https://docs.mapbox.com/style-spec/reference/sources/)**
+>
+> View the reference docs for the Mapbox Style Specification to see details about each source type and its properties.
+
+## Add layers that use your data sources
+
+Once you have added a source to the map, you can add a Style Layer that uses that source to render features on the map.
+
+For example, you can create a `CircleLayer` to represent point data as circles on the map, or a `SymbolLayer` to display icons or text. The following snippet shows how to add a `CircleLayer` and a `SymbolLayer` that uses a common source:
+
+**Android View**
+
+```kotlin
+// a vector or geojson source with id "my-pointdata-source" must have been added to the map
+mapView.mapboxMap.getStyle { style ->
+    // Create a circle layer
+    val circleLayer = circleLayer("circle-layer", "my-pointdata-source") {
+        circleColor(Color.BLUE)
+        circleRadius(6.0)
+    }
+
+    // Create a symbol layer
+    val symbolLayer = symbolLayer("symbol-layer", "my-pointdata-source") {
+        iconImage("my-icon")
+        iconSize(1.5)
+    }
+
+    // Add the layers to the map
+    style.addLayer(circleLayer)
+    style.addLayer(symbolLayer)
+}
+```
+
+**Jetpack Compose**
+
+```kotlin
+MapboxMap(
+  Modifier.fillMaxSize()
+) {
+  // a vector or geojson source with id "my-pointdata-source" must have been added to the map
+  CircleLayer(
+    sourceId = "my-pointdata-source",
+    layerId = "circle-layer"
+  ) {
+    circleColor = Color.Blue
+    circleRadius = 6.0
+  }
+
+  SymbolLayer(
+    sourceId = "my-pointdata-source",
+    layerId = "symbol-layer"
+  ) {
+    iconImage = "my-icon"
+    iconSize = 1.5
+  }
+}
+```
+
+### Layer Types for `vector` and `geojson` sources
+
+Layer types are defined in the [Mapbox Style Specification](https://docs.mapbox.com/style-spec/) and are used to render different types of data on the map. The most common layer types for showing data from `vector` and `geojson` sources are:
+
+-   **Circle Layer**: This layer is used to represent point data as circles on the map, useful for visualizing locations with minimal code and configuration.
+-   **Line Layer**: This layer is used to render lines on the map, often used to show routes, directions or paths.
+-   **Fill Layer**: This layer is used to fill a polygon with a color.
+-   **Symbol Layer**: This layer is used to render icons or text representing point locations on the map.
+
+The layers each have their own set of properties and styling options, allowing you to customize the appearance of the map features. For example, you can set the color, opacity, size, and other visual attributes of each layer type.
+
+For details and code snippets about all available layer types, see the [Work with sources and layers guide](https://docs.mapbox.com/android/maps/guides/styles/work-with-layers/), or browse the examples below.
+
+> **Related content (example): [Add a marker symbol to the map](https://docs.mapbox.com/android/maps/examples/android-view/add-a-marker-symbol/)**
+>
+> Add a teardrop-shaped marker image to a style and display it on the map using a `SymbolLayer`.
+
+> **Related content (example): [Add markers using a Symbol layer](https://docs.mapbox.com/android/maps/examples/android-view/display-multiple-icon-images-in-a-symbol-layer/)**
+>
+> Add markers that use different icons using a `SymbolLayer`.
+
+> **Related content (example): [Animate a line layer](https://docs.mapbox.com/android/maps/examples/android-view/animate-a-line/)**
+>
+> Animate updates to a line layer from a `geojson` source.
+
+Each layer must specify a data source, which defines the geographic data that a layer will render.
+
+### Other layer types
+
+For a complete list of layer types supported by the Maps SDK for Android, see the [Work with sources and layers guide](https://docs.mapbox.com/android/maps/guides/styles/work-with-layers/) or consult the references listed below.
+
+> **Related content (related): [Style layer API reference](https://docs.mapbox.com/android/maps/api/latest/mapbox-maps-android/com.mapbox.maps.extension.style.layers/)**
+>
+> API reference documentation for adding style layers using the Maps SDK.
+
+> **Related content (related): [Mapbox Style Specification - Layers](https://docs.mapbox.com/style-spec/reference/layers/)**
+>
+> View the reference docs for the Mapbox Style Specification to see details about each layer type and its properties.
+
+## Add your data to a custom style in Mapbox Studio
+
+The concepts outlined above involve coding to add sources and layers to the map at runtime after the initial map style has been loaded. Using [Mapbox Studio](https://console.mapbox.com/studio/), you can create a custom style that combines your data sources and layers with basemap layers provided by Mapbox.
+
+Adding your data to a custom style requires vector sources (GeoJSON sources are not supported in Mapbox Studio) and allows you to load the map in your application with your data already included and styled, simplifying your runtime code.
+
+See our tutorials for more information on creating custom styles:
+
+> **Related content (related): [Getting started with Mapbox Standard in Studio](https://docs.mapbox.com/help/tutorials/aa-standard-in-studio/)**
+>
+> This tutorial will walk you through the process of adding custom data to a style that uses the Mapbox Standard basemap.

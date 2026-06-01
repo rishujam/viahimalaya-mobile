@@ -1,0 +1,155 @@
+# Markers
+
+**Markers** are a Jetpack Compose convenience feature that creates customizable pin-style markers displayed above the map. They are ideal for quickly symbolizing a point on the map without needing custom image assets.
+
+**Benefits:**
+
+-   No image assets required - uses built-in default marker design
+-   Simple API with essential customization options (color, stroke, inner color, text)
+-   Quick to implement for common use cases
+
+**Limitations:**
+
+-   Jetpack Compose only (not available with traditional Android Views)
+-   Limited styling compared to annotations or view annotations
+-   Less efficient for large datasets (100+ markers)
+
+> **Note: Experimental Feature**
+>
+> Markers are an experimental feature of the Android Maps SDK. To build with them, use the following import statement:
+> `import com.mapbox.maps.MapboxExperimental`
+
+## Adding a basic marker
+
+The simplest way to add a marker is to specify a coordinate:
+
+```kotlin
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import com.mapbox.geojson.Point
+import com.mapbox.maps.MapboxExperimental
+import com.mapbox.maps.compose.testapp.ExampleScaffold
+import com.mapbox.maps.compose.testapp.ui.theme.MapboxMapComposeTheme
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.annotation.Marker
+
+@OptIn(MapboxExperimental::class)
+public class MyMapActivity : ComponentActivity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContent {
+      MapboxMapComposeTheme {
+        ExampleScaffold {
+          MapboxMap(Modifier.fillMaxSize()) {
+            Marker(
+              point = Point.fromLngLat(-74.0060, 40.7128)
+            )
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+![A map displaying a single default marker](https://docs.mapbox.com/android/assets/ideal-img/maps-examples-default-marker-basic.08468ae.480.png)
+
+## Customizing markers
+
+You can customize markers with colors, strokes, and text:
+
+### Colors and strokes
+
+```kotlin
+MapboxMap(Modifier.fillMaxSize()) {
+    Marker(
+        point = Point.fromLngLat(-74.0060, 40.7128),
+        color = Color.Blue,           // Set the main marker color
+        stroke = Color.Magenta,       // Add a stroke color
+        innerColor = Color.White      // Set the inner circle color
+    )
+}
+```
+
+### Adding text
+
+```kotlin
+MapboxMap(Modifier.fillMaxSize()) {
+    Marker(
+        point = Point.fromLngLat(-74.0060, 40.7128),
+        color = Color.Red,
+        text = "New York City"
+    )
+}
+```
+
+### Removing strokes
+
+To remove the stroke, set it to `null`:
+
+```kotlin
+MapboxMap(Modifier.fillMaxSize()) {
+    Marker(
+        point = Point.fromLngLat(-74.0060, 40.7128),
+        stroke = null  // No stroke
+    )
+}
+```
+
+![A map showing customized markers with different colors, strokes, and text](https://docs.mapbox.com/android/assets/ideal-img/maps-examples-default-marker-customized.ce9633b.480.png)
+
+## Adding multiple markers
+
+Use a loop to add multiple markers from a data collection:
+
+```kotlin
+data class Location(
+    val id: String,
+    val coordinate: Point,
+    val name: String
+)
+
+val locations = listOf(
+    Location("1", Point.fromLngLat(-74.0060, 40.7128), "New York"),
+    Location("2", Point.fromLngLat(-118.2437, 34.0522), "Los Angeles"),
+    // ... more locations
+)
+
+MapboxMap(Modifier.fillMaxSize()) {
+    locations.forEach { location ->
+        Marker(
+            point = location.coordinate,
+            color = Color.Red,
+            text = location.name
+        )
+    }
+}
+```
+
+![A map displaying multiple markers with different colors and text labels](https://docs.mapbox.com/android/assets/ideal-img/maps-examples-default-marker-multiple.ecc8f61.480.png)
+
+## Removing Markers
+
+When using Jetpack Compose, markers conform to `MapContent`. Removing them from the `MapboxMap` composable will also remove them from the visual map. This also works for conditional rendering. The code snippet below uses an `if` statement and a boolean state variable to control the visibility of a `Marker`.
+
+```kotlin
+var showMarker by remember { mutableStateOf(false) }
+MapboxMap(Modifier.fillMaxSize()) {
+    if (showMarker) {
+      Marker(
+          point = Point.fromLngLat(-74.0060, 40.7128),
+          stroke = null  // No stroke
+      )
+    }
+}
+```
+
+## Performance considerations
+
+Markers create View Annotations with custom text rendering, so performance may degrade with large numbers of markers. For scenarios with 100+ markers, consider:
+
+-   Using [`PointAnnotation`](https://docs.mapbox.com/android/maps/guides/add-your-data/annotations/#point-annotations) instead for better performance
+-   Using [Style Layers](https://docs.mapbox.com/android/maps/guides/add-your-data/style-layers/) for maximum performance with large datasets

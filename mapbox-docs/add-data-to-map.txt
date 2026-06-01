@@ -1,0 +1,135 @@
+# Add your data to the map
+
+When using the **Mapbox Maps SDK for Android**, there are several ways to add your own data. The right approach depends on the type, quantity, and style of data you want to display.
+
+The most important distinction is whether you want to display data **above** the map or **within** the map itself, as each approach has fundamental differences in how the data is loaded, styled and interacted with.
+
+For most use cases where you want to add markers to your map, the new **Markers** feature provides the quickest and easiest solution in Jetpack Compose.
+
+![Built-in pin-style markers with basic customization - the quickest way to add markers.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-default-markers.f71780a.480.png)
+
+Above the Map: Markers (Compose)
+
+Built-in pin-style markers with basic customization - the quickest way to add markers.
+
+![Visual elements drawn above the map, simple to add and interact with.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-markers-annotations.6813393.480.png)
+
+Above the Map: Annotations
+
+Visual elements drawn above the map, simple to add and interact with.
+
+![Custom Android views drawn above the map, simple to add and interact with.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-markers-annotations-view.55e9d25.480.png)
+
+Above the Map: View Annotations
+
+Custom Android views drawn above the map, simple to add and interact with.
+
+![Data rendered as part of the map itself, allowing for high-performance visualization of large datasets, and positioning relative to other map features.](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-styles-expressions-zoom-low.adb4f2f.480.png)
+
+In the Map: Style Layers
+
+Data rendered as part of the map itself, allowing for high-performance visualization of large datasets, and positioning relative to other map features.
+
+## Understanding how the Map is rendered
+
+Mapbox maps are rendered entirely on the client device using OpenGL, which enables high-performance, smooth rendering of complex geographic data.
+
+The map you see is not a single image, but rather a composite of many virtual layers. The SDK fetches data for roads, buildings, and other map features from Mapbox servers, assembles these layers in memory, and presents them based on the current map position, zoom level, and style. In the Mapbox Maps SDK for Android, this rendering is handled by the `MapView` class when using traditional Android Views and the `MapboxMap` composable when using Jetpack Compose.
+
+This client-side rendering enables smooth interactions with the map - you can rotate, tilt, and zoom while maintaining crisp visuals at any scale. The SDK dynamically loads additional data as needed based on the current view.
+
+Understanding this architecture is key to choosing how to add your data: you can either add visual elements **above** the map using elements rendered in the native UI layer (markers, annotations, view annotations) or integrate your data **into** the map itself as additional layers that can be mixed into the existing layer stack (style layers).
+
+![](https://docs.mapbox.com/android/assets/ideal-img/add-data-annotation.480.gif)
+
+![](https://docs.mapbox.com/android/assets/ideal-img/add-data-style-layer.480.gif)
+
+Above the Map: Markers, Annotations & View Annotations
+
+Annotations are rendered above the map by the native UI layer, and are fixed to a geographic location so they will move when the map moves.
+
+In the Map: Style Layers
+
+Style layers are rendered as part of the map itself, allowing for high-performance visualization of large datasets, and positioning relative to other map features.
+
+## Choosing the right approach
+
+When deciding how to add your data to the map, consider the following factors:
+
+-   The complexity of your data
+-   The level of interactivity you need
+-   Performance requirements
+-   Development time and effort
+
+**Markers** provide the quickest way to add markers in Jetpack Compose, while **Annotations** offer more customization options for both Jetpack Compose and traditional Android Views. **View annotations** allow completely custom UI elements above the map. **Style layers** offer maximum flexibility and performance for complex datasets.
+
+### Markers
+
+Markers are a Jetpack Compose convenience feature that creates customizable markers displayed above the map. They provide a quick way to add pin-style markers with minimal code.
+
+**Advantages:**
+
+-   Quickest way to add markers in Jetpack Compose
+-   Simple API with limited but useful customization options (color, stroke, text)
+-   No need to provide your own image assets
+
+**Limitations:**
+
+-   Jetpack Compose only (not available with traditional Android Views)
+-   Limited customization compared to other annotation types
+-   Less efficient for large datasets (100+ markers)
+
+### Annotations
+
+Annotations are individually styled images, circles, lines, or polygons that are displayed above the map. They are managed by the SDK's **Annotation API** and are ideal for adding custom images, lines, polygons, or shapes pinned to specific geographic coordinates.
+
+**Advantages:**
+
+-   More customization than Markers
+-   Available in both Jetpack Compose and traditional Android Views
+-   Ideal for interactive features (tapping, dragging, etc.)
+-   Automatically managed by the SDK (rendering, hit-testing)
+-   Works with standard geographic data formats (GeoJSON, etc.)
+-   Support for clustering with point annotations
+
+**Limitations:**
+
+-   Requires providing your own image assets for point annotations
+-   Less efficient for large datasets (performance may degrade with hundreds of annotations)
+
+### View Annotations
+
+A View Annotation is a `View` when using Android Views *or* a composable in Jetpack Compose positioned at geographic coordinate on the map. They are ideal for overlaying completely custom UI elements (buttons, labels, images, data-driven views) that behave like part of the map.
+
+**Advantages:**
+
+-   Full power of Android UI framework & Jetpack Compose — animations, gesture handling, custom layouts.
+-   Can display dynamic or complex components not possible with pure map styling.
+-   Data can be sourced from any format — you only need geographic coordinates to position the views.
+
+**Limitations:**
+
+-   Less efficient for large datasets (performance may degrade with hundreds of annotations).
+-   Implementation is up to the developer, limited pre-built components
+-   No built-in support for clustering
+
+### Style Layers
+
+Style layers are additional layers rendered as part of the map, integrated along with the roads, buildings, and other map features — **sources** provide the geographic data (GeoJSON, vector tiles, raster tiles), and **layers** define how that data is styled (circle, fill, line, symbol, heatmap, etc.).
+
+They are ideal for large or complex datasets, advanced styling, or when you need precise control over map rendering.
+
+**Advantages:**
+
+-   Maximum flexibility and performance — can handle tens of thousands of features.
+-   Compatible with vector tiles for large datasets with wide geographic coverage.
+-   Can make style changes dynamically without reloading the data.
+-   Can use data-driven styling (styles change based on feature properties).
+
+**Limitations:**
+
+-   More verbose to set up, requires familiarity with the Mapbox Style Specification.
+-   Requires data in specific formats, such as GeoJSON or vector tiles.
+-   Complex integration for user interaction — you'll need to add gesture recognizers and query rendered features manually.
+
+---

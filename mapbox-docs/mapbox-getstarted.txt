@@ -1,0 +1,412 @@
+# Get Started with the Maps SDK for Android
+
+This guide describes the steps to install the latest version of the **Mapbox Maps SDK for Android**, configure your Android app to use the SDK, and initialize a map.
+
+![Simple map globe view](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-install.2892947.480.png)
+
+## Prerequisites
+
+-   **A Mapbox account**: Sign up or log into a free account on [Mapbox](https://account.mapbox.com/auth/signup/).
+-   **Android Studio**: This guide includes details specific to the latest version of [Android Studio](https://developer.android.com/studio/install).
+-   **Gradle**: Make sure you have [Gradle](https://gradle.org/install/) installed.
+
+Before proceeding, **create a new Android project** in Android Studio using the `Empty Activity` project type.
+
+> **Related content (video): [How to Video - Get Started with the Maps SDK for Android](null)**
+
+## Part 1: Configure your credentials
+
+Before starting to develop your application with the Maps SDK, you'll need to create and configure your credentials.
+
+### Step 1: Configure your public token
+
+Your app must have a public access token configured to associate its usage of Mapbox resources with your account.
+
+Follow these steps to add a public access token from your Mapbox account as an [Android string resource](https://developer.android.com/guide/topics/resources/string-resource#String).
+
+1.  Locate the resource folder:
+
+-   In the project explorer, find and expand your resource folder located at `app/res/values`.
+
+2.  Create a new string resource file :
+
+-   Right click on the `values` folder
+-   Select **New > Values Resource File**
+-   Name the file `mapbox_access_token.xml`
+-   Click the **OK** button.
+
+4.  In the new file, copy and paste the code snippet below.
+
+-   Make sure you are signed in to docs.mapbox.com. This will insert your default public token into the code snippet (a long string that starts with `pk.`).
+-   If you are not signed in, you will need to replace the placeholder `YOUR_MAPBOX_ACCESS_TOKEN` with a token from your account's [tokens page](https://console.mapbox.com/account/access-tokens/).
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="mapbox_access_token" translatable="false" tools:ignore="UnusedResources">YOUR_MAPBOX_ACCESS_TOKEN</string>
+</resources>
+```
+
+Your Mapbox public access token is now available for use in your Android project. The Maps SDK for Android automatically looks for the `mapbox_access_token` string resource when you initialize a map, so you don't need to do anything else to use the token in your app.
+
+Details
+
+**Advanced Topics: Best Practices, Rotating Tokens & Adding Tokens at Runtime**
+
+> **Related content (guide): [Access token best practices](https://docs.mapbox.com/help/troubleshooting/private-access-token-android-and-ios/)**
+>
+> Learn how to keep access tokens private in mobile apps.
+
+**Adding Tokens at Runtime**
+
+You can also implement tokens at runtime, but this requires you to have a separate server to store your tokens. This is helpful if you want to rotate your tokens or add additional security by storing your tokens outside of the APK, but is a much more complex method of implementation.
+
+If you do choose to follow this method, we recommend calling `MapboxOptions.accessToken = YOUR_PUBLIC_MAPBOX_ACCESS_TOKEN` before inflating the `MapView`, otherwise the app will crash.
+
+**Rotating Tokens**
+
+For more information on access token rotation, consult the [Access Tokens Information page](https://docs.mapbox.com/help/how-mapbox-works/access-tokens/).
+
+### Step 2: (Optional) Configure permissions
+
+If you need to access the user's location to show it on the map, follow the steps below. If you do not need to access the user's location, skip to [Part 2: Add the dependency](#part-2-add-the-dependency).
+
+1.  Open the Android Manifest.
+    -   In the project explorer, find and open `app/manifests/AndroidManifest.xml`.
+2.  Determine the level of location access you need.
+    -   If you only need general user location access, copy the first line of code below - the `ACCESS_COARSE_LOCATION` permission.
+    -   If you also need access to more precise location data, copy the entire code snippet, including the `ACCESS_FINE_LOCATION` permission. The `ACCESS_FINE_LOCATION` will not work without also requesting `ACCESS_COARSE_LOCATION` access.
+3.  Add the permissions you copied to the Android Manifest.
+    -   This code should be added to the top of `AndroidManifest.xml`, below the opening manifest tag and above the opening `<application>` tag.
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools">
+
+<!-- Include this permission to grab user's general location -->
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<!-- Include only if your app benefits from precise location access. -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+<application...>
+```
+
+You can check whether the user has granted location permission and request permissions if the user hasn't granted them yet using the [`PermissionsManager`](https://docs.mapbox.com/android/maps/guides/user-location/permissions#using-the-maps-sdk-permission-utilities).
+
+## Part 2: Add the dependency
+
+### Step 1: Add the Mapbox Maven Repository
+
+With your credentials configured, you can now add the Maps SDK as a dependency to your Android project.
+
+Configure your build to download the Maps SDK from the **Mapbox maven repository** by following these steps:
+
+1.  In the project explorer, find and open `Gradle Scripts/settings.gradle.kts`.
+2.  Add a new `maven {...}` definition under `dependencyResolutionManagement.repositories`.
+
+**Groovy**
+
+Title: `settings.gradle.kts`
+
+```groovy
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // Mapbox Maven repository
+        maven {
+            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+        }
+    }
+}
+```
+
+**Kotlin**
+
+Title: `settings.gradle.kts`
+
+```kotlin
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // Mapbox Maven repository
+        maven {
+            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+        }
+    }
+}
+```
+
+> **Note (warning): Add the Mapbox Maven repository in the correct location**
+>
+> Make sure you configure the Mapbox maven repository inside `dependencyResolutionManagement` and not inside `pluginManagement`.
+
+### Step 2: Add Maps SDK Dependencies
+
+1.  In the project explorer, find and open your *module-level* `build.gradle.kts` file (usually located at `app/build.gradle.kts`).
+
+2.  Add the Mapbox SDK for Android dependency to the `dependencies` section.
+
+
+**Groovy**
+
+Title: `build.gradle.kts`
+
+```groovy
+dependencies {
+  ...
+  implementation 'com.mapbox.maps:android-ndk27:11.24.2'
+  // if your app does not require 16 KB page size support, the default dependency without -ndk27 can be used
+  // implementation 'com.mapbox.maps:android:11.24.2'
+  ...
+}
+```
+
+**Kotlin**
+
+Title: `build.gradle.kts`
+
+```kotlin
+dependencies {
+  ...
+  implementation("com.mapbox.maps:android-ndk27:11.24.2")
+  // if your app does not require 16 KB page size support, the default dependency without -ndk27 can be used
+  // implementation("com.mapbox.maps:android:11.24.2")
+  ...
+}
+```
+
+3.  (Optional) If you are using Jetpack Compose in your app, you must add some additional configuration to your *module-level* `build.gradle.kts` file:
+
+-   Add `compose = true` to the build features section if it's not already there.
+-   Add the **Maps SDK Jetpack Compose Extension** to the `dependencies` section.
+
+**Groovy**
+
+Title: `build.gradle.kts`
+
+```groovy
+android {
+  buildFeatures {
+    compose = true
+  }
+  ...
+}
+dependencies {
+  ...
+  // If you're using compose also add the compose extension
+  implementation 'com.mapbox.extension:maps-compose-ndk27:11.24.2'
+  // if your app does not require 16 KB page size support, the default dependency without -ndk27 can be used
+  // implementation 'com.mapbox.extension:maps-compose:11.24.2'
+  ...
+}
+```
+
+**Kotlin**
+
+Title: `build.gradle.kts`
+
+```kotlin
+android {
+  buildFeatures {
+    compose = true
+  }
+}
+dependencies {
+  ...
+  // If you're using compose also add the compose extension
+  implementation("com.mapbox.extension:maps-compose-ndk27:11.24.2")
+  // if your app does not require 16 KB page size support, the default dependency without -ndk27 can be used
+  // implementation("com.mapbox.extension:maps-compose:11.24.2")
+  ...
+}
+```
+
+4.  In Android Studio, run **File > Sync Project with Gradle Files** to make sure the new dependency is added to your project. Once your project has synced successfully, you are ready to add a map.
+
+> **Note (warning): Troubleshooting**
+>
+> -   Make sure you placed the maven code inside `dependencyResolutionManagement` and not `pluginManagement`. Placing the code here will prevent the Mapbox SDK from being accessible and throw errors later down the line. See [Part 2: Add the dependency - Step 1: add the Mapbox Maven dependency](#step-1-add-the-mapbox-maven-repository) for more details.
+> -   Check `app/res/values/mapbox_access_token.xml` has a token and does not say `YOUR_MAPBOX_ACCESS_TOKEN`.
+> -   Try running **File > Sync Project with Gradle Files** in case a change had not been synced throughout your project.
+> -   You might have conflicting transitive dependencies. If necessary, you can use `exclude group` to remove certain dependencies (see [Exclude transitive dependencies](https://developer.android.com/build/dependency-resolution-errors#exclude_dependencies))
+
+> **Note: About 16 KB page size support**
+>
+> Starting with version 11.7.0 and 10.19.0, **NDK 27 is supported** with dedicated artifacts that include [support for 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes). If your app does not require 16 KB page size support, you can keep using our default artifacts without `-ndk27` suffix.
+
+> **Note: About Google Play Services**
+>
+> Starting from v11.8.0, the Mapbox Maps SDK for Android brings a transitive dependency on Google Play Services, from which the SDK gets an HTTP client that supports HTTP/3.
+>
+> The Google Play Services dependency can be removed, and then the SDK will work without support for HTTP/3. For details about how to manage this dependency, follow the instructions in our [Removing Google Play](https://docs.mapbox.com/android/maps/guides/removing-google-play-dependency) guide.
+
+## Part 3: Add a map
+
+Now add a map to your application. Choose between Jetpack Compose or Android View implementation based on your app's architecture.
+
+**Jetpack Compose**
+
+With the Maps SDK for Android compose extension, you can add a `MapboxMap` composable to your app to render a map:
+
+1.  Make sure you added the **Maps SDK Jetpack Compose extension** to your dependencies (see [Add Maps SDK Dependencies](#step-2-add-maps-sdk-dependencies) above)
+
+2.  In the project explorer, find and open `app/kotlin+java/PROJECT_NAME/MainActivity.kt`.
+
+3.  Paste the code snippet below into the `MainActivity.kt` file, replacing the existing code. Make sure to replace the package import line at the top of the file with your project's package import line. This will typically follow the format of `package com.example.PROJECT_NAME`.
+
+
+This code renders an interactive map centered over the United States and at zoom level 2 (zoomed out to see most of the world in a globe view).
+
+**Kotlin**
+
+Title: `MainActivity.kt`
+
+```kt
+package com.mapbox.maps.demo
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.mapbox.geojson.Point
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.plugin.attribution.Attribution
+import com.mapbox.maps.plugin.scalebar.ScaleBar
+
+public class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MapboxMap(
+                Modifier.fillMaxSize(),
+                mapViewportState = rememberMapViewportState {
+                    setCameraOptions {
+                        zoom(2.0)
+                        center(Point.fromLngLat(-98.0, 39.5))
+                        pitch(0.0)
+                        bearing(0.0)
+                    }
+                },
+                scaleBar = {
+                    ScaleBar(Modifier.padding(top = 60.dp))
+                },
+                logo = {
+                    Logo(Modifier.padding(bottom = 40.dp))
+                },
+                attribution = {
+                    Attribution(Modifier.padding(bottom = 40.dp))
+                }
+            )
+        }
+    }
+}
+```
+
+**Android View**
+
+Instantiate a Mapbox map in your Android Activity:
+
+1.  In the project explorer, find and open `app/kotlin+java/PROJECT_NAME/MainActivity.kt`.
+
+2.  Inside the folder, open the `MainActivity.kt` file.
+
+3.  Delete everything inside the file except the package import on the first line.
+
+4.  Paste the code snippet below into the `MainActivity.kt` file, replacing the existing code. Make sure to replace the package import line at the top of the file with your project's package import line. This will typically follow the format of `package com.example.PROJECT_NAME`.
+
+
+This code will create that will fill the container with an interactive globe, centered over the United States and set to a zoom level 2.
+
+**Kotlin**
+
+Title: `MainActivity.kt`
+
+```kt
+package com.mapbox.maps.demo
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapInitOptions
+import com.mapbox.maps.MapView
+import com.mapbox.maps.plugin.attribution.attribution
+import com.mapbox.maps.plugin.logo.logo
+import com.mapbox.maps.plugin.scalebar.scalebar
+
+class MainActivity : ComponentActivity() {
+    private lateinit var mapView: MapView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Create a map programmatically and set the initial camera
+        mapView = MapView(this, MapInitOptions(
+            this,
+            cameraOptions = CameraOptions.Builder()
+                .center(Point.fromLngLat(-98.0, 39.5))
+                .pitch(0.0)
+                .zoom(2.0)
+                .bearing(0.0)
+                .build(),
+        ))
+
+        // adjust the position of the scalebar, logo, and attribution overlays
+        mapView.scalebar.marginTop = 200f
+        mapView.logo.marginBottom = 140f
+        mapView.attribution.marginBottom = 140f
+
+
+        // Add the map view to the activity (you can also add it to other views as a child)
+        setContentView(mapView)
+    }
+}
+```
+
+Now save your work and start the emulator. Once the emulator is finished loading, you should see the globe. You can zoom in and out and move around the map to explore.
+
+![Simple map globe view](https://docs.mapbox.com/android/assets/ideal-img/maps-guides-install.2892947.480.png)
+
+With a minimal map now rendering in your app, you are ready to begin customizing your map and exploring the features of the Maps SDK for Android.
+
+> **Note (warning): Troubleshooting**
+>
+> -   Click on **File > Save All** to make sure you haven't missed any changes.
+> -   Try running **File > Sync Project with Gradle Files** in case a change had not been synced throughout your project.
+> -   Make sure you are using the correct import package line. If you see `package com.mapbox.maps.demo` in your `MainActivity.kt`, you need to replace with your project's import line. This will typically follow the format of package.com.example.PROJECT_NAME.
+> -   If the mapbox library isn't being imported, check the following:
+>     -   Check `app/res/values/mapbox_access_token.xml` has a token and does not say `YOUR_MAPBOX_ACCESS_TOKEN`.
+>     -   Make sure you've added the required dependencies to the `settings.gradle.kts` file and `build.gradle.kts` match the example snippets seen in [Part 2: Add the dependency](#part-2-add-the-dependency).
+> -   Check you've imported the right libraries into the MainActivity file as seen in the example code.
+> -   Switch virtual devices if you can't get your map to show on the default pixel fold.
+> -   Check if you have conflicting transitive dependencies. If necessary, you can use `exclude group` to remove certain dependencies (see [Exclude transitive dependencies](https://developer.android.com/build/dependencies#exclude_dependencies))_
+
+## Next Steps
+
+With the Maps SDK installed and a minimal map rendering in your app, you can explore additional features of the SDK:
+
+-   [Add a user location puck](https://docs.mapbox.com/android/maps/guides/user-location/)
+-   [Understand Markers and Map Annotations](https://docs.mapbox.com/android/maps/guides/annotations/)
+-   [Learn more about the camera and map animations](https://docs.mapbox.com/android/maps/guides/camera-and-animation/)
+
+You can also explore example code and tutorials:
+
+> **Related content (tutorial): [Learn how to clone and run the Mapbox Maps SDK for Android examples app.](https://docs.mapbox.com/help/tutorials/maps-sdk-android-examples-app/)**
+>
+> Learn how to clone and run the Mapbox Maps SDK for Android examples app to see any Android example in real time.
+
+> **Related content (example): [Add Point Annotations - Jetpack Compose](https://docs.mapbox.com/android/maps/examples/compose/add-point-annotations/)**
+>
+> Learn how to mark a point of interest on a map by using point annotations.
+
+> **Related content (example): [Add Point Annotations - Android View](https://docs.mapbox.com/android/maps/examples/android-view/add-point-annotations/)**
+>
+> Learn how to mark a point of interest on a map by using point annotations.

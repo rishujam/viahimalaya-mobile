@@ -1,11 +1,11 @@
-package com.via.himalaya.presentation
+package com.via.himalaya.presentation.navigator
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.RawSensors
 import com.via.himalaya.data.models.SensorData
-import com.via.himalaya.data.repository.TrekRepository
+import com.via.himalaya.data.repository.NavigatorRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,67 +17,77 @@ import kotlinx.datetime.Clock
  * Uses StateFlow for cross-platform state management instead of mutableStateOf
  * Uses viewModelScope which is now available in KMP
  */
-class TrekViewModel(
-    private val trekRepository: TrekRepository
+class NavigatorViewModel(
+    private val navigatorRepository: NavigatorRepository
 ) : ViewModel() {
     
-    private val _state = MutableStateFlow(TrekScreenUIState())
-    val state: StateFlow<TrekScreenUIState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(NavigatorScreenUIState())
+    val state: StateFlow<NavigatorScreenUIState> = _state.asStateFlow()
     
-    fun onEvent(event: TrekScreenUIEvent) {
+    fun onEvent(event: NavigatorScreenUIEvent) {
         when(event) {
-            is TrekScreenUIEvent.LocationUpdate -> {
+            is NavigatorScreenUIEvent.LocationUpdate -> {
                 updateLocationPoint(event.sensorData)
             }
             
-            is TrekScreenUIEvent.StartTrek -> {
-                startTrek(event.name)
+            is NavigatorScreenUIEvent.StartNavigator -> {
+                startNavigator(event.name)
             }
             
-            is TrekScreenUIEvent.StopTrek -> {
-                stopTrek()
+            is NavigatorScreenUIEvent.StopNavigator -> {
+                stopNavigator()
             }
             
-            is TrekScreenUIEvent.PauseTrek -> {
-                pauseTrek()
+            is NavigatorScreenUIEvent.PauseNavigator -> {
+                pauseNavigator()
+            }
+            
+            is NavigatorScreenUIEvent.NavigatorNameChanged -> {
+                updateTrekName(event.name)
             }
         }
     }
     
-    private fun startTrek(name: String) = viewModelScope.launch {
+    private fun updateTrekName(name: String) {
+        _state.value = _state.value.copy(trekName = name)
+    }
+    
+    private fun startNavigator(name: String) = viewModelScope.launch {
         try {
-            val trekId = trekRepository.startNewTrek(name, "12345")
+            val trekId = navigatorRepository.startNewNavigator(name, "12345")
             _state.value = _state.value.copy(
                 trekId = trekId,
-                trekState = TrekState.Recording
+                trekState = NavigatorState.Recording
             )
         } catch (e: Exception) {
             // Handle error - could emit to a separate error flow
-            println("Error starting trek: ${e.message}")
+            println("Error starting Navigator: ${e.message}")
         }
     }
     
-    private fun stopTrek() = viewModelScope.launch {
+    private fun stopNavigator() = viewModelScope.launch {
         try {
             // Save any remaining points in buffer
             val currentState = _state.value
             if (currentState.pointsBuffer.isNotEmpty() && currentState.trekId != null) {
-                trekRepository.saveBatch(currentState.trekId, currentState.pointsBuffer)
+                navigatorRepository.saveBatch(currentState.trekId, currentState.pointsBuffer)
             }
             
             _state.value = _state.value.copy(
                 trekId = null,
-                trekState = TrekState.Idle,
-                pointsBuffer = emptyList()
+                trekState = NavigatorState.Idle,
+                pointsBuffer = emptyList(),
+                allPoints = emptyList(),
+                trekName = ""
             )
         } catch (e: Exception) {
             println("Error stopping trek: ${e.message}")
         }
     }
     
-    private fun pauseTrek() = viewModelScope.launch {
+    private fun pauseNavigator() = viewModelScope.launch {
         _state.value = _state.value.copy(
-            trekState = TrekState.Paused
+            trekState = NavigatorState.Paused
         )
     }
     
@@ -116,15 +126,19 @@ class TrekViewModel(
                 val updatedPoints = currentState.pointsBuffer.toMutableList()
                 updatedPoints.add(point)
                 
+                val updatedAllPoints = currentState.allPoints.toMutableList()
+                updatedAllPoints.add(point)
+                
                 _state.value = currentState.copy(
-                    pointsBuffer = updatedPoints
+                    pointsBuffer = updatedPoints,
+                    allPoints = updatedAllPoints
                 )
 
                 println("TrekViewModel: Adding location point")
                 // Use efficient batching
                 if (updatedPoints.size >= 10) {
                     println("TrekViewModel: Saving location points: $updatedPoints")
-                    trekRepository.saveBatch(trekId, updatedPoints)
+                    navigatorRepository.saveBatch(trekId, updatedPoints)
                     _state.value = _state.value.copy(pointsBuffer = emptyList())
                 }
             } catch (e: Exception) {
