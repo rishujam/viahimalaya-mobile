@@ -1,4 +1,4 @@
-package com.via.himalaya.data.repository
+package com.via.himalaya.domain.repo
 
 import com.via.himalaya.data.models.NavigatorTrek
 import com.via.himalaya.data.models.Point

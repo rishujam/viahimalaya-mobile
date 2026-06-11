@@ -53,4 +53,6 @@ dependencies {
     implementation(libs.map.box)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
 }

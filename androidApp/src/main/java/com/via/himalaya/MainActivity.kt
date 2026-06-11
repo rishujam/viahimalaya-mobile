@@ -17,9 +17,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.via.himalaya.navigation.BottomNavigation
 import com.via.himalaya.navigation.Screen
 import com.via.himalaya.permissions.PermissionHandler
-import com.via.himalaya.screens.ExploreScreen
-import com.via.himalaya.screens.ProfileScreen
+import com.via.himalaya.presentation.explore.ExploreViewModel
+import com.via.himalaya.ui.screens.ExploreScreen
+import com.via.himalaya.ui.screens.ExploreScreenRoot
+import com.via.himalaya.ui.screens.ProfileScreen
 import com.via.himalaya.ui.MyApplicationTheme
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -59,10 +62,12 @@ fun ViaHimalayaApp() {
         ) {
             when (currentRoute) {
                 Screen.Explore -> {
-                    ExploreScreen(
+                    val exploreViewModel = koinViewModel<ExploreViewModel>()
+                    ExploreScreenRoot (
                         onTrekClicked = { trek ->
 
-                        }
+                        },
+                        viewModel = exploreViewModel
                     )
                 }
                 Screen.Profile -> {

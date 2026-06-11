@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.RawSensors
 import com.via.himalaya.data.models.SensorData
-import com.via.himalaya.data.repository.NavigatorRepository
+import com.via.himalaya.domain.repo.NavigatorRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

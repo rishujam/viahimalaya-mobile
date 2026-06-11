@@ -1,24 +1,19 @@
 package com.via.himalaya.di
 
-import com.via.himalaya.data.database.DatabaseDriverFactory
-import com.via.himalaya.data.repository.NavigatorRepository
-import com.via.himalaya.data.repository.NavigatorRepositoryImpl
+import com.via.himalaya.data.remote.HttpClientFactory
+import com.via.himalaya.data.repository.TrekRepositoryImpl
+import com.via.himalaya.domain.repo.TrekRepository
+import org.koin.core.module.Module
+import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.bind
+import org.koin.dsl.module
+import com.via.himalaya.presentation.explore.ExploreViewModel
 
-/**
- * Simple dependency injection container for the app
- * iOS-friendly implementation without complex DI frameworks
- */
-class AppModule(private val databaseDriverFactory: DatabaseDriverFactory) {
-    
-    // Lazy initialization of repository
-    val navigatorRepository: NavigatorRepository by lazy {
-        NavigatorRepositoryImpl(databaseDriverFactory)
-    }
-}
+expect val platformModule: Module
 
-/**
- * Platform-specific factory for creating AppModule
- */
-expect object AppModuleFactory {
-    fun create(): AppModule
+val sharedModule = module {
+    single { HttpClientFactory.create(get()) }
+    singleOf(::TrekRepositoryImpl).bind<TrekRepository>()
+    viewModelOf(::ExploreViewModel)
 }

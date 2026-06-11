@@ -10,6 +10,7 @@ import com.via.himalaya.data.models.RawSensors
 import com.via.himalaya.data.models.NavigatorTrek
 import com.via.himalaya.data.models.TrekWithPoints
 import com.via.himalaya.database.ViaHimalayaDatabase
+import com.via.himalaya.domain.repo.NavigatorRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
