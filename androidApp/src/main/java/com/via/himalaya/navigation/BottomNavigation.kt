@@ -10,10 +10,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
+@Deprecated("Use BottomNavigationBar instead")
 @Composable
 fun BottomNavigation(
-    currentRoute: Screen,
-    onNavigate: (Screen) -> Unit
+    currentRoute: Route,
+    onNavigate: (Route) -> Unit
 ) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -27,8 +28,8 @@ fun BottomNavigation(
                 )
             },
             label = { Text("Explore") },
-            selected = currentRoute == Screen.Explore,
-            onClick = { onNavigate(Screen.Explore) }
+            selected = currentRoute == Route.Explore,
+            onClick = { onNavigate(Route.Explore) }
         )
 
         NavigationBarItem(
@@ -39,8 +40,8 @@ fun BottomNavigation(
                 )
             },
             label = { Text("Profile") },
-            selected = currentRoute == Screen.Profile,
-            onClick = { onNavigate(Screen.Profile) }
+            selected = currentRoute == Route.Profile,
+            onClick = { onNavigate(Route.Profile) }
         )
     }
 }

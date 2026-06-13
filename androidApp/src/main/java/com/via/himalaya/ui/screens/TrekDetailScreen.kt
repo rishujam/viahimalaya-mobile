@@ -13,8 +13,18 @@ import androidx.compose.ui.graphics.Color
 
 @Composable
 fun TrekDetailScreen() {
-    Column (modifier = Modifier.fillMaxSize().background(Color.Cyan), verticalArrangement = Arrangement.Bottom) {
-        Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f).background(Color.Green)) {
+    Column (
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Cyan),
+        verticalArrangement = Arrangement.Bottom
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.5f)
+                .background(Color.Green)
+        ) {
 
         }
     }
