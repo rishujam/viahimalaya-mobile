@@ -1,5 +1,6 @@
 package com.via.himalaya.navigation
 
+import com.via.himalaya.domain.model.Trek
 import kotlinx.serialization.Serializable
 
 sealed interface Route {
@@ -17,6 +18,6 @@ sealed interface Route {
     data object Profile : Route
 
     @Serializable
-    data object Trek : Route
+    data object Trekking : Route
 
 }

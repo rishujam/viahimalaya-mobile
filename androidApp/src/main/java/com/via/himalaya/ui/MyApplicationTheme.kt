@@ -14,12 +14,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.via.himalaya.presentation.components.getInterFontFamily
 
 @Composable
 fun MyApplicationTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+
     val colors = if (darkTheme) {
         // Dark theme using ViaHimalaya colors with adjustments
         darkColorScheme(
@@ -62,6 +64,13 @@ fun MyApplicationTheme(
             fontSize = 16.sp
         )
     )
+//    val typography2 = Typography(
+//        bodyMedium = TextStyle(
+//            fontFamily = getInterFontFamily(),
+//            fontWeight = FontWeight.Normal,
+//            fontSize = 16.sp
+//        )
+//    )
     val shapes = Shapes(
         small = RoundedCornerShape(4.dp),
         medium = RoundedCornerShape(4.dp),

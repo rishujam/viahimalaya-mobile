@@ -22,20 +22,21 @@ import com.via.himalaya.navigation.Route
 import com.via.himalaya.navigation.bottomNavItems
 import com.via.himalaya.permissions.PermissionHandler
 import com.via.himalaya.presentation.explore.ExploreViewModel
+import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.ui.MyApplicationTheme
 import com.via.himalaya.ui.components.BottomNavigationBar
 import com.via.himalaya.ui.screens.ExploreScreenRoot
 import com.via.himalaya.ui.screens.ProfileScreen
-import com.via.himalaya.ui.screens.TrekDetailScreen
+import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
+//TODO - Create trek detail api and connect with Detail Screen
+//TODO - Trek Screen
 //TODO - Pagination
 //TODO - Splash Screen
-//TODO - Detail Screen
-//TODO - Trek Screen
 //TODO - Data Entry in Backend
 //TODO - Authentication
-//TODO - On Process death location permission is asked and explore list is not loaded
+//TODO (Bug) - On Process death location permission is asked and explore list is not loaded
 
 class MainActivity : ComponentActivity() {
 
@@ -103,8 +104,9 @@ fun ViaHimalayaApp() {
                     ProfileScreen()
                 }
                 composable<Route.TrekDetail> { entry ->
+                    val viewModel = koinViewModel<TrekDetailViewModel>()
                     val args = entry.toRoute<Route.TrekDetail>()
-                    TrekDetailScreen()
+                    TrekDetailScreenRoot(viewModel, args.trekId)
                 }
             }
         }

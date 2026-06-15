@@ -1,8 +1,10 @@
 package com.via.himalaya.data.repository
 
 import com.via.himalaya.domain.model.Trek
+import com.via.himalaya.domain.model.TrekGeoData
 import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
+import com.via.himalaya.domain.model.TrekDetail
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.Result
 import io.ktor.client.HttpClient
@@ -42,5 +44,29 @@ class TrekRepositoryImpl(
         } else {
             Result.Error(response.status.description, response.status.value)
         }
+    }
+
+    override suspend fun getTrekCoordinates(coordinateUrl: String): Result<TrekGeoData> {
+        return try {
+            val response = apiClient.get(coordinateUrl) {
+                contentType(ContentType.Application.Json)
+                headers {
+                    append(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                }
+            }
+            
+            if (response.status.value == 200) {
+                val geoData = response.body<TrekGeoData>()
+                Result.Success(geoData)
+            } else {
+                Result.Error("Failed to fetch coordinates: ${response.status.description}", response.status.value)
+            }
+        } catch (e: Exception) {
+            Result.Error("Error fetching coordinates: ${e.message}", 500)
+        }
+    }
+
+    override suspend fun getTrek(id: String): Result<TrekDetail> {
+        TODO("Not yet implemented")
     }
 }
