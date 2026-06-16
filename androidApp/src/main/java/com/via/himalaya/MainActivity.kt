@@ -94,7 +94,7 @@ fun ViaHimalayaApp() {
                     ExploreScreenRoot(
                         onTrekClicked = { trek ->
                             navController.navigate(
-                                Route.TrekDetail(trek.id)
+                                Route.TrekDetail(trek.id, trek.coordinateUrl)
                             )
                         },
                         viewModel = viewModel
@@ -106,7 +106,7 @@ fun ViaHimalayaApp() {
                 composable<Route.TrekDetail> { entry ->
                     val viewModel = koinViewModel<TrekDetailViewModel>()
                     val args = entry.toRoute<Route.TrekDetail>()
-                    TrekDetailScreenRoot(viewModel, args.trekId)
+                    TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl)
                 }
             }
         }

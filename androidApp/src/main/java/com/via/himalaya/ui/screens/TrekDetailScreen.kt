@@ -20,11 +20,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.via.himalaya.domain.model.Trek
+import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.Style
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.style.ColorValue
+import com.mapbox.maps.extension.compose.style.DoubleValue
+import com.mapbox.maps.extension.compose.style.MapStyle
+import com.mapbox.maps.extension.compose.style.layers.generated.LineCapValue
+import com.mapbox.maps.extension.compose.style.layers.generated.LineJoinValue
+import com.mapbox.maps.extension.compose.style.layers.generated.LineLayer
+import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
+import com.mapbox.maps.extension.compose.style.sources.generated.rememberGeoJsonSourceState
+import com.via.himalaya.domain.model.TrekDetail
+import com.via.himalaya.domain.model.toGeoJsonString
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.ui.components.PrimaryButton
@@ -35,10 +50,12 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun TrekDetailScreenRoot(
     viewModel: TrekDetailViewModel = koinViewModel(),
-    trekId: String
+    trekId: String,
+    coordinateUrl: String
 ) {
     val state by viewModel.state.collectAsState()
-    viewModel.setTrek(trek)
+    viewModel.getTrek(trekId)
+    viewModel.getCoordinates(coordinateUrl)
     TrekDetailScreen(state)
 }
 
@@ -51,8 +68,62 @@ fun TrekDetailScreen(
             .fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        if (state.geoData != null && state.trek != null) {
+            val geoJsonString = state.geoData?.geometry?.toGeoJsonString()
+            val boundingBox = state.trek?.boundingBox
+            
+            val trailSource = rememberGeoJsonSourceState(sourceId = "trek-trail-source")
+            geoJsonString?.let {
+                trailSource.data = GeoJSONData(geoJsonString)
 
+                val mapViewportState = rememberMapViewportState {
+                    setCameraOptions {
+                        // Use bounding box to calculate center and appropriate zoom
+                        if (boundingBox?.size != null && boundingBox.size >= 4) {
+                            val centerLng = (boundingBox[0] + boundingBox[2]) / 2
+                            val centerLat = (boundingBox[1] + boundingBox[3]) / 2
+                            center(Point.fromLngLat(centerLng, centerLat))
+
+                            // Calculate zoom level based on bounding box size
+                            val lngDiff = kotlin.math.abs(boundingBox[2] - boundingBox[0])
+                            val latDiff = kotlin.math.abs(boundingBox[3] - boundingBox[1])
+                            val maxDiff = maxOf(lngDiff, latDiff)
+
+                            // Adjust zoom based on bounding box size
+                            val zoomLevel = when {
+                                maxDiff > 1.0 -> 9.0
+                                maxDiff > 0.5 -> 10.0
+                                maxDiff > 0.2 -> 11.0
+                                maxDiff > 0.1 -> 12.0
+                                else -> 13.0
+                            }
+                            zoom(zoomLevel)
+                        }
+                        pitch(45.0)
+                        bearing(0.0)
+                    }
+                }
+
+                MapboxMap(
+                    modifier = Modifier.fillMaxSize(),
+                    mapViewportState = mapViewportState,
+                    style = {
+                        MapStyle(
+                            style = Style.SATELLITE_STREETS
+                        )
+                    }
+                ) {
+                    LineLayer(
+                        layerId = "trek-trail-line-layer",
+                        sourceState = trailSource
+                    ) {
+                        lineColor = ColorValue(Color(0xFF4285F4))
+                        lineWidth = DoubleValue(5.0)
+                        lineJoin = LineJoinValue.ROUND
+                        lineCap = LineCapValue.ROUND
+                    }
+                }
+            }
         }
         Box(
             modifier = Modifier
@@ -177,7 +248,7 @@ fun TrekDetailScreen(
 fun TrekDetailScreenPreview() {
     TrekDetailScreen(
         TrekDetailScreenUIState(
-            trek = Trek(
+            trek = TrekDetail(
                 id = "x",
                 name = "Triund Trek",
                 location = "Dharamshala, Himachal Pradesh",

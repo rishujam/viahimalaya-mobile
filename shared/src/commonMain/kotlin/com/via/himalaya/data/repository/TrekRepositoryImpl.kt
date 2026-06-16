@@ -3,6 +3,7 @@ package com.via.himalaya.data.repository
 import com.via.himalaya.domain.model.Trek
 import com.via.himalaya.domain.model.TrekGeoData
 import com.via.himalaya.data.models.TreksData
+import com.via.himalaya.data.models.TrekDetailData
 import com.via.himalaya.data.models.VResponse
 import com.via.himalaya.domain.model.TrekDetail
 import com.via.himalaya.domain.repo.TrekRepository
@@ -67,6 +68,25 @@ class TrekRepositoryImpl(
     }
 
     override suspend fun getTrek(id: String): Result<TrekDetail> {
-        TODO("Not yet implemented")
+        return try {
+            val response = apiClient.get("$BASE_URL/api/treks/$id") {
+                contentType(ContentType.Application.Json)
+                headers {
+                    append(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                    append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                }
+            }
+            
+            if (response.status.value == 200) {
+                val trekDetailData = response.body<VResponse<TrekDetailData>>().data
+                Result.Success(trekDetailData.toTrekDetail())
+            } else if (response.status.value == 404) {
+                Result.Error("Trek not found", 404)
+            } else {
+                Result.Error(response.status.description, response.status.value)
+            }
+        } catch (e: Exception) {
+            Result.Error("Error fetching trek details: ${e.message}", 500)
+        }
     }
 }

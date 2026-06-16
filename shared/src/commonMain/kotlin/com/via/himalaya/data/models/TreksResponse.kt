@@ -43,4 +43,21 @@ data class TrekDto(
     }
 }
 
-
+@Serializable
+data class TrekDetailData(
+    val trek: TrekDto,
+    @SerialName("retrieved_at")
+    val retrievedAt: String
+) {
+    fun toTrekDetail(): com.via.himalaya.domain.model.TrekDetail {
+        return com.via.himalaya.domain.model.TrekDetail(
+            id = trek.id,
+            name = trek.name,
+            location = trek.location,
+            distance = trek.distance,
+            elevation = trek.elevation,
+            boundingBox = trek.boundingBox,
+            coordinateUrl = trek.coordinateUrl
+        )
+    }
+}

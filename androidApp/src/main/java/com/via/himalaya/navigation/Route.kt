@@ -12,7 +12,7 @@ sealed interface Route {
     data object Explore : Route
 
     @Serializable
-    data class TrekDetail(val trekId: String) : Route
+    data class TrekDetail(val trekId: String, val coordinateUrl: String) : Route
 
     @Serializable
     data object Profile : Route
