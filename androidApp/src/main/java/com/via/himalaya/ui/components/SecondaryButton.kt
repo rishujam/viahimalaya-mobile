@@ -30,6 +30,7 @@ fun SecondaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
+    trailingText: String? = null,
 ) {
     OutlinedButton(
         onClick = onClick,
@@ -48,6 +49,15 @@ fun SecondaryButton(
             Spacer(Modifier.width(8.dp))
         }
         Text(modifier = Modifier.padding(vertical = 8.dp), text = text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+        if (trailingText != null) {
+            Text(
+                modifier = Modifier.padding(start = 8.dp),
+                text = trailingText,
+                fontWeight = FontWeight.Normal,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

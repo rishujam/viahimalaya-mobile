@@ -36,6 +36,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Splash Screen
 //TODO - Data Entry in Backend
 //TODO - Authentication
+//TODO - Dark Mode
 //TODO (Bug) - On Process death location permission is asked and explore list is not loaded
 
 class MainActivity : ComponentActivity() {
@@ -106,7 +107,9 @@ fun ViaHimalayaApp() {
                 composable<Route.TrekDetail> { entry ->
                     val viewModel = koinViewModel<TrekDetailViewModel>()
                     val args = entry.toRoute<Route.TrekDetail>()
-                    TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl)
+                    TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl) {
+                        navController.navigateUp()
+                    }
                 }
             }
         }
