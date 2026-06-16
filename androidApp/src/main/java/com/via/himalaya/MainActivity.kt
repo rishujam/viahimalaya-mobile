@@ -30,12 +30,15 @@ import com.via.himalaya.ui.screens.ProfileScreen
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
-//TODO - Create trek detail api and connect with Detail Screen
-//TODO - Trek Screen
+//TODO - Trek Screen (Simulate a hike for testing by passing fake live location coordinates)
+//TODO - Download Hike
 //TODO - Pagination
 //TODO - Splash Screen
 //TODO - Data Entry in Backend
-//TODO - Authentication
+//TODO - Authentication - Login/Logout
+//TODO - Profile Page (Downloaded hikes, Feedback, Logout)
+//TODO - Thumbnail in trek listing payload
+//TODO - Search trek implementation
 //TODO - Dark Mode
 //TODO (Bug) - On Process death location permission is asked and explore list is not loaded
 
