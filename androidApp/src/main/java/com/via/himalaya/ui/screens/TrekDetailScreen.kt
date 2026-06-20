@@ -21,8 +21,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,9 +36,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapboxExperimental
 import com.mapbox.maps.Style
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotation
 import com.mapbox.maps.extension.compose.style.ColorValue
 import com.mapbox.maps.extension.compose.style.DoubleValue
 import com.mapbox.maps.extension.compose.style.MapStyle
@@ -63,14 +70,19 @@ fun TrekDetailScreenRoot(
     viewModel.getCoordinates(coordinateUrl)
     TrekDetailScreen(
         state = state,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
+        onStartHike = { viewModel.startTrekking() },
+        onStopHike = { viewModel.stopTrekking() }
     )
 }
 
+@OptIn(MapboxExperimental::class)
 @Composable
 fun TrekDetailScreen(
     state: TrekDetailScreenUIState,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onStartHike: () -> Unit = {},
+    onStopHike: () -> Unit = {}
 ) {
     Box (
         modifier = Modifier
@@ -113,6 +125,20 @@ fun TrekDetailScreen(
                         bearing(0.0)
                     }
                 }
+                
+                // Animate camera to current location when trekking
+                LaunchedEffect(state.currentLocation) {
+                    state.currentLocation?.let { location ->
+                        mapViewportState.setCameraOptions(
+                            CameraOptions.Builder()
+                                .center(Point.fromLngLat(location.longitude, location.latitude))
+                                .zoom(16.0) // Max zoom level for tracking
+                                .pitch(45.0)
+                                .bearing(0.0)
+                                .build()
+                        )
+                    }
+                }
 
                 MapboxMap(
                     modifier = Modifier.fillMaxSize(),
@@ -131,6 +157,18 @@ fun TrekDetailScreen(
                         lineWidth = DoubleValue(5.0)
                         lineJoin = LineJoinValue.ROUND
                         lineCap = LineCapValue.ROUND
+                    }
+                    
+                    // Show current location marker when trekking
+                    state.currentLocation?.let { location ->
+                        CircleAnnotation(
+                            point = Point.fromLngLat(location.longitude, location.latitude)
+                        ) {
+                            circleRadius = 10.0
+                            circleColor = Color(0xFF4285F4)
+                            circleStrokeWidth = 3.0
+                            circleStrokeColor = Color.White
+                        }
                     }
                 }
             }
@@ -160,6 +198,30 @@ fun TrekDetailScreen(
             }
         }
         
+        // Show message when NOT trekking and not near start point
+        if (!state.isTrekking && !state.isNearTrekStart && state.currentLocation != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 80.dp, start = 16.dp, end = 16.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFFF9800))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = "You need to reach the start point first",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+        
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -180,89 +242,99 @@ fun TrekDetailScreen(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.onPrimary),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
+                if(!state.isTrekking) {
+                    Row(
                         modifier = Modifier
-                            .padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .fillMaxWidth()
+                            .padding(top = 20.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.onPrimary),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "DISTANCE",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Column(
+                            modifier = Modifier
+                                .padding(vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "DISTANCE",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = state.trek?.distance.orEmpty(),
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(36.dp)
+                                .background(MaterialTheme.colorScheme.outline)
                         )
-                        Text(
-                            text = state.trek?.distance.orEmpty(),
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                        Column(
+                            modifier = Modifier
+                                .padding(vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "DURATION",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "4h 30m",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(36.dp)
+                                .background(MaterialTheme.colorScheme.outline)
                         )
-                    }
-                    Spacer(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(36.dp)
-                            .background(MaterialTheme.colorScheme.outline)
-                    )
-                    Column(
-                        modifier = Modifier
-                            .padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "DURATION",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "4h 30m",
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Spacer(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(36.dp)
-                            .background(MaterialTheme.colorScheme.outline)
-                    )
-                    Column(
-                        modifier = Modifier
-                            .padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "ELEVATION",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = state.trek?.elevation.orEmpty(),
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Column(
+                            modifier = Modifier
+                                .padding(vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "ELEVATION",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = state.trek?.elevation.orEmpty(),
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
                 PrimaryButton(
-                    text = "Start Hike",
-                    onClick = {},
+                    text = if (state.isTrekking) "Stop Hike" else "Start Hike",
+                    onClick = {
+                        if (state.isTrekking) {
+                            onStopHike()
+                        } else {
+                            onStartHike()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.fillMaxWidth().height(16.dp))
-                SecondaryButton(
-                    text = "Download for offline",
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingText = "38 MB"
-                )
+                if(!state.isTrekking) {
+                    Spacer(modifier = Modifier.fillMaxWidth().height(16.dp))
+                    SecondaryButton(
+                        text = "Download for offline",
+                        onClick = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingText = "38 MB"
+                    )
+                }
                 Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
             }
         }

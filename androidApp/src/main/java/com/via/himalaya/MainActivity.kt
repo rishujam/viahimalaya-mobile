@@ -30,7 +30,11 @@ import com.via.himalaya.ui.screens.ProfileScreen
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
-//TODO - Trek Screen (Simulate a hike for testing by passing fake live location coordinates)
+//TODO - When start hike is clicked
+        //ask for location permission if not allowed already if denied show message
+        //see it user is logged in or not
+//TODO - Implement real location service
+//TODO - Collect the sensor and location data of the trekker locally
 //TODO - Download Hike
 //TODO - Pagination
 //TODO - Splash Screen

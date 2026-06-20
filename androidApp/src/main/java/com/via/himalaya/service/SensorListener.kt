@@ -1,4 +1,4 @@
-package com.via.himalaya
+package com.via.himalaya.service
 
 import android.Manifest
 import android.content.Context
