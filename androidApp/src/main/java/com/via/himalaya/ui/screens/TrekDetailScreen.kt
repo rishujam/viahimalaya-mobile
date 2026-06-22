@@ -64,8 +64,15 @@ fun TrekDetailScreenRoot(
     permissionHandler: PermissionHandler?
 ) {
     val state by viewModel.state.collectAsState()
+    
+    // Request permissions only once when screen is created
+    LaunchedEffect(Unit) {
+        permissionHandler?.checkAndRequestPermissions()
+    }
+    
     viewModel.getTrek(trekId)
     viewModel.getCoordinates(coordinateUrl)
+    
     TrekDetailScreen(
         state = state,
         onBackClick = onBackClick,
@@ -73,7 +80,6 @@ fun TrekDetailScreenRoot(
         onStopHike = { viewModel.stopTrekking() },
         permissionHandler
     )
-    permissionHandler?.checkAndRequestPermissions()
 }
 
 @Composable
@@ -126,17 +132,22 @@ fun TrekDetailScreen(
                     }
                 }
                 
-                // Animate camera to current location when trekking
-                LaunchedEffect(state.currentLocation) {
-                    state.currentLocation?.let { location ->
-                        mapViewportState.setCameraOptions(
-                            CameraOptions.Builder()
-                                .center(Point.fromLngLat(location.longitude, location.latitude))
-                                .zoom(16.0) // Max zoom level for tracking
-                                .pitch(45.0)
-                                .bearing(0.0)
-                                .build()
-                        )
+                // Animate camera to current location ONLY when:
+                // 1. User is trekking, OR
+                // 2. User is inside bounding box (isNearTrekStart)
+                // Otherwise, keep camera on the trail path
+                LaunchedEffect(state.currentLocation, state.isTrekking, state.isNearTrekStart) {
+                    if (state.isTrekking || state.isNearTrekStart) {
+                        state.currentLocation?.let { location ->
+                            mapViewportState.setCameraOptions(
+                                CameraOptions.Builder()
+                                    .center(Point.fromLngLat(location.longitude, location.latitude))
+                                    .zoom(16.0) // Max zoom level for tracking
+                                    .pitch(45.0)
+                                    .bearing(0.0)
+                                    .build()
+                            )
+                        }
                     }
                 }
 
@@ -159,15 +170,18 @@ fun TrekDetailScreen(
                         lineCap = LineCapValue.ROUND
                     }
                     
-                    // Show current location marker when trekking
-                    state.currentLocation?.let { location ->
-                        CircleAnnotation(
-                            point = Point.fromLngLat(location.longitude, location.latitude)
-                        ) {
-                            circleRadius = 10.0
-                            circleColor = Color(0xFF4285F4)
-                            circleStrokeWidth = 3.0
-                            circleStrokeColor = Color.White
+                    // Show current location marker when user has location and is in bounding box
+                    if (state.isNearTrekStart && state.currentLocation != null) {
+                        val location = state.currentLocation
+                        location?.let {
+                            CircleAnnotation(
+                                point = Point.fromLngLat(location.longitude, location.latitude)
+                            ) {
+                                circleRadius = 10.0
+                                circleColor = Color(0xFF4285F4)
+                                circleStrokeWidth = 3.0
+                                circleStrokeColor = Color.White
+                            }
                         }
                     }
                 }
@@ -198,7 +212,7 @@ fun TrekDetailScreen(
             }
         }
         
-        // Show message when NOT trekking and not near start point
+        // Show message when NOT trekking and not in bounding box
         if (!state.isTrekking && !state.isNearTrekStart && state.currentLocation != null) {
             Box(
                 modifier = Modifier
@@ -213,7 +227,7 @@ fun TrekDetailScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Text(
-                        text = "You need to reach the start point first",
+                        text = "You are not in the trekking area",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium

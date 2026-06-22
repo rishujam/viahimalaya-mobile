@@ -3,6 +3,7 @@ package com.via.himalaya.permissions
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 
@@ -32,6 +33,9 @@ class PermissionHandler(private val activity: ComponentActivity) {
     }
 
     fun checkAndRequestPermissions() {
+        if(shouldShowRationale) {
+            Log.d("PermissionHandler", "Should show rationale")
+        }
         val hasFine = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         val hasCoarse = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
 
@@ -39,8 +43,6 @@ class PermissionHandler(private val activity: ComponentActivity) {
         isFullyDenied = !hasFine && !hasCoarse
         shouldShowRationale = !hasFine &&
                     activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)
-
-        // If we don't have precise location, trigger the system dialog
         if (!hasFine) {
             locationPermissionLauncher.launch(
                 arrayOf(

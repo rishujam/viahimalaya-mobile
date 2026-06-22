@@ -31,13 +31,9 @@ import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
-//TODO - On TrekDetail screen show the user location marker if its in bounding box if not show a message you are not in the trekking area. If location permission denied show message.
-        //if permission not granted after 2 times show dialog to go to settings and allow permission.
-//TODO - When start hike is clicked
-        //if permission not allowed after 2 times show dialog to go to settings and allow permission.
 //TODO - Implement real location service
 //TODO - Collect the sensor and location data of the trekker locally
-//TODO - Download Hike. If not logged in redirect to login screen. Download files in context.filesDir
+//TODO - Download Hike. Download files in context.filesDir
 //TODO - Downloaded Trek screen
 //TODO - Pagination
 //TODO - Splash Screen
@@ -53,6 +49,7 @@ import org.koin.androidx.compose.koinViewModel
 //Phase 2
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
+//TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
 
 
 class MainActivity : ComponentActivity() {
