@@ -24,9 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,18 +49,19 @@ import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.rememberGeoJsonSourceState
 import com.via.himalaya.domain.model.TrekDetail
 import com.via.himalaya.domain.model.toGeoJsonString
+import com.via.himalaya.permissions.PermissionHandler
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.ui.components.PrimaryButton
 import com.via.himalaya.ui.components.SecondaryButton
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun TrekDetailScreenRoot(
     viewModel: TrekDetailViewModel,
     trekId: String,
     coordinateUrl: String,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    permissionHandler: PermissionHandler?
 ) {
     val state by viewModel.state.collectAsState()
     viewModel.getTrek(trekId)
@@ -72,17 +70,19 @@ fun TrekDetailScreenRoot(
         state = state,
         onBackClick = onBackClick,
         onStartHike = { viewModel.startTrekking() },
-        onStopHike = { viewModel.stopTrekking() }
+        onStopHike = { viewModel.stopTrekking() },
+        permissionHandler
     )
+    permissionHandler?.checkAndRequestPermissions()
 }
 
-@OptIn(MapboxExperimental::class)
 @Composable
 fun TrekDetailScreen(
     state: TrekDetailScreenUIState,
     onBackClick: () -> Unit = {},
     onStartHike: () -> Unit = {},
-    onStopHike: () -> Unit = {}
+    onStopHike: () -> Unit = {},
+    permissionHandler: PermissionHandler?
 ) {
     Box (
         modifier = Modifier
@@ -321,7 +321,11 @@ fun TrekDetailScreen(
                         if (state.isTrekking) {
                             onStopHike()
                         } else {
-                            onStartHike()
+                            if(permissionHandler?.hasPreciseLocationPermission() == true) {
+                                onStartHike()
+                            } else {
+                                permissionHandler?.checkAndRequestPermissions()
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -357,6 +361,7 @@ fun TrekDetailScreenPreview() {
                 boundingBox = emptyList()
             )
         ),
-        onBackClick = {}
+        onBackClick = {},
+        permissionHandler = null
     )
 }

@@ -11,7 +11,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -20,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.via.himalaya.navigation.Route
 import com.via.himalaya.navigation.bottomNavItems
+import com.via.himalaya.permissions.PermissionHandler
 import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
@@ -31,10 +31,10 @@ import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
-//TODO - Ask for location permission on trek detail screen and show the user location marker if its in bounding box if not show a message you are not in the trekking area. If permission denied show message.
+//TODO - On TrekDetail screen show the user location marker if its in bounding box if not show a message you are not in the trekking area. If location permission denied show message.
+        //if permission not granted after 2 times show dialog to go to settings and allow permission.
 //TODO - When start hike is clicked
-        //ask for location permission if not allowed already if denied show message.
-        //see it user is logged in or not if not logged in redirect to login screen
+        //if permission not allowed after 2 times show dialog to go to settings and allow permission.
 //TODO - Implement real location service
 //TODO - Collect the sensor and location data of the trekker locally
 //TODO - Download Hike. If not logged in redirect to login screen. Download files in context.filesDir
@@ -56,19 +56,22 @@ import org.koin.androidx.compose.koinViewModel
 
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var permissionLauncher: PermissionHandler
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        permissionLauncher = PermissionHandler(this)
         setContent {
             MyApplicationTheme {
-                ViaHimalayaApp()
+                ViaHimalayaApp(permissionLauncher)
             }
         }
     }
 }
 
 @Composable
-fun ViaHimalayaApp() {
+fun ViaHimalayaApp(permissionHandler: PermissionHandler) {
     val navController = rememberNavController()
     val authViewModel = koinViewModel<AuthViewModel>()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -137,19 +140,11 @@ fun ViaHimalayaApp() {
                 composable<Route.TrekDetail> { entry ->
                     val viewModel = koinViewModel<TrekDetailViewModel>()
                     val args = entry.toRoute<Route.TrekDetail>()
-                    TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl) {
+                    TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl, {
                         navController.navigateUp()
-                    }
+                    }, permissionHandler)
                 }
             }
         }
-    }
-}
-
-@Preview
-@Composable
-fun DefaultPreview() {
-    MyApplicationTheme {
-        ViaHimalayaApp()
     }
 }
