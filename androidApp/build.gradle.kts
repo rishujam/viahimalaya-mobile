@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.google.gms)
 }
 
 android {
@@ -58,4 +59,7 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.jetbrains.compose.navigation)
     implementation(libs.koin.androidx.compose)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.identity.google)
 }

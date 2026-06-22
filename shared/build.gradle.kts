@@ -35,6 +35,11 @@ kotlin {
             baseName = "shared"
             isStatic = true
         }
+        // NOTE: Do not declare pod("FirebaseAuth") here. GitLive's firebase-auth
+        // klib already ships the iOS cinterop bindings; redeclaring the pod makes
+        // Kotlin expect a cinterop klib it can't produce without a CocoaPods sync.
+        // The actual Firebase pods are linked via the iosApp Podfile (resolved at
+        // app-link time, which is fine for this static framework).
     }
     
     sourceSets {
@@ -55,9 +60,10 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+            implementation(libs.gitlive.firebase.auth)
             api(libs.koin.core)
         }
-        
+
         androidMain.dependencies {
             implementation(libs.sqldelight.android.driver)
             implementation(libs.ktor.client.okhttp)

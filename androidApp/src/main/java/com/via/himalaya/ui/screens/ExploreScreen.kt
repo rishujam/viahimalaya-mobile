@@ -42,7 +42,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ExploreScreenRoot(
-    viewModel: ExploreViewModel = koinViewModel(),
+    viewModel: ExploreViewModel,
     onTrekClicked: (Trek) -> Unit
 ) {
     val state by viewModel.state.collectAsState()

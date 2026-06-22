@@ -60,7 +60,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun TrekDetailScreenRoot(
-    viewModel: TrekDetailViewModel = koinViewModel(),
+    viewModel: TrekDetailViewModel,
     trekId: String,
     coordinateUrl: String,
     onBackClick: () -> Unit = {}

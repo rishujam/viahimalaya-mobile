@@ -20,41 +20,45 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.via.himalaya.navigation.Route
 import com.via.himalaya.navigation.bottomNavItems
-import com.via.himalaya.permissions.PermissionHandler
+import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.ui.MyApplicationTheme
 import com.via.himalaya.ui.components.BottomNavigationBar
 import com.via.himalaya.ui.screens.ExploreScreenRoot
-import com.via.himalaya.ui.screens.ProfileScreen
+import com.via.himalaya.ui.screens.ProfileScreenRoot
+import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
+//TODO - Ask for location permission on trek detail screen and show the user location marker if its in bounding box if not show a message you are not in the trekking area. If permission denied show message.
 //TODO - When start hike is clicked
-        //ask for location permission if not allowed already if denied show message
-        //see it user is logged in or not
+        //ask for location permission if not allowed already if denied show message.
+        //see it user is logged in or not if not logged in redirect to login screen
 //TODO - Implement real location service
 //TODO - Collect the sensor and location data of the trekker locally
-//TODO - Download Hike
+//TODO - Download Hike. If not logged in redirect to login screen. Download files in context.filesDir
+//TODO - Downloaded Trek screen
 //TODO - Pagination
 //TODO - Splash Screen
 //TODO - Data Entry in Backend
-//TODO - Authentication - Login/Logout
-//TODO - Profile Page (Downloaded hikes, Feedback, Logout)
 //TODO - Thumbnail in trek listing payload
 //TODO - Search trek implementation
 //TODO - Dark Mode
-//TODO (Bug) - On Process death location permission is asked and explore list is not loaded
+//TODO - Handle process death
+//TODO - Firebase analytics
+//TODO - (Bug) Bottom bar color fix
+//TODO - Font fix all over the app
+
+//Phase 2
+//TODO - Profile Page
+        //User Pref: Create datastore to store profile object (email, name, treks, distance)
+
 
 class MainActivity : ComponentActivity() {
-
-    private lateinit var permissionHandler: PermissionHandler
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        permissionHandler = PermissionHandler(this)
-        permissionHandler.checkAndRequestPermissions()
-        
         setContent {
             MyApplicationTheme {
                 ViaHimalayaApp()
@@ -66,6 +70,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ViaHimalayaApp() {
     val navController = rememberNavController()
+    val authViewModel = koinViewModel<AuthViewModel>()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute?.let { route ->
@@ -95,8 +100,20 @@ fun ViaHimalayaApp() {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             navigation<Route.ViaHimalayaGraph>(
-                startDestination = Route.Explore
+                startDestination = Route.SignIn
             ) {
+                composable<Route.SignIn> {
+                    SignInScreenRoot(
+                        viewModel = authViewModel,
+                        onSignedIn = {
+                            navController.navigate(Route.Explore) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    inclusive = true
+                                }
+                            }
+                        }
+                    )
+                }
                 composable<Route.Explore> {
                     val viewModel = koinViewModel<ExploreViewModel>()
                     ExploreScreenRoot(
@@ -109,7 +126,13 @@ fun ViaHimalayaApp() {
                     )
                 }
                 composable<Route.Profile> {
-                    ProfileScreen()
+                    ProfileScreenRoot(authViewModel) {
+                        navController.navigate(Route.SignIn) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                inclusive = true
+                            }
+                        }
+                    }
                 }
                 composable<Route.TrekDetail> { entry ->
                     val viewModel = koinViewModel<TrekDetailViewModel>()

@@ -13,9 +13,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.via.himalaya.presentation.auth.AuthViewModel
+import com.via.himalaya.presentation.auth.ProfileScreenUIState
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreenRoot(viewModel: AuthViewModel, onSignOutCompleted: () -> Unit) {
+    val state by viewModel.state.collectAsState()
+    ProfileScreen(state) {
+        viewModel.signOut()
+        onSignOutCompleted()
+    }
+}
+
+@Composable
+fun ProfileScreen(
+    state: ProfileScreenUIState,
+    onSignOut: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -64,17 +78,11 @@ fun ProfileScreen() {
                 }
 
                 Text(
-                    text = "Trek Explorer",
+                    text = state.userProfile?.name.orEmpty(),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
                     color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = "Adventure enthusiast",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Stats Row
@@ -82,9 +90,8 @@ fun ProfileScreen() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    StatItem(label = "Treks", value = "12")
-                    StatItem(label = "Distance", value = "156 km")
-                    StatItem(label = "Elevation", value = "8,420 m")
+                    StatItem(label = "Treks", value = state.userProfile?.treks.toString())
+                    StatItem(label = "Distance", value = "${state.userProfile?.distance} km")
                 }
             }
         }
@@ -96,14 +103,8 @@ fun ProfileScreen() {
             
             ProfileMenuItem(
                 icon = Icons.Default.Favorite,
-                title = "Saved Treks",
-                subtitle = "Your bookmarked trails"
-            )
-            
-            ProfileMenuItem(
-                icon = Icons.Default.Settings,
-                title = "Settings",
-                subtitle = "App preferences and account"
+                title = "Downloaded Treks",
+                subtitle = "Your downloaded trails"
             )
             
 //            ProfileMenuItem(
@@ -115,7 +116,7 @@ fun ProfileScreen() {
             ProfileMenuItem(
                 icon = Icons.Default.Info,
                 title = "About",
-                subtitle = "App version and information"
+                subtitle = "Learn more about ViaHimalaya"
             )
         }
 
@@ -123,7 +124,7 @@ fun ProfileScreen() {
 
         // Sign Out Button
         OutlinedButton(
-            onClick = { /* Handle sign out */ },
+            onClick = { onSignOut() },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
