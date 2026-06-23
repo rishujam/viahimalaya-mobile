@@ -6,9 +6,10 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.sqldelight)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.skie)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 kotlin {
@@ -41,14 +42,16 @@ kotlin {
         // The actual Firebase pods are linked via the iosApp Podfile (resolved at
         // app-link time, which is fine for this static framework).
     }
+
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
     
     sourceSets {
         commonMain.dependencies {
             api(libs.androidx.lifecycle.viewmodel)
             implementation(compose.components.resources)
             implementation(compose.runtime)
-            implementation(libs.sqldelight.runtime)
-            implementation(libs.sqldelight.coroutines)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
@@ -62,19 +65,23 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.gitlive.firebase.auth)
             api(libs.koin.core)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
         }
 
         androidMain.dependencies {
-            implementation(libs.sqldelight.android.driver)
             implementation(libs.ktor.client.okhttp)
         }
         iosMain.dependencies {
-            implementation(libs.sqldelight.native.driver)
             implementation(libs.ktor.client.darwin)
         }
         
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+
+        dependencies {
+            ksp(libs.androidx.room.compiler)
         }
     }
 }
@@ -88,13 +95,5 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-    }
-}
-
-sqldelight {
-    databases {
-        create("ViaHimalayaDatabase") {
-            packageName.set("com.via.himalaya.database")
-        }
     }
 }

@@ -5,6 +5,11 @@
     "sourceSetName": "iosMain"
   },
   {
+    "moduleId": "androidx.sqlite:sqlite-bundled:2.5.0",
+    "file": "/Users/sudhanshukumar/Documents/viahimalaya/viahimalaya-mobile/.kotlin/metadata/kotlinTransformedCInteropMetadataLibraries/androidx.sqlite-sqlite-bundled-2.5.0-nativeMain-cinterop/androidx.sqlite_sqlite-bundled-cinterop-androidXBundledSqlite-BHP1JA.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
     "moduleId": "org.jetbrains.kotlinx:atomicfu:0.23.2",
     "file": "/Users/sudhanshukumar/Documents/viahimalaya/viahimalaya-mobile/.kotlin/metadata/kotlinTransformedCInteropMetadataLibraries/org.jetbrains.kotlinx-atomicfu-0.23.2-nativeMain-cinterop/org.jetbrains.kotlinx_atomicfu-cinterop-interop-yBS35w.klib",
     "sourceSetName": "nativeMain"
@@ -13,6 +18,11 @@
     "moduleId": "dev.gitlive:firebase-app:2.1.0",
     "file": "/Users/sudhanshukumar/Documents/viahimalaya/viahimalaya-mobile/.kotlin/metadata/kotlinTransformedCInteropMetadataLibraries/dev.gitlive-firebase-app-2.1.0-iosMain-cinterop/dev.gitlive_firebase-app-cinterop-FirebaseCore-YwAkWA.klib",
     "sourceSetName": "iosMain"
+  },
+  {
+    "moduleId": "androidx.sqlite:sqlite-framework:2.5.0",
+    "file": "/Users/sudhanshukumar/Documents/viahimalaya/viahimalaya-mobile/.kotlin/metadata/kotlinTransformedCInteropMetadataLibraries/androidx.sqlite-sqlite-framework-2.5.0-nativeMain-cinterop/androidx.sqlite_sqlite-framework-cinterop-sqlite3-kyeICw.klib",
+    "sourceSetName": "nativeMain"
   },
   {
     "moduleId": "io.ktor:ktor-utils:3.0.3",

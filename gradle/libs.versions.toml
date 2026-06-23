@@ -3,7 +3,6 @@ agp = "8.6.0"
 kotlin = "2.1.0"
 composeBom = "2024.06.00"
 activityCompose = "1.9.2"
-sqldelight = "2.0.2"
 skie = "0.10.11"
 kotlinx-coroutines = "1.9.0"
 kotlinx-serialization = "1.7.1"
@@ -18,10 +17,10 @@ navigationCompose = "2.8.0-alpha10"
 google-gms = "4.5.0"
 firebase-bom = "33.8.0"
 credentials = "1.3.0"
-# GitLive Firebase KMP wrapper. Pinned to 2.1.0: it is built with Kotlin 2.0.20
-# metadata (readable by this project's Kotlin 2.1.0 compiler). 2.2.0+ are built
-# with Kotlin 2.2 and their klibs cannot be consumed by Kotlin 2.1.0.
 gitlive-firebase = "2.1.0"
+room = "2.7.0"
+sqlite = "2.5.0"
+ksp = "2.0.21-1.0.28"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -41,11 +40,6 @@ jetbrains-compose-navigation = { group = "org.jetbrains.androidx.navigation", na
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 identity-google = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version = "1.1.1" }
-
-sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
-sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
-sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
-sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
@@ -72,6 +66,10 @@ firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 gitlive-firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "gitlive-firebase" }
 
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -80,7 +78,8 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
-sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 google-gms = { id = "com.google.gms.google-services", version.ref = "google-gms" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room", version.ref = "room" }

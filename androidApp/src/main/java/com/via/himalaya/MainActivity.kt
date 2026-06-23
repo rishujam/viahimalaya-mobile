@@ -38,7 +38,6 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Pagination
 //TODO - Splash Screen
 //TODO - Data Entry in Backend
-//TODO - Thumbnail in trek listing payload
 //TODO - Search trek implementation
 //TODO - Dark Mode
 //TODO - Handle process death
@@ -50,6 +49,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
 //TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
+//TODO - Thumbnail in trek listing payload
 
 
 class MainActivity : ComponentActivity() {
