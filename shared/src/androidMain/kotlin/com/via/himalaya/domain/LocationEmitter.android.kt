@@ -44,30 +44,6 @@ class AndroidLocationEmitter(
     }
 
     @SuppressLint("MissingPermission")
-    private fun requestSingleLocation(callback: (Loc?) -> Unit) {
-        val locationRequest = LocationRequest.Builder(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            0L // Get location immediately
-        ).apply {
-            setMaxUpdates(1) // Only get one update
-        }.build()
-
-        val locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                val location = locationResult.lastLocation
-                callback(location?.toLoc())
-                fusedLocationClient.removeLocationUpdates(this)
-            }
-        }
-
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
-        )
-    }
-
-    @SuppressLint("MissingPermission")
     override fun getLiveLocationStream(): Flow<Loc> = callbackFlow {
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
@@ -94,6 +70,30 @@ class AndroidLocationEmitter(
         awaitClose {
             fusedLocationClient.removeLocationUpdates(locationCallback)
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun requestSingleLocation(callback: (Loc?) -> Unit) {
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            0L // Get location immediately
+        ).apply {
+            setMaxUpdates(1) // Only get one update
+        }.build()
+
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                val location = locationResult.lastLocation
+                callback(location?.toLoc())
+                fusedLocationClient.removeLocationUpdates(this)
+            }
+        }
+
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
     }
 
     private fun Location.toLoc(): Loc {

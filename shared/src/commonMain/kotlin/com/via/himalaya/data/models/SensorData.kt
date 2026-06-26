@@ -6,6 +6,5 @@ data class SensorData (
     val magnetometer: FloatArray? = null,
     val pressure: Float? = null,
     val altBaro: Float? = null,
-    val location: Loc? = null,
     val battery: Int
 )

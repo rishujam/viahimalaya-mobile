@@ -120,32 +120,7 @@ class TrekDetailViewModel(
                 _state.update {
                     it.copy(currentLocation = location)
                 }
-            }
-        }
-    }
-    
-    fun updateCurrentLocation(location: Loc) {
-        if (!_state.value.isTrekking) {
-            val trek = _state.value.trek
-            val boundingBox = trek?.boundingBox
-            val isInBoundingBox = if (boundingBox != null && boundingBox.size >= 4) {
-                isLocationInBoundingBox(
-                    lat = location.lat,
-                    lon = location.lon,
-                    minLon = boundingBox[0],
-                    minLat = boundingBox[1],
-                    maxLon = boundingBox[2],
-                    maxLat = boundingBox[3]
-                )
-            } else {
-                true
-            }
-            
-            _state.update {
-                it.copy(
-                    currentLocation = location,
-                    isNearTrekStart = isInBoundingBox
-                )
+
             }
         }
     }
