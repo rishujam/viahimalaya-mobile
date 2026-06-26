@@ -2,6 +2,8 @@ package com.via.himalaya.presentation.trekDetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.via.himalaya.data.models.Loc
+import com.via.himalaya.domain.LocationEmitter
 import com.via.himalaya.domain.model.getFlattenedCoordinates
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.DummyLocationEmitter
@@ -14,7 +16,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class TrekDetailViewModel(
-    private val trekRepository: TrekRepository
+    private val trekRepository: TrekRepository,
+    private val locationEmitter: LocationEmitter
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TrekDetailScreenUIState())
@@ -22,37 +25,13 @@ class TrekDetailViewModel(
     
     private var locationJob: Job? = null
     
-    // Test locations for bounding box [83.8170309, 28.4063366, 83.9083462, 28.5310466]
-    companion object {
-        // Location INSIDE bounding box (near bottom-left corner, slightly inside)
-        val TEST_LOCATION_INSIDE = com.via.himalaya.util.LocationCoordinate(
-            latitude = 28.41,  // Just above minLat (28.4063366)
-            longitude = 83.82  // Just right of minLon (83.8170309)
-        )
-        
-        // Location OUTSIDE bounding box (below and left of the box)
-        val TEST_LOCATION_OUTSIDE = com.via.himalaya.util.LocationCoordinate(
-            latitude = 28.30,  // Below minLat
-            longitude = 83.70  // Left of minLon
-        )
-        
-        // Toggle this to test different scenarios
-        private const val USE_TEST_LOCATION_INSIDE = false // Change to false to test outside
-    }
-    
     init {
-        // Set initial test location for testing
         setInitialTestLocation()
     }
     
-    private fun setInitialTestLocation() {
-        val testLocation = if (USE_TEST_LOCATION_INSIDE) {
-            TEST_LOCATION_INSIDE
-        } else {
-            TEST_LOCATION_OUTSIDE
-        }
-        
-        _state.update { it.copy(currentLocation = testLocation) }
+    private fun setInitialTestLocation() = viewModelScope.launch {
+        val loc = locationEmitter.getLocation()
+        _state.update { it.copy(currentLocation = loc) }
     }
 
     fun getTrekMeta(trekId: String) = viewModelScope.launch {
@@ -85,8 +64,8 @@ class TrekDetailViewModel(
         
         if (boundingBox != null && boundingBox.size >= 4) {
             val isInBox = isLocationInBoundingBox(
-                lat = currentLocation.latitude,
-                lon = currentLocation.longitude,
+                lat = currentLocation.lat,
+                lon = currentLocation.lon,
                 minLon = boundingBox[0],
                 minLat = boundingBox[1],
                 maxLon = boundingBox[2],
@@ -94,7 +73,7 @@ class TrekDetailViewModel(
             )
             
             println("TrekDetailViewModel: Test location check - " +
-                "lat=${currentLocation.latitude}, lon=${currentLocation.longitude}, " +
+                "lat=${currentLocation.lat}, lon=${currentLocation.lon}, " +
                 "isInBox=$isInBox, boundingBox=$boundingBox")
             
             _state.update {
@@ -137,7 +116,7 @@ class TrekDetailViewModel(
         _state.update { it.copy(isTrekking = true) }
         locationJob?.cancel()
         locationJob = viewModelScope.launch {
-            DummyLocationEmitter.emitLocations(coordinates).collect { location ->
+            locationEmitter.getLiveLocationStream().collect { location ->
                 _state.update {
                     it.copy(currentLocation = location)
                 }
@@ -145,14 +124,14 @@ class TrekDetailViewModel(
         }
     }
     
-    fun updateCurrentLocation(location: com.via.himalaya.util.LocationCoordinate) {
+    fun updateCurrentLocation(location: Loc) {
         if (!_state.value.isTrekking) {
             val trek = _state.value.trek
             val boundingBox = trek?.boundingBox
             val isInBoundingBox = if (boundingBox != null && boundingBox.size >= 4) {
                 isLocationInBoundingBox(
-                    lat = location.latitude,
-                    lon = location.longitude,
+                    lat = location.lat,
+                    lon = location.lon,
                     minLon = boundingBox[0],
                     minLat = boundingBox[1],
                     maxLon = boundingBox[2],

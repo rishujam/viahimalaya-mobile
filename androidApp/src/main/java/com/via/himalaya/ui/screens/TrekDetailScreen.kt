@@ -79,7 +79,7 @@ fun TrekDetailScreenRoot(
         onStartHike = { viewModel.startTrekking() },
         onStopHike = { viewModel.stopTrekking() },
         permissionHandler = permissionHandler,
-        onDownloadHikeClick = { viewModel.downloadHike(Constants.STYLE_URI) }
+        onDownloadHikeClick = { viewModel.downloadHike() }
     )
 }
 
@@ -143,7 +143,7 @@ fun TrekDetailScreen(
                         state.currentLocation?.let { location ->
                             mapViewportState.setCameraOptions(
                                 CameraOptions.Builder()
-                                    .center(Point.fromLngLat(location.longitude, location.latitude))
+                                    .center(Point.fromLngLat(location.lon, location.lat))
                                     .zoom(16.0) // Max zoom level for tracking
                                     .pitch(45.0)
                                     .bearing(0.0)
@@ -177,7 +177,7 @@ fun TrekDetailScreen(
                         val location = state.currentLocation
                         location?.let {
                             CircleAnnotation(
-                                point = Point.fromLngLat(location.longitude, location.latitude)
+                                point = Point.fromLngLat(location.lon, location.lat)
                             ) {
                                 circleRadius = 10.0
                                 circleColor = Color(0xFF4285F4)

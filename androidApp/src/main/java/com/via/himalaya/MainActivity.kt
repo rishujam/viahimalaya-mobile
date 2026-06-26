@@ -33,7 +33,8 @@ import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
-//TODO - Implement real location service
+//TODO - Implement location service
+        //Listen only when device is moving
 //TODO - Collect the sensor and location data of the trekker locally
 //TODO - Pagination
 //TODO - Splash Screen
@@ -45,6 +46,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - (Bug) Bottom bar color fix
 //TODO - Font fix all over the app
 //TODO - Handle No internet connection
+
 //Phase 2
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
