@@ -17,18 +17,27 @@ import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.auth.ProfileScreenUIState
 
 @Composable
-fun ProfileScreenRoot(viewModel: AuthViewModel, onSignOutCompleted: () -> Unit) {
+fun ProfileScreenRoot(
+    viewModel: AuthViewModel,
+    onSignOutCompleted: () -> Unit,
+    onDownloadedTrekClicked: () -> Unit
+) {
     val state by viewModel.state.collectAsState()
-    ProfileScreen(state) {
-        viewModel.signOut()
-        onSignOutCompleted()
-    }
+    ProfileScreen(
+        state,
+        onSignOut = {
+            viewModel.signOut()
+            onSignOutCompleted()
+        },
+        onDownloadedTrekClicked = onDownloadedTrekClicked
+    )
 }
 
 @Composable
 fun ProfileScreen(
     state: ProfileScreenUIState,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onDownloadedTrekClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -100,19 +109,13 @@ fun ProfileScreen(
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            
             ProfileMenuItem(
                 icon = Icons.Default.Favorite,
                 title = "Downloaded Treks",
                 subtitle = "Your downloaded trails"
-            )
-            
-//            ProfileMenuItem(
-//                icon = Icons.Default.Help,
-//                title = "Help & Support",
-//                subtitle = "Get assistance and feedback"
-//            )
-            
+            ) {
+                onDownloadedTrekClicked()
+            }
             ProfileMenuItem(
                 icon = Icons.Default.Info,
                 title = "About",

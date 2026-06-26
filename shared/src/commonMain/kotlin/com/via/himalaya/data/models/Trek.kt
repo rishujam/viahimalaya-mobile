@@ -1,4 +1,4 @@
-package com.via.himalaya.domain.model
+package com.via.himalaya.data.models
 
 data class Trek(
     val id: String,

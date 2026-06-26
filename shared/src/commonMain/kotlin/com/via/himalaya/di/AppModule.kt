@@ -1,5 +1,8 @@
 package com.via.himalaya.di
 
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.via.himalaya.data.local.DatabaseFactory
+import com.via.himalaya.data.local.TrekDatabase
 import com.via.himalaya.data.remote.HttpClientFactory
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.data.repository.TrekRepositoryImpl
@@ -16,17 +19,27 @@ import org.koin.dsl.module
 import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
+import com.via.himalaya.presentation.downloads.DownloadedTrekViewModel
 
 expect val platformModule: Module
 
 val sharedModule = module {
     single { HttpClientFactory.create(get()) }
+    single<FirebaseAuth> { Firebase.auth }
+
+    single {
+        get<DatabaseFactory>()
+            .create()
+            .setDriver(BundledSQLiteDriver())
+            .build()
+    }
+
+    single { get<TrekDatabase>().trekDao }
+
     singleOf(::TrekRepositoryImpl).bind<TrekRepository>()
     viewModelOf(::ExploreViewModel)
     viewModelOf(::TrekDetailViewModel)
-
-    // Auth
-    single<FirebaseAuth> { Firebase.auth }
     singleOf(::FirebaseAuthRepository).bind<AuthRepository>()
     viewModelOf(::AuthViewModel)
+    viewModelOf(::DownloadedTrekViewModel)
 }

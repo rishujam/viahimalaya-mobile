@@ -55,7 +55,7 @@ class TrekDetailViewModel(
         _state.update { it.copy(currentLocation = testLocation) }
     }
 
-    fun getTrek(trekId: String) = viewModelScope.launch {
+    fun getTrekMeta(trekId: String) = viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
         val trek = trekRepository.getTrek(trekId)
         if(trek is Result.Success && trek.data != null) {
@@ -103,9 +103,9 @@ class TrekDetailViewModel(
         }
     }
 
-    fun getCoordinates(url: String) = viewModelScope.launch {
+    fun getCoordinates(url: String, trekId: String) = viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
-        val coordinates = trekRepository.getTrekCoordinates(url)
+        val coordinates = trekRepository.getTrekCoordinates(url, trekId)
         if(coordinates is Result.Success && coordinates.data != null) {
             _state.update {
                 it.copy(
@@ -191,6 +191,26 @@ class TrekDetailViewModel(
                 currentLocation = null,
                 isNearTrekStart = false
             )
+        }
+    }
+
+    fun downloadHike() = viewModelScope.launch {
+        state.value.trek?.let { trek ->
+            trekRepository.saveTrekMetaData(trek)
+//            val result = trekRepository.downloadMap(
+//                trekId = trek.id,
+//                boundingBox = trek.boundingBox,
+//                onProgress = { progress ->
+//                    // Update UI with download progress
+//                    _state.update { it.copy(downloadProgress = progress) }
+//                }
+//            )
+//            if(result is Result.Success) {
+//                println("Trek downloaded successfully for offline use")
+//                _state.update { it.copy(isDownloaded = true) }
+//            } else {
+//                println("Failed to download trek: ${result.message}")
+//            }
         }
     }
     

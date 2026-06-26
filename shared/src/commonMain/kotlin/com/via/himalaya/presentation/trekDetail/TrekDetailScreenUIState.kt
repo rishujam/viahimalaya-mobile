@@ -1,6 +1,6 @@
 package com.via.himalaya.presentation.trekDetail
 
-import com.via.himalaya.domain.model.TrekDetail
+import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.TrekGeoData
 import com.via.himalaya.util.LocationCoordinate
 

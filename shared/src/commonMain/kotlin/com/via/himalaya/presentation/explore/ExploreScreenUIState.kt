@@ -1,6 +1,6 @@
 package com.via.himalaya.presentation.explore
 
-import com.via.himalaya.domain.model.Trek
+import com.via.himalaya.data.models.Trek
 import com.via.himalaya.presentation.UIEffect
 
 data class ExploreScreenUIState(

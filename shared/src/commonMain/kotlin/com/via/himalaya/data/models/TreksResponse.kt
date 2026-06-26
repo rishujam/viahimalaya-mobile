@@ -1,6 +1,5 @@
 package com.via.himalaya.data.models
 
-import com.via.himalaya.domain.model.Trek
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -49,8 +48,8 @@ data class TrekDetailData(
     @SerialName("retrieved_at")
     val retrievedAt: String
 ) {
-    fun toTrekDetail(): com.via.himalaya.domain.model.TrekDetail {
-        return com.via.himalaya.domain.model.TrekDetail(
+    fun toTrekDetail(): TrekDetail {
+        return TrekDetail(
             id = trek.id,
             name = trek.name,
             location = trek.location,

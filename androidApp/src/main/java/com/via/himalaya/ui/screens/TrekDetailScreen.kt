@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
-import com.mapbox.maps.MapboxExperimental
 import com.mapbox.maps.Style
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
@@ -47,13 +46,14 @@ import com.mapbox.maps.extension.compose.style.layers.generated.LineJoinValue
 import com.mapbox.maps.extension.compose.style.layers.generated.LineLayer
 import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.rememberGeoJsonSourceState
-import com.via.himalaya.domain.model.TrekDetail
+import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.toGeoJsonString
 import com.via.himalaya.permissions.PermissionHandler
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.ui.components.PrimaryButton
 import com.via.himalaya.ui.components.SecondaryButton
+import com.via.himalaya.util.Constants
 
 @Composable
 fun TrekDetailScreenRoot(
@@ -70,15 +70,16 @@ fun TrekDetailScreenRoot(
         permissionHandler?.checkAndRequestPermissions()
     }
     
-    viewModel.getTrek(trekId)
-    viewModel.getCoordinates(coordinateUrl)
+    viewModel.getTrekMeta(trekId)
+    viewModel.getCoordinates(coordinateUrl, trekId)
     
     TrekDetailScreen(
         state = state,
         onBackClick = onBackClick,
         onStartHike = { viewModel.startTrekking() },
         onStopHike = { viewModel.stopTrekking() },
-        permissionHandler
+        permissionHandler = permissionHandler,
+        onDownloadHikeClick = { viewModel.downloadHike(Constants.STYLE_URI) }
     )
 }
 
@@ -88,6 +89,7 @@ fun TrekDetailScreen(
     onBackClick: () -> Unit = {},
     onStartHike: () -> Unit = {},
     onStopHike: () -> Unit = {},
+    onDownloadHikeClick: () -> Unit,
     permissionHandler: PermissionHandler?
 ) {
     Box (
@@ -348,7 +350,7 @@ fun TrekDetailScreen(
                     Spacer(modifier = Modifier.fillMaxWidth().height(16.dp))
                     SecondaryButton(
                         text = "Download for offline",
-                        onClick = {},
+                        onClick = { onDownloadHikeClick() },
                         modifier = Modifier.fillMaxWidth(),
                         trailingText = "38 MB"
                     )
@@ -376,6 +378,7 @@ fun TrekDetailScreenPreview() {
             )
         ),
         onBackClick = {},
-        permissionHandler = null
+        permissionHandler = null,
+        onDownloadHikeClick = {}
     )
 }
