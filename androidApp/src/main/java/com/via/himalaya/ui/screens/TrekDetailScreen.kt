@@ -68,10 +68,9 @@ fun TrekDetailScreenRoot(
     // Request permissions only once when screen is created
     LaunchedEffect(Unit) {
         permissionHandler?.checkAndRequestPermissions()
+        viewModel.getTrekMeta(trekId)
+        viewModel.getCoordinates(coordinateUrl, trekId)
     }
-    
-    viewModel.getTrekMeta(trekId)
-    viewModel.getCoordinates(coordinateUrl, trekId)
     
     TrekDetailScreen(
         state = state,

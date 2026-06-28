@@ -53,22 +53,15 @@ class AndroidSensorListener(
         when (event?.sensor?.type) {
             Sensor.TYPE_ACCELEROMETER -> {
                 currentAccelerometer = event.values.clone()
-                Log.v(TAG, "📱 Accelerometer: ${event.values.contentToString()}")
             }
             Sensor.TYPE_GYROSCOPE -> {
                 currentGyroscope = event.values.clone()
-                Log.v(TAG, "🌀 Gyroscope: ${event.values.contentToString()}")
             }
             Sensor.TYPE_MAGNETIC_FIELD -> {
                 currentMagnetometer = event.values.clone()
-                Log.v(TAG, "🧭 Magnetometer: ${event.values.contentToString()}")
             }
             Sensor.TYPE_PRESSURE -> {
                 currentPressure = event.values[0]
-                Log.v(TAG, "🌡️ Pressure: ${event.values[0]} hPa")
-                // Calculate barometric altitude
-                val altitude = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0])
-                Log.v(TAG, "🏔️ Barometric altitude: $altitude m")
             }
         }
     }

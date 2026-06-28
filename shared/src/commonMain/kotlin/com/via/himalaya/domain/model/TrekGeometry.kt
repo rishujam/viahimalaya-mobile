@@ -1,12 +1,105 @@
 package com.via.himalaya.domain.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
-@Serializable
+@Serializable(with = TrekGeometrySerializer::class)
 data class TrekGeometry(
     val type: String, // "LineString" or "MultiLineString"
-    val coordinates: List<List<List<Double>>> // Flexible structure to handle both types
+    val coordinates: List<List<List<Double>>> // Normalized to MultiLineString format internally
 )
+
+/**
+ * Custom serializer to handle both LineString and MultiLineString coordinate formats
+ */
+object TrekGeometrySerializer : KSerializer<TrekGeometry> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("TrekGeometry") {
+        element<String>("type")
+        element<JsonElement>("coordinates")
+    }
+
+    override fun deserialize(decoder: Decoder): TrekGeometry {
+        require(decoder is JsonDecoder)
+        val element = decoder.decodeJsonElement()
+        require(element is JsonObject)
+        
+        val type = element["type"]?.jsonPrimitive?.content ?: throw IllegalArgumentException("Missing type field")
+        val coordinatesElement = element["coordinates"]?.jsonArray ?: throw IllegalArgumentException("Missing coordinates field")
+        
+        val normalizedCoordinates = when (type) {
+            "LineString" -> {
+                // LineString: [[lon, lat], [lon, lat], ...]
+                // Convert to MultiLineString format: [[[lon, lat], [lon, lat], ...]]
+                val lineStringCoords = coordinatesElement.map { pointElement ->
+                    pointElement.jsonArray.map { it.jsonPrimitive.double }
+                }
+                listOf(lineStringCoords)
+            }
+            "MultiLineString" -> {
+                // MultiLineString: [[[lon, lat], [lon, lat], ...], [[lon, lat], ...]]
+                // Already in the correct format
+                coordinatesElement.map { lineElement ->
+                    lineElement.jsonArray.map { pointElement ->
+                        pointElement.jsonArray.map { it.jsonPrimitive.double }
+                    }
+                }
+            }
+            else -> throw IllegalArgumentException("Unsupported geometry type: $type")
+        }
+        
+        return TrekGeometry(type, normalizedCoordinates)
+    }
+
+    override fun serialize(encoder: Encoder, value: TrekGeometry) {
+        require(encoder is JsonEncoder)
+        val jsonObject = buildJsonObject {
+            put("type", value.type)
+            
+            // Serialize based on original type
+            val coordinatesArray = when (value.type) {
+                "LineString" -> {
+                    // Convert back to LineString format: [[lon, lat], [lon, lat], ...]
+                    JsonArray(
+                        value.coordinates.firstOrNull()?.map { point ->
+                            JsonArray(point.map { kotlinx.serialization.json.JsonPrimitive(it) })
+                        } ?: emptyList()
+                    )
+                }
+                "MultiLineString" -> {
+                    // Keep MultiLineString format: [[[lon, lat], ...], [[lon, lat], ...]]
+                    JsonArray(
+                        value.coordinates.map { line ->
+                            JsonArray(
+                                line.map { point ->
+                                    JsonArray(point.map { kotlinx.serialization.json.JsonPrimitive(it) })
+                                }
+                            )
+                        }
+                    )
+                }
+                else -> JsonArray(emptyList())
+            }
+            
+            put("coordinates", coordinatesArray)
+        }
+        encoder.encodeJsonElement(jsonObject)
+    }
+}
 
 @Serializable
 data class TrekGeoData(
