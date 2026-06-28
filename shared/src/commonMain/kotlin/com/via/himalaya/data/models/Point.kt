@@ -1,14 +1,12 @@
 package com.via.himalaya.data.models
 
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Point(
-    val trekId: String,
     val lat: Double,
     val lon: Double,
-    val timestamp: Instant,
+    val timestamp: Long,
     val altGps: Double? = null,
     val altBaro: Double? = null,
     val accuracyH: Double? = null,

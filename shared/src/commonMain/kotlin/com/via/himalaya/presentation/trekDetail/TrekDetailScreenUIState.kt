@@ -11,5 +11,6 @@ data class TrekDetailScreenUIState(
     val geoData: TrekGeoData? = null,
     val currentLocation: Loc? = null,
     val isNearTrekStart: Boolean = false,
-    val isTrekking: Boolean = false
+    val isTrekking: Boolean = false,
+    val userEmail: String? = null
 )

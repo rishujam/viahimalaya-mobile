@@ -1,5 +1,7 @@
 package com.via.himalaya.domain.repo
 
+import com.via.himalaya.data.models.NavigatorTrek
+import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.TrekGeoData
@@ -16,6 +18,14 @@ interface TrekRepository {
     suspend fun saveTrekMetaData(meta: TrekDetail)
 
     suspend fun getSavedTreks(): Result<List<TrekDetail>>
+
+    suspend fun saveNavigatorTrek(navigatorTrek: NavigatorTrek)
+
+    suspend fun updateNavigatorTrek(id: String, points: List<Point>)
+
+//    suspend fun deleteNavigatorTrek(id: String)
+
+    suspend fun getAllNavigatorTreks(): List<NavigatorTrek>
 
 //    suspend fun downloadMap(
 //        trekId: String,

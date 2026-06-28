@@ -3,7 +3,12 @@ package com.via.himalaya.presentation.trekDetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.via.himalaya.data.models.Loc
+import com.via.himalaya.data.models.NavigatorTrek
+import com.via.himalaya.data.models.Point
+import com.via.himalaya.data.models.RawSensors
+import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
+import com.via.himalaya.domain.SensorListener
 import com.via.himalaya.domain.model.getFlattenedCoordinates
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.DummyLocationEmitter
@@ -14,10 +19,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 class TrekDetailViewModel(
     private val trekRepository: TrekRepository,
-    private val locationEmitter: LocationEmitter
+    private val locationEmitter: LocationEmitter,
+    private val sensorListener: SensorListener,
+    private val authRepository: FirebaseAuthRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TrekDetailScreenUIState())
@@ -26,12 +34,13 @@ class TrekDetailViewModel(
     private var locationJob: Job? = null
     
     init {
-        setInitialTestLocation()
+        setInitialData()
     }
     
-    private fun setInitialTestLocation() = viewModelScope.launch {
+    private fun setInitialData() = viewModelScope.launch {
         val loc = locationEmitter.getLocation()
-        _state.update { it.copy(currentLocation = loc) }
+        val user = authRepository.currentUser?.email
+        _state.update { it.copy(currentLocation = loc, userEmail = user) }
     }
 
     fun getTrekMeta(trekId: String) = viewModelScope.launch {
@@ -46,7 +55,8 @@ class TrekDetailViewModel(
                 )
             }
             // After trek is loaded, check if test location is in bounding box
-            checkTestLocationInBoundingBox()
+            checkLocationInBoundingBox()
+            sensorListener.startListening()
         } else {
             _state.update {
                 it.copy(
@@ -57,7 +67,7 @@ class TrekDetailViewModel(
         }
     }
     
-    private fun checkTestLocationInBoundingBox() {
+    private fun checkLocationInBoundingBox() {
         val currentLocation = _state.value.currentLocation ?: return
         val trek = _state.value.trek ?: return
         val boundingBox = trek.boundingBox
@@ -103,7 +113,7 @@ class TrekDetailViewModel(
         }
     }
     
-    fun startTrekking() {
+    fun startTrekking(trekId: String){
         val geoData = _state.value.geoData ?: return
         val coordinates = geoData.geometry.getFlattenedCoordinates()
         
@@ -114,13 +124,53 @@ class TrekDetailViewModel(
         }
 
         _state.update { it.copy(isTrekking = true) }
+        val user = _state.value.userEmail
+        val navigatorTrekId = "$user/${Clock.System.now().toEpochMilliseconds()}"
+        viewModelScope.launch {
+            trekRepository.saveNavigatorTrek(
+                NavigatorTrek(
+                    id = navigatorTrekId,
+                    trekId = trekId
+                )
+            )
+        }
         locationJob?.cancel()
         locationJob = viewModelScope.launch {
             locationEmitter.getLiveLocationStream().collect { location ->
                 _state.update {
                     it.copy(currentLocation = location)
                 }
-
+                val sensorData = sensorListener.getSensorData()
+                val rawSensors = RawSensors(
+                    accelerometerX = sensorData.accelerometer?.getOrNull(0)?.toDouble(),
+                    accelerometerY = sensorData.accelerometer?.getOrNull(1)?.toDouble(),
+                    accelerometerZ = sensorData.accelerometer?.getOrNull(2)?.toDouble(),
+                    gyroscopeX = sensorData.gyroscope?.getOrNull(0)?.toDouble(),
+                    gyroscopeY = sensorData.gyroscope?.getOrNull(1)?.toDouble(),
+                    gyroscopeZ = sensorData.gyroscope?.getOrNull(2)?.toDouble(),
+                    magnetometerX = sensorData.magnetometer?.getOrNull(0)?.toDouble(),
+                    magnetometerY = sensorData.magnetometer?.getOrNull(1)?.toDouble(),
+                    magnetometerZ = sensorData.magnetometer?.getOrNull(2)?.toDouble(),
+                    pressure = sensorData.pressure?.toDouble()
+                )
+                trekRepository.updateNavigatorTrek(
+                    navigatorTrekId,
+                    listOf(
+                        Point(
+                            lat = location.lat,
+                            lon = location.lon,
+                            altBaro = sensorData.altBaro?.toDouble(),
+                            altGps = location.altitude,
+                            timestamp = Clock.System.now().toEpochMilliseconds(),
+                            accuracyH = location.accH,
+                            accuracyV = location.accV,
+                            battery = sensorData.battery,
+                            rawSensors = rawSensors,
+                            speed = location.speed,
+                            bearing = location.bearing
+                        )
+                    )
+                )
             }
         }
     }

@@ -76,7 +76,7 @@ fun TrekDetailScreenRoot(
     TrekDetailScreen(
         state = state,
         onBackClick = onBackClick,
-        onStartHike = { viewModel.startTrekking() },
+        onStartHike = { viewModel.startTrekking(trekId) },
         onStopHike = { viewModel.stopTrekking() },
         permissionHandler = permissionHandler,
         onDownloadHikeClick = { viewModel.downloadHike() }

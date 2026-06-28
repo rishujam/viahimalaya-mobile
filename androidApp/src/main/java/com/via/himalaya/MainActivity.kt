@@ -33,21 +33,23 @@ import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import org.koin.androidx.compose.koinViewModel
 
-//TODO - Implement location service
-        //Listen only when device is moving
 //TODO - Collect the sensor and location data of the trekker locally
+        //Create table to store path followed by user mapped to trek id - Done need to test
 //TODO - Pagination
-//TODO - Splash Screen
-//TODO - Data Entry in Backend
 //TODO - Search trek implementation
-//TODO - Dark Mode
 //TODO - Handle process death
 //TODO - Firebase analytics
+
+//TODO - Data Entry in Backend
+
+//TODO - Splash Screen
+//TODO - Login Page branding
+//TODO - Dark Mode
 //TODO - (Bug) Bottom bar color fix
 //TODO - Font fix all over the app
-//TODO - Handle No internet connection
 
 //Phase 2
+//TODO - Listen to location only when device is moving - optimize battery
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
 //TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.

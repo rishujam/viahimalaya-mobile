@@ -7,7 +7,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.BatteryManager
 import android.util.Log
-import com.via.himalaya.data.models.SensorData
+import com.via.himalaya.domain.model.SensorData
 
 class AndroidSensorListener(
     private val context: Context

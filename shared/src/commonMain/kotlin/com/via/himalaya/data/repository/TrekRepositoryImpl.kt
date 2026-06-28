@@ -1,7 +1,10 @@
 package com.via.himalaya.data.repository
 
 import com.via.himalaya.data.local.FileDownloader
+import com.via.himalaya.data.local.NavigatorDao
 import com.via.himalaya.data.local.TrekDao
+import com.via.himalaya.data.models.NavigatorTrek
+import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.models.TrekDetailData
@@ -22,7 +25,8 @@ import kotlinx.serialization.json.Json
 class TrekRepositoryImpl(
     private val apiClient: HttpClient,
     private val trekDao: TrekDao,
-    private val fileDownloader: FileDownloader
+    private val navigatorDao: NavigatorDao,
+    private val fileDownloader: FileDownloader,
 ) : TrekRepository {
 
     companion object {
@@ -153,7 +157,19 @@ class TrekRepositoryImpl(
         }
     }
 
-//    override suspend fun downloadMap(
+    override suspend fun saveNavigatorTrek(navigatorTrek: NavigatorTrek) {
+        navigatorDao.insertTrek(navigatorTrek)
+    }
+
+    override suspend fun updateNavigatorTrek(id: String, points: List<Point>) {
+        navigatorDao.updateNavigatorTrek(id, points)
+    }
+
+    override suspend fun getAllNavigatorTreks(): List<NavigatorTrek> {
+        return navigatorDao.getAllNavigatorTreks()
+    }
+
+    //    override suspend fun downloadMap(
 //        trekId: String,
 //        boundingBox: List<Double>,
 //        onProgress: (Float) -> Unit,

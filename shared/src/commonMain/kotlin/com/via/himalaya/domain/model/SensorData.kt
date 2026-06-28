@@ -1,4 +1,4 @@
-package com.via.himalaya.data.models
+package com.via.himalaya.domain.model
 
 data class SensorData (
     val accelerometer: FloatArray? = null,

@@ -1,6 +1,6 @@
 package com.via.himalaya.domain
 
-import com.via.himalaya.data.models.SensorData
+import com.via.himalaya.domain.model.SensorData
 
 interface SensorListener {
 

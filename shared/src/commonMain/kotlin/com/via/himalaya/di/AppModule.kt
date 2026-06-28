@@ -2,6 +2,8 @@ package com.via.himalaya.di
 
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.via.himalaya.data.local.DatabaseFactory
+import com.via.himalaya.data.local.NavigatorDatabase
+import com.via.himalaya.data.local.NavigatorDatabaseFactory
 import com.via.himalaya.data.local.TrekDatabase
 import com.via.himalaya.data.remote.HttpClientFactory
 import com.via.himalaya.data.repository.FirebaseAuthRepository
@@ -35,6 +37,14 @@ val sharedModule = module {
     }
 
     single { get<TrekDatabase>().trekDao }
+
+    single {
+        get<NavigatorDatabaseFactory>()
+            .create()
+            .setDriver(BundledSQLiteDriver())
+            .build()
+    }
+    single { get<NavigatorDatabase>().navigatorDao }
 
     singleOf(::TrekRepositoryImpl).bind<TrekRepository>()
     viewModelOf(::ExploreViewModel)

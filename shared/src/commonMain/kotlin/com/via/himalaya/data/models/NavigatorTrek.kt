@@ -1,19 +1,11 @@
 package com.via.himalaya.data.models
 
-import kotlinx.datetime.Instant
-import kotlinx.serialization.Serializable
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-@Serializable
+@Entity
 data class NavigatorTrek(
-    val id: String,
-    val name: String,
-    val guideId: String,
-    val startTime: Instant,
-    val isSynced: Boolean = false
-)
-
-@Serializable
-data class TrekWithPoints(
-    val trek_meta: NavigatorTrek,
-    val points: List<Point>
+    @PrimaryKey val id: String,
+    val trekId: String,
+    val points: List<Point>? = null
 )
