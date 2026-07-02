@@ -5,9 +5,6 @@ import com.via.himalaya.util.Result
 
 interface AuthRepository {
 
-    /** The currently signed-in user, or null. Read synchronously. */
-    val currentUser: UserProfile?
-
     /**
      * Exchanges a Google ID token (obtained natively per platform) for a Firebase
      * session and returns the signed-in user.
@@ -15,4 +12,7 @@ interface AuthRepository {
     suspend fun signInWithGoogle(idToken: String): Result<UserProfile>
 
     suspend fun signOut()
+
+    suspend fun getCurrentUser(): String?
+
 }

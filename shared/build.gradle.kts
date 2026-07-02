@@ -68,6 +68,8 @@ kotlin {
             api(libs.koin.core)
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.androidx.datastore.preferences)
+            implementation(libs.androidx.datastore.core)
         }
 
         androidMain.dependencies {

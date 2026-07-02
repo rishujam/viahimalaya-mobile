@@ -39,7 +39,7 @@ class TrekDetailViewModel(
     
     private fun setInitialData() = viewModelScope.launch {
         val loc = locationEmitter.getLocation()
-        val user = authRepository.currentUser?.email
+        val user = authRepository.getCurrentUser()
         _state.update { it.copy(currentLocation = loc, userEmail = user) }
     }
 

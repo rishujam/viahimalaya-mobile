@@ -11,4 +11,7 @@ class FirebaseTracker(
         tracker.logEvent(name = event, params)
     }
 
+    override fun setUser(userId: String) {
+        tracker.setUserId(userId)
+    }
 }

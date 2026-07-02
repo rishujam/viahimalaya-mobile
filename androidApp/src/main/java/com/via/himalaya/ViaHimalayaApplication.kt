@@ -4,12 +4,17 @@ import android.app.Application
 import android.util.Log
 import com.via.himalaya.di.initKoin
 import com.via.himalaya.domain.Tracker
+import com.via.himalaya.domain.repo.AuthRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 
 class ViaHimalayaApplication : Application() {
 
     private val tracker: Tracker by inject()
+    private val authRepository: AuthRepository by inject()
     
     override fun onCreate() {
         super.onCreate()
@@ -17,8 +22,16 @@ class ViaHimalayaApplication : Application() {
         initKoin {
             androidContext(this@ViaHimalayaApplication)
         }
-        
-        // Now you can use the tracker
-        tracker.track("app_started", mapOf("platform" to "android"))
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val user = authRepository.getCurrentUser()
+            user?.let {
+                tracker.setUser(user)
+            }
+            tracker.track(
+                "app_started",
+                mapOf("platform" to "android")
+            )
+        }
     }
 }

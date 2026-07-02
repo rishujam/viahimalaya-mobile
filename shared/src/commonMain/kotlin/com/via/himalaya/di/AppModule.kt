@@ -5,6 +5,8 @@ import com.via.himalaya.data.local.DatabaseFactory
 import com.via.himalaya.data.local.NavigatorDatabase
 import com.via.himalaya.data.local.NavigatorDatabaseFactory
 import com.via.himalaya.data.local.TrekDatabase
+import com.via.himalaya.data.local.UserPreferences
+import com.via.himalaya.data.local.UserPreferencesImpl
 import com.via.himalaya.data.remote.HttpClientFactory
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.data.repository.TrekRepositoryImpl
@@ -51,6 +53,8 @@ val sharedModule = module {
     single { get<NavigatorDatabase>().navigatorDao }
     single<FirebaseAnalytics> { Firebase.analytics }
     singleOf(::FirebaseTracker).bind<Tracker>()
+
+    single<UserPreferences> { UserPreferencesImpl(get()) }
 
     singleOf(::TrekRepositoryImpl).bind<TrekRepository>()
     viewModelOf(::ExploreViewModel)

@@ -4,6 +4,7 @@ import com.via.himalaya.data.local.DatabaseFactory
 import com.via.himalaya.data.local.FileDownloader
 import com.via.himalaya.data.local.IosFileDownloader
 import com.via.himalaya.data.local.NavigatorDatabaseFactory
+import com.via.himalaya.data.local.createDatastore
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.core.module.Module
@@ -16,4 +17,5 @@ actual val platformModule: Module
         single { DatabaseFactory() }
         single { NavigatorDatabaseFactory() }
         single { IosFileDownloader(get()) }.bind<FileDownloader>()
+        single { createDatastore() }
     }

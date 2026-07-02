@@ -18,30 +18,6 @@ class AuthViewModel(
     private val _state = MutableStateFlow(ProfileScreenUIState())
     val state: StateFlow<ProfileScreenUIState> = _state.asStateFlow()
 
-    init {
-        _state.update {
-            it.copy(
-                isLoading = true
-            )
-        }
-        val currentUser = authRepository.currentUser
-        if (currentUser != null) {
-            println("AuthViewModel: User already signed in")
-            println("  UID: ${currentUser.uid}")
-            println("  Email: ${currentUser.email}")
-            println("  Name: ${currentUser.name}")
-            println("  Photo: ${currentUser.photoUrl}")
-            _state.update {
-                it.copy(isLoading = false, userProfile = currentUser)
-            }
-        } else {
-            _state.update {
-                it.copy(isLoading = false)
-            }
-            println("AuthViewModel: No user currently signed in")
-        }
-    }
-
     /** Called with the Google ID token retrieved by the platform sign-in UI. */
     fun onGoogleIdToken(idToken: String) = viewModelScope.launch {
         _state.update {
@@ -52,11 +28,7 @@ class AuthViewModel(
         when (val result = authRepository.signInWithGoogle(idToken)) {
             is Result.Success -> {
                 val user = result.data
-                println("AuthViewModel: ✅ Sign-in successful!")
-                println("AuthViewModel: UID: ${user?.uid}")
-                println("AuthViewModel  Email: ${user?.email}")
-                println("AuthViewModel  Display Name: ${user?.name}")
-                println("AuthViewModel  Photo URL: ${user?.photoUrl}")
+                println("AuthViewModel: Sign-in successful!: ${user?.email}")
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -66,7 +38,7 @@ class AuthViewModel(
             }
             is Result.Error -> {
                 _state.update { it.copy(isLoading = false) }
-                println("AuthViewModel: ❌ Sign-in failed: ${result.message}")
+                println("AuthViewModel: Sign-in failed: ${result.message}")
             }
             is Result.Loading -> _state.update { it.copy(isLoading = true) }
         }
@@ -79,8 +51,8 @@ class AuthViewModel(
     }
 
     fun signOut() = viewModelScope.launch {
-        val user = authRepository.currentUser
-        println("AuthViewModel: Signing out user: ${user?.email}")
+        val user = authRepository.getCurrentUser()
+        println("AuthViewModel: Signing out user: $user")
         authRepository.signOut()
         _state.update { it.copy(userProfile = null) }
         println("AuthViewModel: User signed out successfully")

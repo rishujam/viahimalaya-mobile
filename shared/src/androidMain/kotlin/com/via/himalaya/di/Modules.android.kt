@@ -4,6 +4,7 @@ import com.via.himalaya.data.local.AndroidFileDownloader
 import com.via.himalaya.data.local.DatabaseFactory
 import com.via.himalaya.data.local.FileDownloader
 import com.via.himalaya.data.local.NavigatorDatabaseFactory
+import com.via.himalaya.data.local.createDatastore
 import com.via.himalaya.domain.AndroidLocationEmitter
 import com.via.himalaya.domain.AndroidSensorListener
 import com.via.himalaya.domain.LocationEmitter
@@ -23,4 +24,5 @@ actual val platformModule: Module
         single { AndroidFileDownloader(androidApplication(), get()) }.bind<FileDownloader>()
         single { AndroidLocationEmitter(androidApplication()) }.bind<LocationEmitter>()
         single { AndroidSensorListener(androidApplication()) }.bind<SensorListener>()
+        single { createDatastore(androidApplication()) }
     }

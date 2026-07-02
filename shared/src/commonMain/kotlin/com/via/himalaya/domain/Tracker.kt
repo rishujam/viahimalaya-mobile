@@ -4,4 +4,6 @@ interface Tracker {
 
     fun track(event: String, params: Map<String, String>)
 
+    fun setUser(userId: String)
+
 }
