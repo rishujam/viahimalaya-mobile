@@ -35,8 +35,7 @@ import org.koin.androidx.compose.koinViewModel
 
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
-//TODO - Pagination
-        //In API
+        //Create API to sync this data to server
 //TODO - Search trek implementation
 //TODO - Firebase analytics
 

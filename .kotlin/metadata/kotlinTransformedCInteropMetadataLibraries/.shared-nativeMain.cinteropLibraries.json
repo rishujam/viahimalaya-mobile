@@ -5,6 +5,11 @@
     "sourceSetName": "iosMain"
   },
   {
+    "moduleId": "dev.gitlive:firebase-analytics:2.1.0",
+    "file": "/Users/sudhanshukumar/Documents/viahimalaya/viahimalaya-mobile/.kotlin/metadata/kotlinTransformedCInteropMetadataLibraries/dev.gitlive-firebase-analytics-2.1.0-iosMain-cinterop/dev.gitlive_firebase-analytics-cinterop-FirebaseAnalytics-PoRpVQ.klib",
+    "sourceSetName": "iosMain"
+  },
+  {
     "moduleId": "androidx.sqlite:sqlite-bundled:2.5.0",
     "file": "/Users/sudhanshukumar/Documents/viahimalaya/viahimalaya-mobile/.kotlin/metadata/kotlinTransformedCInteropMetadataLibraries/androidx.sqlite-sqlite-bundled-2.5.0-nativeMain-cinterop/androidx.sqlite_sqlite-bundled-cinterop-androidXBundledSqlite-BHP1JA.klib",
     "sourceSetName": "nativeMain"

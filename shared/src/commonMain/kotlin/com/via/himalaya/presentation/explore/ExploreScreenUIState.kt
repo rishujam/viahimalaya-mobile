@@ -7,5 +7,8 @@ data class ExploreScreenUIState(
     val treks: List<Trek> = emptyList(),
     val errorState: String? = null,
     val isLoading: Boolean = false,
-    val uiEffect: UIEffect? = null
+    val uiEffect: UIEffect? = null,
+    val page: Int = 0,
+    val seed: String? = null,
+    val hasNextPage: Boolean = true
 )

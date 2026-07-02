@@ -14,6 +14,10 @@ class ExploreViewModel(
     private val trekRepository: TrekRepository
 ) : ViewModel() {
 
+    companion object {
+        private const val PAGE_SIZE = 10
+    }
+
     private val _state = MutableStateFlow(ExploreScreenUIState())
     val state: StateFlow<ExploreScreenUIState> = _state.asStateFlow()
 
@@ -21,30 +25,54 @@ class ExploreViewModel(
         loadTreks()
     }
 
+    fun onEvent(event: ExploreScreenUIEvent) {
+        when(event) {
+            is ExploreScreenUIEvent.OnLoadMore -> {
+                loadTreks()
+            }
+            is ExploreScreenUIEvent.ClearErrorMessage -> {
+                _state.update { it.copy(errorState = null) }
+            }
+        }
+    }
+
     private fun loadTreks() = viewModelScope.launch {
-        _state.update { it.copy(isLoading = true) }
-        when(val treks = trekRepository.getTreks()) {
-            is Result.Success -> {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        treks = treks.data.orEmpty()
-                    )
+        if(state.value.hasNextPage) {
+            _state.update { it.copy(isLoading = true) }
+            val treks = trekRepository.getTreks(
+                page = state.value.page + 1,
+                limit = PAGE_SIZE,
+                seed = state.value.seed
+            )
+            when(treks) {
+                is Result.Success -> {
+                    val updatedTreks = state.value.treks.toMutableList()
+                    val newTreks = treks.data?.treks.orEmpty()
+                    updatedTreks.addAll(newTreks)
+                    _state.update {
+                        it.copy(
+                            page = treks.data?.page?.pageNo ?: 0,
+                            isLoading = false,
+                            treks = updatedTreks,
+                            seed = treks.data?.page?.seed,
+                            hasNextPage = treks.data?.page?.hasNext ?: false
+                        )
+                    }
                 }
-            }
-            is Result.Error -> {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        errorState = treks.message
-                    )
+                is Result.Error -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            errorState = treks.message
+                        )
+                    }
                 }
-            }
-            is Result.Loading -> {
-                _state.update {
-                    it.copy(
-                        isLoading = true
-                    )
+                is Result.Loading -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = true
+                        )
+                    }
                 }
             }
         }

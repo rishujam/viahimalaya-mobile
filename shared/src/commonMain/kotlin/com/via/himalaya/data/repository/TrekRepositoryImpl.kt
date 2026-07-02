@@ -11,6 +11,7 @@ import com.via.himalaya.data.models.TrekDetailData
 import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
 import com.via.himalaya.domain.model.TrekGeoData
+import com.via.himalaya.domain.model.Treks
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.Result
 import io.ktor.client.HttpClient
@@ -36,7 +37,11 @@ class TrekRepositoryImpl(
 //        private const val MAX_ZOOM = 15
     }
 
-    override suspend fun getTreks(): Result<List<Trek>> {
+    override suspend fun getTreks(
+        page: Int,
+        limit: Int,
+        seed: String?
+    ): Result<Treks> {
         return try {
             val response = apiClient
                 .get("$BASE_URL/api/treks") {
@@ -44,6 +49,11 @@ class TrekRepositoryImpl(
                     headers {
                         append(HttpHeaders.Accept, ContentType.Application.Json.toString())
                         append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                    }
+                    url {
+                        parameters.append("page", page.toString())
+                        parameters.append("limit", limit.toString())
+                        seed?.let { parameters.append("seed", it) }
                     }
                 }
             if(response.status.value == 200) {

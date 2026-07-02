@@ -64,6 +64,7 @@ kotlin {
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.gitlive.firebase.auth)
+            implementation(libs.gitlive.firebase.analytics)
             api(libs.koin.core)
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)

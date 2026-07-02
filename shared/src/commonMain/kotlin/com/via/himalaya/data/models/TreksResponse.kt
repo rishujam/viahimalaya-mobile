@@ -1,17 +1,43 @@
 package com.via.himalaya.data.models
 
+import com.via.himalaya.domain.model.Page
+import com.via.himalaya.domain.model.Treks
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class Pagination(
+    val page: Int,
+    val limit: Int,
+    val total: Int,
+    @SerialName("total_pages")
+    val totalPages: Int,
+    @SerialName("has_next")
+    val hasNext: Boolean,
+    @SerialName("has_prev")
+    val hasPrev: Boolean,
+    val seed: String
+)
+
+@Serializable
 data class TreksData(
     val treks: List<TrekDto>,
-    val count: Int,
+    val pagination: Pagination? = null,
+    val count: Int? = null, // Keep for backward compatibility
     @SerialName("retrieved_at")
     val retrievedAt: String
 ) {
-    fun toTreks(): List<Trek> {
-        return treks.map { it.toTrek() }
+    fun toTreks(): Treks {
+        return Treks(
+            treks = treks.map { it.toTrek() },
+            page = Page(
+                seed = pagination?.seed,
+                pageNo = pagination?.page ?: 1,
+                hasNext = pagination?.hasNext ?: false,
+                total = pagination?.total ?: count ?: 0,
+                totalPages = pagination?.totalPages ?: 0
+            )
+        )
     }
 }
 

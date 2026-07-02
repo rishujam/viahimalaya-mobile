@@ -5,11 +5,16 @@ import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.TrekGeoData
+import com.via.himalaya.domain.model.Treks
 import com.via.himalaya.util.Result
 
 interface TrekRepository {
 
-    suspend fun getTreks(): Result<List<Trek>>
+    suspend fun getTreks(
+        page: Int,
+        limit: Int,
+        seed: String? = null
+    ): Result<Treks>
 
     suspend fun getTrek(id: String): Result<TrekDetail>
     

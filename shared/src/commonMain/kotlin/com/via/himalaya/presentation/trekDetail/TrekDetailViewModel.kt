@@ -130,7 +130,8 @@ class TrekDetailViewModel(
             trekRepository.saveNavigatorTrek(
                 NavigatorTrek(
                     id = navigatorTrekId,
-                    trekId = trekId
+                    trekId = trekId,
+                    user = user.orEmpty()
                 )
             )
         }

@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity
 data class NavigatorTrek(
     @PrimaryKey val id: String,
+    val user: String,
     val trekId: String,
     val points: List<Point>? = null
 )

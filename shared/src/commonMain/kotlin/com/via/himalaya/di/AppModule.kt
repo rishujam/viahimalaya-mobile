@@ -8,8 +8,10 @@ import com.via.himalaya.data.local.TrekDatabase
 import com.via.himalaya.data.remote.HttpClientFactory
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.data.repository.TrekRepositoryImpl
+import com.via.himalaya.domain.Tracker
 import com.via.himalaya.domain.repo.AuthRepository
 import com.via.himalaya.domain.repo.TrekRepository
+import com.via.himalaya.data.remote.FirebaseTracker
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.auth
@@ -22,6 +24,8 @@ import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.presentation.downloads.DownloadedTrekViewModel
+import dev.gitlive.firebase.analytics.FirebaseAnalytics
+import dev.gitlive.firebase.analytics.analytics
 
 expect val platformModule: Module
 
@@ -45,6 +49,8 @@ val sharedModule = module {
             .build()
     }
     single { get<NavigatorDatabase>().navigatorDao }
+    single<FirebaseAnalytics> { Firebase.analytics }
+    singleOf(::FirebaseTracker).bind<Tracker>()
 
     singleOf(::TrekRepositoryImpl).bind<TrekRepository>()
     viewModelOf(::ExploreViewModel)
