@@ -35,9 +35,8 @@ import org.koin.androidx.compose.koinViewModel
 
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
-        //Create API to sync this data to server
+        //Create API to sync this data to server - Done need to test
 //TODO - Search trek implementation
-//TODO - Firebase analytics
 
 //TODO - Data Entry in Backend
 
@@ -54,6 +53,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
 //TODO - Thumbnail in trek listing payload
 //TODO - Download tiles of map for offline use
+//TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 
 
 class MainActivity : ComponentActivity() {

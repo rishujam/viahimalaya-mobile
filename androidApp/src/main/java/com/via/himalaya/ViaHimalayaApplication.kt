@@ -25,6 +25,7 @@ class ViaHimalayaApplication : Application() {
 
         CoroutineScope(Dispatchers.IO).launch {
             val user = authRepository.getCurrentUser()
+            Log.d("ViaHimalaya", "Current user: $user")
             user?.let {
                 tracker.setUser(user)
             }

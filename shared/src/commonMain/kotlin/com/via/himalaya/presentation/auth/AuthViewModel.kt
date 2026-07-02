@@ -18,6 +18,20 @@ class AuthViewModel(
     private val _state = MutableStateFlow(ProfileScreenUIState())
     val state: StateFlow<ProfileScreenUIState> = _state.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            val user = authRepository.getCurrentUser()
+            user?.let {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        userProfile = UserProfile(email = user)
+                    )
+                }
+            }
+        }
+    }
+
     /** Called with the Google ID token retrieved by the platform sign-in UI. */
     fun onGoogleIdToken(idToken: String) = viewModelScope.launch {
         _state.update {

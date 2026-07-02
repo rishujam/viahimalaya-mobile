@@ -18,6 +18,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
+import io.ktor.client.request.post
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
@@ -177,6 +178,15 @@ class TrekRepositoryImpl(
 
     override suspend fun getAllNavigatorTreks(): List<NavigatorTrek> {
         return navigatorDao.getAllNavigatorTreks()
+    }
+
+    override suspend fun syncNavigatorTrek() {
+        try {
+            val navigatorTreks = navigatorDao.getAllNavigatorTreks()
+            //TODO - Sync navigator treks to server
+        } catch (e: Exception) {
+            println("Error syncing navigator trek: ${e.message}")
+        }
     }
 
     //    override suspend fun downloadMap(

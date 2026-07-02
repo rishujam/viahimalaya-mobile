@@ -70,7 +70,7 @@ fun SignInScreenRoot(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(state.userProfile) {
-        if (state.userProfile != null) onSignedIn()
+        if (state.userProfile?.email != null) onSignedIn()
     }
 //    LaunchedEffect(state.errorMessage) {
 //        state.errorMessage?.let { message ->

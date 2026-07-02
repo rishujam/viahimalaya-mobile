@@ -28,6 +28,8 @@ interface TrekRepository {
 
     suspend fun updateNavigatorTrek(id: String, points: List<Point>)
 
+    suspend fun syncNavigatorTrek()
+
 //    suspend fun deleteNavigatorTrek(id: String)
 
     suspend fun getAllNavigatorTreks(): List<NavigatorTrek>

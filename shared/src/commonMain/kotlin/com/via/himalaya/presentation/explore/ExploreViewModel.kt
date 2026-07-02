@@ -23,6 +23,9 @@ class ExploreViewModel(
 
     init {
         loadTreks()
+        viewModelScope.launch {
+            trekRepository.syncNavigatorTrek()
+        }
     }
 
     fun onEvent(event: ExploreScreenUIEvent) {
