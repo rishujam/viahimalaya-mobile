@@ -18,6 +18,8 @@ interface TrekRepository {
 
     suspend fun getTrek(id: String): Result<TrekDetail>
     
+    suspend fun searchTreks(query: String): Result<List<Trek>>
+    
     suspend fun getTrekCoordinates(coordinateUrl: String, trekId: String): Result<TrekGeoData>
 
     suspend fun saveTrekMetaData(meta: TrekDetail)

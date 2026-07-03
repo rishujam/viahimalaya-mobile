@@ -8,6 +8,7 @@ import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.models.TrekDetailData
+import com.via.himalaya.data.models.TrekSearchData
 import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
 import com.via.himalaya.domain.model.TrekGeoData
@@ -112,6 +113,40 @@ class TrekRepositoryImpl(
             }
         } catch (e: Exception) {
             Result.Error("Error fetching coordinates: ${e.message}", 500)
+        }
+    }
+
+    override suspend fun searchTreks(query: String): Result<List<Trek>> {
+        return try {
+            val response = apiClient.get("$BASE_URL/api/treks/search") {
+                contentType(ContentType.Application.Json)
+                headers {
+                    append(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                    append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                }
+                url {
+                    parameters.append("q", query)
+                }
+            }
+            
+            when (response.status.value) {
+                200 -> {
+                    val searchData = response.body<VResponse<TrekSearchData>>().data
+                    if (searchData.treks.isEmpty()) {
+                        Result.Error("No treks found matching '$query'", 204)
+                    } else {
+                        Result.Success(searchData.toTrekList())
+                    }
+                }
+                400 -> {
+                    Result.Error("Invalid search query", 400)
+                }
+                else -> {
+                    Result.Error(response.status.description, response.status.value)
+                }
+            }
+        } catch (e: Exception) {
+            Result.Error("Error searching treks: ${e.message}", 500)
         }
     }
 

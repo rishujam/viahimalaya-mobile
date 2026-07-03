@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,29 +45,31 @@ import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.ui.components.TrekCard
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+private const val PAGING_THRESHOLD = 3
+
 @Composable
 fun ExploreScreenRoot(
     viewModel: ExploreViewModel,
     onTrekClicked: (Trek) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackBarHostState = remember { SnackbarHostState() }
     
-    LaunchedEffect(state.errorState) {
-        state.errorState?.let { errorMessage ->
-            snackbarHostState.showSnackbar(
+    LaunchedEffect(state.errorToast) {
+        state.errorToast?.let { errorMessage ->
+            snackBarHostState.showSnackbar(
                 message = errorMessage,
                 withDismissAction = true
             )
-            viewModel.onEvent(ExploreScreenUIEvent.ClearErrorMessage)
+            viewModel.onEvent(ExploreScreenUIEvent.ClearErrorToast)
         }
     }
     
     ExploreScreen(
         state = state,
         onTrekClicked = onTrekClicked,
-        onLoadMore = { viewModel.onEvent(ExploreScreenUIEvent.OnLoadMore) },
-        snackbarHostState = snackbarHostState
+        onEvent = viewModel::onEvent,
+        snackbarHostState = snackBarHostState
     )
 }
 
@@ -73,40 +77,36 @@ fun ExploreScreenRoot(
 fun ExploreScreen(
     state: ExploreScreenUIState,
     onTrekClicked: (Trek) -> Unit,
-    onLoadMore: () -> Unit,
+    onEvent: (ExploreScreenUIEvent) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    val filteredTreks = remember(state.treks, searchQuery) {
+    LaunchedEffect(searchQuery, state.isSearching) {
         if (searchQuery.isBlank()) {
-            state.treks
-        } else {
-            val q = searchQuery.trim()
-            state.treks.filter { trek ->
-                trek.name.contains(q, ignoreCase = true) ||
-                    trek.location.contains(q, ignoreCase = true)
-            }
+            onEvent(ExploreScreenUIEvent.OnClearSearch)
+        } else if (!state.isSearching) {
+            delay(1000)
+            onEvent(ExploreScreenUIEvent.OnSearchTrek(searchQuery.trim()))
         }
     }
 
-    // Detect when user reaches the end of the list and trigger pagination
-    LaunchedEffect(listState, state.isLoading, state.hasNextPage, searchQuery) {
+    LaunchedEffect(listState, state.isLoading, state.hasNextPage, state.isSearching) {
         snapshotFlow {
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
             val totalItems = listState.layoutInfo.totalItemsCount
             
             lastVisibleItem != null &&
-            lastVisibleItem.index >= totalItems - 3 && // Load when 3 items from the end
+            lastVisibleItem.index >= totalItems - PAGING_THRESHOLD &&
             !state.isLoading &&
             state.hasNextPage &&
-            searchQuery.isBlank() // Only paginate when not searching
+            !state.isSearching
         }
             .distinctUntilChanged()
             .collect { shouldLoadMore ->
                 if (shouldLoadMore) {
-                    onLoadMore()
+                    onEvent(ExploreScreenUIEvent.OnLoadMore)
                 }
             }
     }
@@ -165,7 +165,7 @@ fun ExploreScreen(
                 state = listState,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                itemsIndexed(filteredTreks) { index, trek ->
+                itemsIndexed(state.treks) { index, trek ->
                     TrekCard(
                         trek = trek,
                         onClick = { onTrekClicked(trek) }
@@ -173,7 +173,7 @@ fun ExploreScreen(
                 }
                 
                 // Loading indicator at the bottom when paginating
-                if (state.isLoading && filteredTreks.isNotEmpty()) {
+                if (state.isLoading && state.treks.isNotEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -196,6 +196,7 @@ fun ExploreScreen(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .imePadding()
                 .padding(16.dp)
         ) { snackbarData ->
             Snackbar(

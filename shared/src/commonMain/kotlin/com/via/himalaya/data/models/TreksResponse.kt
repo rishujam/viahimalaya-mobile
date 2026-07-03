@@ -69,6 +69,19 @@ data class TrekDto(
 }
 
 @Serializable
+data class TrekSearchData(
+    val query: String,
+    val count: Int,
+    val treks: List<TrekDto>,
+    @SerialName("searched_at")
+    val searchedAt: String
+) {
+    fun toTrekList(): List<Trek> {
+        return treks.map { it.toTrek() }
+    }
+}
+
+@Serializable
 data class TrekDetailData(
     val trek: TrekDto,
     @SerialName("retrieved_at")

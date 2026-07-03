@@ -33,8 +33,14 @@ class ExploreViewModel(
             is ExploreScreenUIEvent.OnLoadMore -> {
                 loadTreks()
             }
-            is ExploreScreenUIEvent.ClearErrorMessage -> {
-                _state.update { it.copy(errorState = null) }
+            is ExploreScreenUIEvent.ClearErrorToast -> {
+                _state.update { it.copy(errorToast = null) }
+            }
+            is ExploreScreenUIEvent.OnClearSearch -> {
+                clearSearchedTreks()
+            }
+            is ExploreScreenUIEvent.OnSearchTrek -> {
+                searchTrek(event.query)
             }
         }
     }
@@ -66,7 +72,7 @@ class ExploreViewModel(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorState = treks.message
+                            errorToast = treks.message
                         )
                     }
                 }
@@ -78,6 +84,40 @@ class ExploreViewModel(
                     }
                 }
             }
+        }
+    }
+
+    private fun searchTrek(query: String) = viewModelScope.launch {
+        _state.update {
+            it.copy(isLoading = true, isSearching = true, searchQuery = query)
+        }
+        val result = trekRepository.searchTreks(query)
+        if(result is Result.Success) {
+            _state.update {
+                it.copy(
+                    tempTreks = if (state.value.tempTreks.isEmpty()) state.value.treks else state.value.tempTreks,
+                    treks = result.data ?: emptyList(),
+                    isLoading = false
+                )
+            }
+        } else {
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    errorToast = "No treks found: ${result.message}"
+                )
+            }
+        }
+    }
+
+    private fun clearSearchedTreks() = viewModelScope.launch {
+        _state.update {
+            it.copy(
+                treks = if (state.value.tempTreks.isNotEmpty()) state.value.tempTreks else state.value.treks,
+                tempTreks = emptyList(),
+                isSearching = false,
+                searchQuery = ""
+            )
         }
     }
 
