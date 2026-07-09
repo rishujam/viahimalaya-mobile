@@ -35,14 +35,12 @@ import org.koin.androidx.compose.koinViewModel
 
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
-//TODO - Search trek implementation
 
 //TODO - Data Entry in Backend
 
 //TODO - Splash Screen
 //TODO - Login Page branding
 //TODO - Dark Mode
-//TODO - (Bug) Bottom bar color fix
 //TODO - Font fix all over the app
 
 //Phase 2

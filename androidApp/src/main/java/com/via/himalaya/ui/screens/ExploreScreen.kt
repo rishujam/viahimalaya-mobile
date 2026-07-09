@@ -2,6 +2,7 @@ package com.via.himalaya.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,14 +38,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.presentation.explore.ExploreScreenUIEvent
 import com.via.himalaya.presentation.explore.ExploreScreenUIState
 import com.via.himalaya.presentation.explore.ExploreViewModel
-import com.via.himalaya.ui.components.TrekCard
+import com.via.himalaya.ui.components.CarouselTrekCard
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlin.math.abs
 
 private const val PAGING_THRESHOLD = 3
 
@@ -82,6 +86,30 @@ fun ExploreScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    var focusedIndex by remember { mutableIntStateOf(0) }
+
+    // Focus detection: Track which card is closest to viewport center
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                if (visibleItems.isNotEmpty()) {
+                    val viewportHeight = listState.layoutInfo.viewportEndOffset
+                    val center = viewportHeight / 2
+                    val focused = visibleItems.minByOrNull { item ->
+                        val itemCenter = item.offset + item.size / 2
+                        abs(itemCenter - center)
+                    }?.index
+                    if (focused != null && focused != focusedIndex) {
+                        focusedIndex = focused
+                    }
+                }
+            }
+    }
+
+    // Reset focus when search results change
+    LaunchedEffect(state.treks.size) {
+        focusedIndex = 0
+    }
 
     LaunchedEffect(searchQuery, state.isSearching) {
         if (searchQuery.isBlank()) {
@@ -92,6 +120,7 @@ fun ExploreScreen(
         }
     }
 
+    // Pagination logic (existing)
     LaunchedEffect(listState, state.isLoading, state.hasNextPage, state.isSearching) {
         snapshotFlow {
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
@@ -161,30 +190,42 @@ fun ExploreScreen(
             )
         )
 
-            LazyColumn(
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize()
             ) {
-                itemsIndexed(state.treks) { index, trek ->
-                    TrekCard(
-                        trek = trek,
-                        onClick = { onTrekClicked(trek) }
-                    )
-                }
+                // Available height for LazyColumn (between search bar and bottom nav)
+                val availableHeight = maxHeight
+                // Card height = available height - peek space for next card
+                val cardHeight = availableHeight - 60.dp
                 
-                // Loading indicator at the bottom when paginating
-                if (state.isLoading && state.treks.isNotEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    itemsIndexed(state.treks) { index, trek ->
+                        val isFocused = index == focusedIndex
+                        CarouselTrekCard(
+                            trek = trek,
+                            isFocused = isFocused,
+                            onClick = { onTrekClicked(trek) },
+                            cardHeight = cardHeight
+                        )
+                    }
+                
+                    // Loading indicator at the bottom when paginating
+                    if (state.isLoading && state.treks.isNotEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
