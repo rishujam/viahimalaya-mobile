@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.via.himalaya.domain.model.UserProfile
 import com.via.himalaya.domain.repo.AuthRepository
 import com.via.himalaya.util.Result
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +25,14 @@ class AuthViewModel(
             user?.let {
                 _state.update {
                     it.copy(
-                        isLoading = false,
+                        initialAuthCheckRunning = false,
                         userProfile = UserProfile(email = user)
+                    )
+                }
+            } ?: run {
+                _state.update {
+                    it.copy(
+                        initialAuthCheckRunning = false
                     )
                 }
             }

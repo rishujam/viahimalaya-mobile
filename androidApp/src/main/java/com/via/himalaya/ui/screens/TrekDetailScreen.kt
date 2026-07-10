@@ -350,8 +350,7 @@ fun TrekDetailScreen(
                     SecondaryButton(
                         text = "Download for offline",
                         onClick = { onDownloadHikeClick() },
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingText = "38 MB"
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))

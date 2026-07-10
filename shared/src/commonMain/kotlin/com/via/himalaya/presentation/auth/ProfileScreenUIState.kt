@@ -4,5 +4,6 @@ import com.via.himalaya.domain.model.UserProfile
 
 data class ProfileScreenUIState(
     val isLoading: Boolean = false,
-    val userProfile: UserProfile? = null
+    val userProfile: UserProfile? = null,
+    val initialAuthCheckRunning: Boolean = true
 )

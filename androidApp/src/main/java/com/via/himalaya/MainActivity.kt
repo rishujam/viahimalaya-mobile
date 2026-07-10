@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -36,20 +39,19 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
 
-//TODO - Data Entry in Backend
-
-//TODO - Splash Screen
+//TODO - Data Entry in Backend - Add Photos to trek
 //TODO - Login Page branding
 //TODO - Dark Mode
-//TODO - Font fix all over the app
+//TODO - Download tiles of map for offline use
 
 //Phase 2
+//TODO - Add span in LazyColumn
 //TODO - Listen to location only when device is moving - optimize battery
+//TODO - Font fix all over the app
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
 //TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
 //TODO - Thumbnail in trek listing payload
-//TODO - Download tiles of map for offline use
 //TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 
 
@@ -58,20 +60,31 @@ class MainActivity : ComponentActivity() {
     private lateinit var permissionLauncher: PermissionHandler
     
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        
         super.onCreate(savedInstanceState)
         permissionLauncher = PermissionHandler(this)
+        var keepSplashScreen = true
+        splashScreen.setKeepOnScreenCondition { keepSplashScreen }
         setContent {
             MyApplicationTheme {
-                ViaHimalayaApp(permissionLauncher)
+                ViaHimalayaApp(
+                    permissionHandler = permissionLauncher,
+                    onAuthCheckComplete = { keepSplashScreen = false }
+                )
             }
         }
     }
 }
 
 @Composable
-fun ViaHimalayaApp(permissionHandler: PermissionHandler) {
+fun ViaHimalayaApp(
+    permissionHandler: PermissionHandler,
+    onAuthCheckComplete: () -> Unit
+) {
     val navController = rememberNavController()
     val authViewModel = koinViewModel<AuthViewModel>()
+    val authState by authViewModel.state.collectAsState()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute?.let { route ->
@@ -83,77 +96,84 @@ fun ViaHimalayaApp(permissionHandler: PermissionHandler) {
             }
         }
     } ?: false
-
-    Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                BottomNavigationBar(navController = navController)
-            }
-        },
-        modifier = Modifier.fillMaxSize()
-    ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = Route.ViaHimalayaGraph,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            navigation<Route.ViaHimalayaGraph>(
-                startDestination = Route.SignIn
+    if (!authState.initialAuthCheckRunning) {
+        onAuthCheckComplete()
+        val startDestination = if (authState.userProfile?.email != null) {
+            Route.Explore
+        } else {
+            Route.SignIn
+        }
+        Scaffold(
+            bottomBar = {
+                if (showBottomBar) {
+                    BottomNavigationBar(navController = navController)
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            NavHost(
+                navController = navController,
+                startDestination = Route.ViaHimalayaGraph,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
-                composable<Route.SignIn> {
-                    SignInScreenRoot(
-                        viewModel = authViewModel,
-                        onSignedIn = {
-                            navController.navigate(Route.Explore) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    inclusive = true
+                navigation<Route.ViaHimalayaGraph>(
+                    startDestination = startDestination
+                ) {
+                    composable<Route.SignIn> {
+                        SignInScreenRoot(
+                            viewModel = authViewModel,
+                            onSignedIn = {
+                                navController.navigate(Route.Explore) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        inclusive = true
+                                    }
                                 }
                             }
-                        }
-                    )
-                }
-                composable<Route.Explore> {
-                    val viewModel = koinViewModel<ExploreViewModel>()
-                    ExploreScreenRoot(
-                        onTrekClicked = { trek ->
+                        )
+                    }
+                    composable<Route.Explore> {
+                        val viewModel = koinViewModel<ExploreViewModel>()
+                        ExploreScreenRoot(
+                            onTrekClicked = { trek ->
+                                navController.navigate(
+                                    Route.TrekDetail(trek.id, trek.coordinateUrl)
+                                )
+                            },
+                            viewModel = viewModel
+                        )
+                    }
+                    composable<Route.Profile> {
+                        ProfileScreenRoot(
+                            authViewModel,
+                            onSignOutCompleted = {
+                                navController.navigate(Route.SignIn) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        inclusive = true
+                                    }
+                                }
+                            },
+                            onDownloadedTrekClicked = {
+                                navController.navigate(Route.DownloadedTrek)
+                            }
+                        )
+                    }
+                    composable<Route.TrekDetail> { entry ->
+                        val viewModel = koinViewModel<TrekDetailViewModel>()
+                        val args = entry.toRoute<Route.TrekDetail>()
+                        TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl, {
+                            navController.navigateUp()
+                        }, permissionHandler)
+                    }
+                    composable<Route.DownloadedTrek> {
+                        val viewModel = koinViewModel<DownloadedTrekViewModel>()
+                        DownloadedTrekScreenRoot(viewModel) { trek ->
                             navController.navigate(
                                 Route.TrekDetail(trek.id, trek.coordinateUrl)
                             )
-                        },
-                        viewModel = viewModel
-                    )
-                }
-                composable<Route.Profile> {
-                    ProfileScreenRoot(
-                        authViewModel,
-                        onSignOutCompleted = {
-                            navController.navigate(Route.SignIn) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    inclusive = true
-                                }
-                            }
-                        },
-                        onDownloadedTrekClicked = {
-                            navController.navigate(Route.DownloadedTrek)
                         }
-                    )
-                }
-                composable<Route.TrekDetail> { entry ->
-                    val viewModel = koinViewModel<TrekDetailViewModel>()
-                    val args = entry.toRoute<Route.TrekDetail>()
-                    TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl, {
-                        navController.navigateUp()
-                    }, permissionHandler)
-                }
-                composable<Route.DownloadedTrek> {
-                    val viewModel = koinViewModel<DownloadedTrekViewModel>()
-                    DownloadedTrekScreenRoot(viewModel) { trek ->
-                        navController.navigate(
-                            Route.TrekDetail(trek.id, trek.coordinateUrl)
-                        )
                     }
                 }
             }

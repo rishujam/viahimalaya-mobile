@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +59,7 @@ fun ExploreScreenRoot(
 ) {
     val state by viewModel.state.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
-    
+
     LaunchedEffect(state.errorToast) {
         state.errorToast?.let { errorMessage ->
             snackBarHostState.showSnackbar(
@@ -68,7 +69,7 @@ fun ExploreScreenRoot(
             viewModel.onEvent(ExploreScreenUIEvent.ClearErrorToast)
         }
     }
-    
+
     ExploreScreen(
         state = state,
         onTrekClicked = onTrekClicked,
@@ -125,12 +126,12 @@ fun ExploreScreen(
         snapshotFlow {
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
             val totalItems = listState.layoutInfo.totalItemsCount
-            
+
             lastVisibleItem != null &&
-            lastVisibleItem.index >= totalItems - PAGING_THRESHOLD &&
-            !state.isLoading &&
-            state.hasNextPage &&
-            !state.isSearching
+                    lastVisibleItem.index >= totalItems - PAGING_THRESHOLD &&
+                    !state.isLoading &&
+                    state.hasNextPage &&
+                    !state.isSearching
         }
             .distinctUntilChanged()
             .collect { shouldLoadMore ->
@@ -144,51 +145,51 @@ fun ExploreScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp)
         ) {
-        // Header
-        Text(
-            text = "Explore",
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 26.sp
-        )
-        
-        Text(
-            text = "Find your next adventure",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp, bottom = 28.dp),
-            fontSize = 12.sp
-        )
-
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = {
-                Text(
-                    "Search treks, valleys, peaks…",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                focusedContainerColor = Color(0xFFFFFFFF),    // White background
-                unfocusedContainerColor = Color(0xFFFFFFFF)   // White background
+            // Header
+            Text(
+                text = "Explore",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 26.sp
             )
-        )
+
+            Text(
+                text = "Find your next adventure",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp, bottom = 28.dp),
+                fontSize = 14.sp
+            )
+
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = {
+                    Text(
+                        "Search treks, valleys, peaks…",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = Color(0xFFFFFFFF),    // White background
+                    unfocusedContainerColor = Color(0xFFFFFFFF)   // White background
+                )
+            )
 
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize()
@@ -197,7 +198,7 @@ fun ExploreScreen(
                 val availableHeight = maxHeight
                 // Card height = available height - peek space for next card
                 val cardHeight = availableHeight - 60.dp
-                
+
                 LazyColumn(
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(0.dp)
@@ -211,7 +212,7 @@ fun ExploreScreen(
                             cardHeight = cardHeight
                         )
                     }
-                
+
                     // Loading indicator at the bottom when paginating
                     if (state.isLoading && state.treks.isNotEmpty()) {
                         item {
@@ -231,7 +232,7 @@ fun ExploreScreen(
                 }
             }
         }
-        
+
         // Snackbar for error messages
         SnackbarHost(
             hostState = snackbarHostState,
@@ -249,3 +250,13 @@ fun ExploreScreen(
     }
 }
 
+@Preview
+@Composable
+fun ExploreScreenPreview() {
+    ExploreScreen(
+        state = ExploreScreenUIState(),
+        onTrekClicked = {},
+        onEvent = {},
+        snackbarHostState = remember { SnackbarHostState() }
+    )
+}
