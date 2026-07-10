@@ -63,4 +63,5 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.identity.google)
     implementation(libs.splash)
+    implementation(libs.coil.compose)
 }

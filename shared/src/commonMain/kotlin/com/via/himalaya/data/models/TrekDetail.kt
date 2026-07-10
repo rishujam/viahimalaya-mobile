@@ -11,7 +11,8 @@ data class TrekDetail(
     val distance: String,
     val elevation: String,
     val boundingBox: List<Double>,
-    val coordinateUrl: String
+    val coordinateUrl: String,
+    val imageUrl: String? = null
 ) {
 
     fun toTrek(): Trek {
@@ -22,7 +23,8 @@ data class TrekDetail(
             distance = distance,
             elevation = elevation,
             coordinateUrl = coordinateUrl,
-            boundingBox = boundingBox
+            boundingBox = boundingBox,
+            imageUrl = imageUrl
         )
     }
 

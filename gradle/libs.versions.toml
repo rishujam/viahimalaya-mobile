@@ -22,6 +22,7 @@ sqlite = "2.5.0"
 ksp = "2.0.21-1.0.28"
 play-services-location = "21.3.0"
 datastore = "1.1.1"
+coil = "2.7.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -73,6 +74,8 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences-core", version.ref = "datastore" }
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastore" }
+
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

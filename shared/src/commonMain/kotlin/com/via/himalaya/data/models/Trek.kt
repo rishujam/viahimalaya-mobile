@@ -8,5 +8,5 @@ data class Trek(
     val elevation: String,
     val boundingBox: List<Double>,
     val coordinateUrl: String,
-    val thumbnailUrl: String? = null
+    val imageUrl: String? = null
 )

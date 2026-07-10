@@ -51,7 +51,6 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
 //TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
-//TODO - Thumbnail in trek listing payload
 //TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 
 
