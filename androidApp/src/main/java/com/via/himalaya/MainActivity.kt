@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -39,7 +38,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
 
-//TODO - Data Entry in Backend - Add Photos to trek
+//TODO - Data Entry in Backend
 //TODO - Login Page branding
 //TODO - Dark Mode
 //TODO - Download tiles of map for offline use

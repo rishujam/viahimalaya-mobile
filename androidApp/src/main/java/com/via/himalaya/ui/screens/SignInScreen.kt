@@ -3,6 +3,7 @@ package com.via.himalaya.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +28,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.credentials.exceptions.GetCredentialException
 import com.via.himalaya.auth.getGoogleIdToken
 import com.via.himalaya.presentation.auth.AuthViewModel
@@ -49,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.via.himalaya.R
 import com.via.himalaya.ui.MyApplicationTheme
 
 // ViaHimalaya map palette (mirrors the Figma "Sign In" screen tokens).
@@ -113,11 +117,15 @@ fun SignInScreen(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.BottomCenter
         ) {
-            HeroMap(
+            Image(
+                painter = painterResource(id = R.drawable.bg_signin),
+                contentDescription = "Sign In Background",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp)
                     .padding(bottom = 36.dp)
+                    .clip(RoundedCornerShape(24.dp)),
+                contentScale = ContentScale.Crop
             )
             LogoBadge()
         }
@@ -138,17 +146,6 @@ fun SignInScreen(
         )
 
         Spacer(Modifier.weight(1f))
-
-        Text(
-            text = "Sign in to save trails and sync your hikes",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
-            color = Color(0xFFAAA89E),
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-
-        Spacer(Modifier.height(20.dp))
 
         GoogleSignInButton(onClick = onGoogleSignInClick, isLoading = isLoading)
 
@@ -209,15 +206,16 @@ private fun LogoBadge() {
     Surface(
         modifier = Modifier.size(72.dp),
         shape = CircleShape,
-        color = Color.White,
+        color = Color(0xFF1C2416),
         shadowElevation = 6.dp
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = "▲",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary
+        Box(
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_logo_foreground),
+                contentDescription = "ViaHimalaya Logo",
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
