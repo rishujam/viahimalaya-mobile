@@ -1,6 +1,5 @@
 package com.via.himalaya.ui.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -24,45 +23,32 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.credentials.exceptions.GetCredentialException
-import com.via.himalaya.auth.getGoogleIdToken
-import com.via.himalaya.presentation.auth.AuthViewModel
-import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.exceptions.GetCredentialException
 import com.via.himalaya.R
+import com.via.himalaya.auth.getGoogleIdToken
+import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.ui.MyApplicationTheme
-
-// ViaHimalaya map palette (mirrors the Figma "Sign In" screen tokens).
-private val MapBase = Color(0xFFE8DFD2)
-private val MapGrid = Color(0xFFD9CFC0)
-private val Veg = Color(0xFFC4D1B5)
-private val Water = Color(0xFFB8CFE0)
-private val Trail = Color(0xFF8B6F5C)
-private val PinStart = Color(0xFF466638)
-private val PinEnd = Color(0xFF9C4032)
+import kotlinx.coroutines.launch
 
 @Composable
 fun SignInScreenRoot(
@@ -172,7 +158,7 @@ private fun GoogleSignInButton(onClick: () -> Unit, isLoading: Boolean = false) 
             .clip(RoundedCornerShape(28.dp))
             .clickable(enabled = !isLoading) { onClick() },
         shape = RoundedCornerShape(28.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 2.dp
     ) {
@@ -218,70 +204,6 @@ private fun LogoBadge() {
                 modifier = Modifier.fillMaxSize()
             )
         }
-    }
-}
-
-@Composable
-private fun HeroMap(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(MapBase)
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            // Geometry is authored in the Figma 335×300 space, then scaled to fit.
-            val sx = size.width / 335f
-            val sy = size.height / 300f
-
-            fun blob(x: Float, y: Float, w: Float, h: Float, color: Color) {
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(x * sx, y * sy),
-                    size = Size(w * sx, h * sy),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(28f * sx, 28f * sy)
-                )
-            }
-
-            // Terrain
-            blob(-20f, 30f, 120f, 70f, Veg)
-            blob(230f, 40f, 130f, 60f, Veg)
-            blob(210f, 180f, 90f, 46f, Water)
-            blob(30f, 200f, 110f, 60f, Veg)
-            blob(250f, 240f, 120f, 70f, Veg)
-
-            // Grid hairlines
-            drawLine(MapGrid, Offset(0f, 150f * sy), Offset(335f * sx, 150f * sy), 1f)
-            drawLine(MapGrid, Offset(168f * sx, 0f), Offset(168f * sx, 300f * sy), 1f)
-
-            // Trail route (quadratic path authored in 335×300 space)
-            val route = PathParser()
-                .parsePathString(
-                    "M 55 260 Q 95 210 120 185 Q 155 150 185 130 " +
-                        "Q 225 100 260 75 Q 285 58 300 45"
-                )
-                .toPath()
-            scale(sx, sy, pivot = Offset.Zero) {
-                drawPath(
-                    path = route,
-                    color = Trail,
-                    style = Stroke(width = 3f / sx, cap = StrokeCap.Round)
-                )
-            }
-
-            // Start + summit pins (halo + dot)
-            pin(55f * sx, 261f * sy, PinStart, sx)
-            pin(296f * sx, 41f * sy, PinEnd, sx)
-        }
-
-        Text(
-            text = "Summit",
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF1A1F1A),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 40.dp, end = 44.dp)
-        )
     }
 }
 

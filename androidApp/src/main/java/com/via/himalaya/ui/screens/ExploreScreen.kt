@@ -168,7 +168,7 @@ fun ExploreScreen(
                 onValueChange = { searchQuery = it },
                 placeholder = {
                     Text(
-                        "Search treks, valleys, peaks…",
+                        "Search treks",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -182,12 +182,12 @@ fun ExploreScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedContainerColor = Color(0xFFFFFFFF),    // White background
-                    unfocusedContainerColor = Color(0xFFFFFFFF)   // White background
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,    // White background
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface   // White background
                 )
             )
 

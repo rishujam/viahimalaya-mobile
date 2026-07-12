@@ -39,11 +39,14 @@ import org.koin.androidx.compose.koinViewModel
         //Create table to store path followed by user mapped to trek id - Done need to test
 
 //TODO - Data Entry in Backend
-//TODO - Login Page branding
-//TODO - Dark Mode
+//TODO - Download Trek Screen
 //TODO - Download tiles of map for offline use
+//TODO - Downloaded Trek Screen
+//TODO - Bug Profile name is not visible on second time onwards
 
 //Phase 2
+//TODO - Add view on google maps (the destination)
+//TODO - SignIn Page improved video branding
 //TODO - Add span in LazyColumn
 //TODO - Listen to location only when device is moving - optimize battery
 //TODO - Font fix all over the app
