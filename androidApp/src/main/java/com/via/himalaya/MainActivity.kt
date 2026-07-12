@@ -42,7 +42,6 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Download Trek Screen
 //TODO - Download tiles of map for offline use
 //TODO - Downloaded Trek Screen
-//TODO - Bug Profile name is not visible on second time onwards
 
 //Phase 2
 //TODO - Add view on google maps (the destination)

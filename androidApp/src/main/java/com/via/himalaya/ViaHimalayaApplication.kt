@@ -27,7 +27,7 @@ class ViaHimalayaApplication : Application() {
             val user = authRepository.getCurrentUser()
             Log.d("ViaHimalaya", "Current user: $user")
             user?.let {
-                tracker.setUser(user)
+                tracker.setUser(user.email)
             }
             tracker.track(
                 "app_started",

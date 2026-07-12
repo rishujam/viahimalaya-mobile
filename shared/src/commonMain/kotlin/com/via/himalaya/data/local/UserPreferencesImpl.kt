@@ -13,6 +13,7 @@ class UserPreferencesImpl(
     
     private companion object {
         val USER_EMAIL_KEY = stringPreferencesKey("user_email")
+        val NAME = stringPreferencesKey("name")
     }
     
     override suspend fun getUserEmail(): String? {
@@ -20,13 +21,20 @@ class UserPreferencesImpl(
             preferences[USER_EMAIL_KEY]
         }.first()
     }
-    
-    override suspend fun saveUserEmail(email: String) {
-        dataStore.edit { preferences ->
-            preferences[USER_EMAIL_KEY] = email
+
+    override suspend fun saveUserInfo(email: String, name: String) {
+        dataStore.edit { prefrences ->
+            prefrences[USER_EMAIL_KEY] = email
+            prefrences[NAME] = name
         }
     }
-    
+
+    override suspend fun getName(): String? {
+        return dataStore.data.map { preferences ->
+            preferences[NAME]
+        }.first()
+    }
+
     override suspend fun clearUserEmail() {
         dataStore.edit { preferences ->
             preferences.remove(USER_EMAIL_KEY)

@@ -5,11 +5,10 @@ interface UserPreferences {
      * Get the user's email
      */
     suspend fun getUserEmail(): String?
-    
-    /**
-     * Save the user's email
-     */
-    suspend fun saveUserEmail(email: String)
+
+    suspend fun saveUserInfo(email: String, name: String)
+
+    suspend fun getName(): String?
     
     /**
      * Clear the user's email

@@ -25,7 +25,7 @@ class FirebaseAuthRepository(
             val credential = GoogleAuthProvider.credential(idToken = idToken, accessToken = null)
             val user = auth.signInWithCredential(credential).user
                 ?: return Result.Error("Google sign-in returned no user.", -1)
-            userPreferences.saveUserEmail(user.email.orEmpty())
+            userPreferences.saveUserInfo(user.email.orEmpty(), user.displayName.orEmpty())
             Result.Success(user.toUserProfile())
         } catch (e: Exception) {
             tracker.track(Constants.Events.API_ERROR, mapOf("error" to e.message.toString()))
@@ -38,8 +38,14 @@ class FirebaseAuthRepository(
         auth.signOut()
     }
 
-    override suspend fun getCurrentUser(): String? {
-        return userPreferences.getUserEmail()
+    override suspend fun getCurrentUser(): UserProfile? {
+        val email = userPreferences.getUserEmail()
+        val name = userPreferences.getName()
+        return if(email.isNullOrEmpty()) {
+            null
+        } else {
+            UserProfile(email = email, name = name.orEmpty())
+        }
     }
 }
 

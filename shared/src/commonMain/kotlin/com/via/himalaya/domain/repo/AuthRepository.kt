@@ -13,6 +13,6 @@ interface AuthRepository {
 
     suspend fun signOut()
 
-    suspend fun getCurrentUser(): String?
+    suspend fun getCurrentUser(): UserProfile?
 
 }

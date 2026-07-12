@@ -26,7 +26,7 @@ class AuthViewModel(
                 _state.update {
                     it.copy(
                         initialAuthCheckRunning = false,
-                        userProfile = UserProfile(email = user)
+                        userProfile = user
                     )
                 }
             } ?: run {
