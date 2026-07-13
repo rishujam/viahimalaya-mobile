@@ -189,15 +189,7 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun saveTrekMetaData(meta: TrekDetail) {
-        try {
-            trekDao.insert(meta)
-        } catch (e: Exception) {
-            println("error inserting trek meta: ${e.message}")
-        }
-    }
-
-    override suspend fun getSavedTreks(): Result<List<TrekDetail>> {
+    override suspend fun getDownloadedTreks(): Result<List<TrekDetail>> {
         try {
             val treks = trekDao.getTreks()
             return if(!treks.isNullOrEmpty()) {
@@ -210,50 +202,21 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun saveNavigatorTrek(navigatorTrek: NavigatorTrek) {
-        navigatorDao.insertTrek(navigatorTrek)
-    }
-
-    override suspend fun updateNavigatorTrek(id: String, points: List<Point>) {
-        navigatorDao.updateNavigatorTrek(id, points)
-    }
-
-    override suspend fun getAllNavigatorTreks(): List<NavigatorTrek> {
-        return navigatorDao.getAllNavigatorTreks()
-    }
-
-    override suspend fun syncNavigatorTrek() {
-        try {
-            val navigatorTreks = navigatorDao.getAllNavigatorTreks()
-            //TODO - Sync navigator treks to server
-        } catch (e: Exception) {
-            println("Error syncing navigator trek: ${e.message}")
-        }
-    }
-
     override suspend fun downloadTrekOffline(
-        trekId: String,
+        trek: TrekDetail,
         onProgress: (Float) -> Unit
     ): Result<Boolean> {
         return try {
-            println("TrekRepository: Starting offline download for trek: $trekId")
-            
-            // Step 1: Get trek details (0-20% progress)
-            onProgress(0.0f)
-            val trekResult = getTrek(trekId)
-            if (trekResult !is Result.Success) {
-                return Result.Error("Failed to fetch trek details: ${(trekResult as? Result.Error)?.message}", 500)
-            }
-            val trek = trekResult.data!!
+            println("TrekRepository: Starting offline download for trek: ${trek.id}")
             onProgress(0.1f)
-            
-            // Step 2: Save metadata (10-20% progress)
-            saveTrekMetaData(trek)
+            try {
+                trekDao.insert(trek)
+            } catch (e: Exception) {
+                return Result.Error("Failed to save meta data: ${e.message}", 500)
+            }
             onProgress(0.2f)
             println("TrekRepository: Trek metadata saved")
-            
-            // Step 3: Download and save coordinates (20-40% progress)
-            val coordsResult = getTrekCoordinates(trek.coordinateUrl, trekId)
+            val coordsResult = getTrekCoordinates(trek.coordinateUrl, trek.id)
             if (coordsResult !is Result.Success) {
                 return Result.Error("Failed to download coordinates: ${(coordsResult as? Result.Error)?.message}", 500)
             }
@@ -263,18 +226,15 @@ class TrekRepositoryImpl(
             // Step 4: Download map tiles (40-100% progress)
             if (offlineMapManager != null) {
                 // Get the coordinates JSON from file
-                val coordinatesJson = fileDownloader.readFile(trekId)
-                if (coordinatesJson == null) {
-                    return Result.Error("Failed to read coordinates file for tile download", 500)
-                }
-                
+                val coordinatesJson = fileDownloader.readFile(trek.id)
+                    ?: return Result.Error("Failed to read coordinates file for tile download", 500)
+
                 val tilesResult = offlineMapManager.downloadTrekTiles(
-                    trekId = trekId,
+                    trekId = trek.id,
                     coordinatesJson = coordinatesJson,
                     minZoom = MIN_ZOOM,
                     maxZoom = MAX_ZOOM,
                     onProgress = { tileProgress ->
-                        // Map tile progress from 40% to 100%
                         onProgress(0.4f + (tileProgress * 0.6f))
                     }
                 )
@@ -299,7 +259,7 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun removeTrekOffline(trekId: String): Result<Boolean> {
+    override suspend fun removeDownloadedTrek(trekId: String): Result<Boolean> {
         return try {
             println("TrekRepository: Removing offline data for trek: $trekId")
             
@@ -337,12 +297,24 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun getTrekTileSize(trekId: String): Long {
-        return try {
-            offlineMapManager?.getTrekTileSize(trekId) ?: 0L
+    override suspend fun saveNavigatorTrek(navigatorTrek: NavigatorTrek) {
+        navigatorDao.insertTrek(navigatorTrek)
+    }
+
+    override suspend fun updateNavigatorTrek(id: String, points: List<Point>) {
+        navigatorDao.updateNavigatorTrek(id, points)
+    }
+
+    override suspend fun getAllNavigatorTreks(): List<NavigatorTrek> {
+        return navigatorDao.getAllNavigatorTreks()
+    }
+
+    override suspend fun syncNavigatorTrek() {
+        try {
+            val navigatorTreks = navigatorDao.getAllNavigatorTreks()
+            //TODO - Sync navigator treks to server
         } catch (e: Exception) {
-            println("TrekRepository: Error getting trek tile size: ${e.message}")
-            0L
+            println("Error syncing navigator trek: ${e.message}")
         }
     }
 }
