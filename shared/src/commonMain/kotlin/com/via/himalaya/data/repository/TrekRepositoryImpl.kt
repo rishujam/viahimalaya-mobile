@@ -209,37 +209,31 @@ class TrekRepositoryImpl(
         return try {
             println("TrekRepository: Starting offline download for trek: ${trek.id}")
             onProgress(0.1f)
-            try {
-                trekDao.insert(trek)
-            } catch (e: Exception) {
-                return Result.Error("Failed to save meta data: ${e.message}", 500)
-            }
-            onProgress(0.2f)
-            println("TrekRepository: Trek metadata saved")
-            val coordsResult = getTrekCoordinates(trek.coordinateUrl, trek.id)
-            if (coordsResult !is Result.Success) {
-                return Result.Error("Failed to download coordinates: ${(coordsResult as? Result.Error)?.message}", 500)
-            }
-            onProgress(0.4f)
-            println("TrekRepository: Trek coordinates downloaded")
-            
-            // Step 4: Download map tiles (40-100% progress)
             if (offlineMapManager != null) {
-                // Get the coordinates JSON from file
+                val coordinatesResult = getTrekCoordinates(trek.coordinateUrl, trek.id)
+                if (coordinatesResult !is Result.Success) {
+                    return Result.Error(
+                        "Failed to download coordinates: ${(coordinatesResult as? Result.Error)?.message}",
+                        500
+                    )
+                }
+                onProgress(0.2f)
+                println("TrekRepository: Trek coordinates downloaded")
                 val coordinatesJson = fileDownloader.readFile(trek.id)
                     ?: return Result.Error("Failed to read coordinates file for tile download", 500)
-
                 val tilesResult = offlineMapManager.downloadTrekTiles(
                     trekId = trek.id,
                     coordinatesJson = coordinatesJson,
                     minZoom = MIN_ZOOM,
                     maxZoom = MAX_ZOOM,
                     onProgress = { tileProgress ->
-                        onProgress(0.4f + (tileProgress * 0.6f))
+                        onProgress(0.2f + (tileProgress * 0.7f))
                     }
                 )
-                
                 if (tilesResult.isSuccess) {
+                    onProgress(0.9f)
+                    trekDao.insert(trek)
+                    onProgress(1.0f)
                     println("TrekRepository: Trek tiles downloaded successfully")
                     Result.Success(true)
                 } else {
@@ -248,7 +242,6 @@ class TrekRepositoryImpl(
                     Result.Error("Failed to download map tiles: ${error?.message}", 500)
                 }
             } else {
-                // No offline map manager available (e.g., on iOS)
                 println("TrekRepository: Offline map manager not available, skipping tile download")
                 onProgress(1.0f)
                 Result.Success(true)

@@ -39,15 +39,16 @@ import org.koin.androidx.compose.koinViewModel
         //Create table to store path followed by user mapped to trek id - Done need to test
 
 //TODO - Data Entry in Backend
-//TODO - Download Trek Screen
 //TODO - Download tiles of map for offline use
-//TODO - Downloaded Trek Screen
-//TODO - Foreground Notification while downloading
-        // if incomplete remove the half downloaded file
-//TODO - If not connected to internet navigate to profile screen
-//TODO - Map Caching size limits - can download 5 treks at a time
+        //Downloaded Trek Screen Updated UI
+        //Foreground Notification while downloading
+        //If incomplete remove the half downloaded file
+        //If not connected to internet navigate to profile screen
+        //Map Caching size limits - can download 5 treks at a time
+        //Before showing the list in downloaded treks make sure trek is fully downloaded
 
 //Phase 2
+//TODO - SignInScreen Video
 //TODO - (Bug) Coming back to explore page the state of isFocused in not maintained
 //TODO - Add view on google maps (the destination)
 //TODO - SignIn Page improved video branding
