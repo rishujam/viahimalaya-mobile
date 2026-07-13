@@ -19,6 +19,8 @@ class ViaHimalayaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Log.d("ViaHimalaya", "🚀 ViaHimalaya Application Starting...")
+        
+        // Initialize Koin (Mapbox TileStore configured in DI)
         initKoin {
             androidContext(this@ViaHimalayaApplication)
         }

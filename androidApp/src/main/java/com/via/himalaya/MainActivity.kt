@@ -42,8 +42,13 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Download Trek Screen
 //TODO - Download tiles of map for offline use
 //TODO - Downloaded Trek Screen
+//TODO - Foreground Notification while downloading
+        // if incomplete remove the half downloaded file
+//TODO - If not connected to internet navigate to profile screen
+//TODO - Map Caching size limits - can download 5 treks at a time
 
 //Phase 2
+//TODO - (Bug) Coming back to explore page the state of isFocused in not maintained
 //TODO - Add view on google maps (the destination)
 //TODO - SignIn Page improved video branding
 //TODO - Add span in LazyColumn

@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.implementation
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -73,6 +74,7 @@ kotlin {
         }
 
         androidMain.dependencies {
+            api(libs.map.box)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.play.services.location)

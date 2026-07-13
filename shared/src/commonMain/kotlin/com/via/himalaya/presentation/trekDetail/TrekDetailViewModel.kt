@@ -202,6 +202,9 @@ class TrekDetailViewModel(
     fun downloadHike() = viewModelScope.launch {
         state.value.trek?.let { trek ->
             trekRepository.saveTrekMetaData(trek)
+            trekRepository.downloadTrekOffline(trek.id) { progress ->
+                println("in progress downloading tiles: $progress")
+            }
 //            val result = trekRepository.downloadMap(
 //                trekId = trek.id,
 //                boundingBox = trek.boundingBox,

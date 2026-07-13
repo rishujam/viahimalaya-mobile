@@ -11,6 +11,7 @@ import com.via.himalaya.data.models.TrekDetailData
 import com.via.himalaya.data.models.TrekSearchData
 import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
+import com.via.himalaya.data.local.OfflineMapManager
 import com.via.himalaya.domain.model.TrekGeoData
 import com.via.himalaya.domain.model.Treks
 import com.via.himalaya.domain.repo.TrekRepository
@@ -30,13 +31,19 @@ class TrekRepositoryImpl(
     private val trekDao: TrekDao,
     private val navigatorDao: NavigatorDao,
     private val fileDownloader: FileDownloader,
+    private val offlineMapManager: OfflineMapManager?,
 ) : TrekRepository {
 
     companion object {
         private const val BASE_URL = "https://viahimalaya.com"
         const val DEFAULT_API_KEY = "ea6265827acc4132d98dc8e37727f36fda3b91e9c4c6d79b4cb5b6c89d9fa6cf"
-//        private const val MIN_ZOOM = 11
-//        private const val MAX_ZOOM = 15
+        // Zoom levels for offline maps
+        // IMPORTANT: Mapbox tile packs have predefined zoom ranges: 0-5, 6-10, 11-14, 15-16
+        // Maximum offline zoom is 16 (zoom 17-22 only available online via dynamic tile generation)
+        // Setting minZoom=11, maxZoom=16 downloads tile packs for ranges 11-14 and 15-16
+        // This provides the best possible offline quality (~30-60MB per trek)
+        private const val MIN_ZOOM = 11
+        private const val MAX_ZOOM = 16  // Maximum possible for offline maps
     }
 
     override suspend fun getTreks(
@@ -224,136 +231,118 @@ class TrekRepositoryImpl(
         }
     }
 
-    //    override suspend fun downloadMap(
-//        trekId: String,
-//        boundingBox: List<Double>,
-//        onProgress: (Float) -> Unit,
-//        mapStyle: String
-//    ): Result<Boolean> = withContext(Dispatchers.IO) {
-//        try {
-//            downloadStylePackIfNeeded(mapStyle)
-//
-//            // Step 2: Download trek coordinates
-//            val coordsDownloaded = downloadCoordinatesFileToLocal(
-//                trek.coordinateUrl,
-//                trekId
-//            )
-//            if (!coordsDownloaded) {
-//                return@withContext Result.Error("Failed to download coordinates", 500)
-//            }
-//
-//            // Step 3: Download map tiles for the trek area
-//            val tileRegionDownloaded = downloadTileRegion(
-//                trekId,
-//                boundingBox,
-//                onProgress
-//            )
-//
-//            if (tileRegionDownloaded) {
-//                Result.Success(true)
-//            } else {
-//                Result.Error("Failed to download tile region", 500)
-//            }
-//        } catch (e: Exception) {
-//            Result.Error("Error downloading trek offline: ${e.message}", 500)
-//        }
-//    }
-//
-//    private suspend fun downloadStylePackIfNeeded(mapStyle: String) {
-//        // Check if style pack already exists
-//        val stylePacks = offlineManager.getAllStylePacks()
-//        val hasStylePack = stylePacks.value?.any {
-//            it.styleURI == mapStyle
-//        } ?: false
-//
-//        if (!hasStylePack) {
-//            val stylePackOptions = StylePackLoadOptions.Builder()
-//                .glyphsRasterizationMode(GlyphsRasterizationMode.IDEOGRAPHS_RASTERIZED_LOCALLY)
-//                .acceptExpired(false)
-//                .build()
-//
-//            suspendCoroutine<Unit> { continuation ->
-//                offlineManager.loadStylePack(
-//                    STYLE_URI,
-//                    stylePackOptions,
-//                    { progress -> /* Track progress if needed */ },
-//                    { expected ->
-//                        expected.fold(
-//                            { continuation.resume(Unit) },
-//                            { continuation.resumeWithException(Exception(it.message)) }
-//                        )
-//                    }
-//                )
-//            }
-//        }
-//    }
-//
-//    private suspend fun downloadTileRegion(
-//        trekId: String,
-//        boundingBox: List<Double>,
-//        onProgress: (Float) -> Unit
-//    ): Boolean = suspendCoroutine { continuation ->
-//        // Create tileset descriptor
-//        val tilesetDescriptorOptions = TilesetDescriptorOptions.Builder()
-//            .styleURI(STYLE_URI)
-//            .minZoom(MIN_ZOOM.toByte())
-//            .maxZoom(MAX_ZOOM.toByte())
-//            .build()
-//
-//        val tilesetDescriptor = offlineManager.createTilesetDescriptor(
-//            tilesetDescriptorOptions
-//        )
-//
-//        // Convert bounding box to polygon
-//        val polygon = createPolygonFromBoundingBox(boundingBox)
-//
-//        // Create tile region load options
-//        val loadOptions = TileRegionLoadOptions.Builder()
-//            .geometry(polygon)
-//            .descriptors(listOf(tilesetDescriptor))
-//            .metadata(hashMapOf(
-//                "trekId" to Value.valueOf(trekId),
-//                "downloadDate" to Value.valueOf(System.currentTimeMillis())
-//            ))
-//            .acceptExpired(false)
-//            .build()
-//
-//        // Download tile region
-//        tileStore.loadTileRegion(
-//            trekId, // Use trekId as region ID
-//            loadOptions,
-//            { progress ->
-//                val total = maxOf(progress.requiredResourceCount, 1)
-//                val progressVal = progress.completedResourceCount.toFloat() / total.toFloat()
-//                onProgress(progressVal)
-//            }
-//        ) { expected ->
-//            expected.fold(
-//                { continuation.resume(true) },
-//                { continuation.resume(false) }
-//            )
-//        }
-//    }
-//
-//    private fun createPolygonFromBoundingBox(boundingBox: List<Double>): Polygon {
-//        // boundingBox format: [minLng, minLat, maxLng, maxLat]
-//        val coords = listOf(
-//            Point.fromLngLat(boundingBox[0], boundingBox[1]), // SW
-//            Point.fromLngLat(boundingBox[2], boundingBox[1]), // SE
-//            Point.fromLngLat(boundingBox[2], boundingBox[3]), // NE
-//            Point.fromLngLat(boundingBox[0], boundingBox[3]), // NW
-//            Point.fromLngLat(boundingBox[0], boundingBox[1])  // Close polygon
-//        )
-//        return Polygon.fromLngLats(listOf(coords))
-//    }
-//
-//    override suspend fun removeTrekOffline(trekId: String): Result<Boolean> {
-//        return try {
-//            tileStore.removeTileRegion(trekId)
-//            fileDownloader.deleteFile(trekId)
-//            Result.Success(true)
-//        } catch (e: Exception) {
-//            Result.Error("Error removing offline trek: ${e.message}", 500)
-//        }
-//    }
+    override suspend fun downloadTrekOffline(
+        trekId: String,
+        onProgress: (Float) -> Unit
+    ): Result<Boolean> {
+        return try {
+            println("TrekRepository: Starting offline download for trek: $trekId")
+            
+            // Step 1: Get trek details (0-20% progress)
+            onProgress(0.0f)
+            val trekResult = getTrek(trekId)
+            if (trekResult !is Result.Success) {
+                return Result.Error("Failed to fetch trek details: ${(trekResult as? Result.Error)?.message}", 500)
+            }
+            val trek = trekResult.data!!
+            onProgress(0.1f)
+            
+            // Step 2: Save metadata (10-20% progress)
+            saveTrekMetaData(trek)
+            onProgress(0.2f)
+            println("TrekRepository: Trek metadata saved")
+            
+            // Step 3: Download and save coordinates (20-40% progress)
+            val coordsResult = getTrekCoordinates(trek.coordinateUrl, trekId)
+            if (coordsResult !is Result.Success) {
+                return Result.Error("Failed to download coordinates: ${(coordsResult as? Result.Error)?.message}", 500)
+            }
+            onProgress(0.4f)
+            println("TrekRepository: Trek coordinates downloaded")
+            
+            // Step 4: Download map tiles (40-100% progress)
+            if (offlineMapManager != null) {
+                // Get the coordinates JSON from file
+                val coordinatesJson = fileDownloader.readFile(trekId)
+                if (coordinatesJson == null) {
+                    return Result.Error("Failed to read coordinates file for tile download", 500)
+                }
+                
+                val tilesResult = offlineMapManager.downloadTrekTiles(
+                    trekId = trekId,
+                    coordinatesJson = coordinatesJson,
+                    minZoom = MIN_ZOOM,
+                    maxZoom = MAX_ZOOM,
+                    onProgress = { tileProgress ->
+                        // Map tile progress from 40% to 100%
+                        onProgress(0.4f + (tileProgress * 0.6f))
+                    }
+                )
+                
+                if (tilesResult.isSuccess) {
+                    println("TrekRepository: Trek tiles downloaded successfully")
+                    Result.Success(true)
+                } else {
+                    val error = tilesResult.exceptionOrNull()
+                    println("TrekRepository: Failed to download tiles: ${error?.message}")
+                    Result.Error("Failed to download map tiles: ${error?.message}", 500)
+                }
+            } else {
+                // No offline map manager available (e.g., on iOS)
+                println("TrekRepository: Offline map manager not available, skipping tile download")
+                onProgress(1.0f)
+                Result.Success(true)
+            }
+        } catch (e: Exception) {
+            println("TrekRepository: Error downloading trek offline: ${e.message}")
+            Result.Error("Error downloading trek offline: ${e.message}", 500)
+        }
+    }
+
+    override suspend fun removeTrekOffline(trekId: String): Result<Boolean> {
+        return try {
+            println("TrekRepository: Removing offline data for trek: $trekId")
+            
+            // Remove map tiles
+            offlineMapManager?.removeTrekTiles(trekId)
+            
+            // Remove coordinates file
+            fileDownloader.deleteFile(trekId)
+            
+            // Remove metadata from database
+            // Note: You may need to add a delete method to TrekDao
+            // trekDao.deleteTrek(trekId)
+            
+            println("TrekRepository: Offline data removed for trek: $trekId")
+            Result.Success(true)
+        } catch (e: Exception) {
+            println("TrekRepository: Error removing offline trek: ${e.message}")
+            Result.Error("Error removing offline trek: ${e.message}", 500)
+        }
+    }
+
+    override suspend fun isTrekFullyDownloaded(trekId: String): Boolean {
+        return try {
+            val hasMetadata = trekDao.getTrek(trekId) != null
+            val hasCoordinates = fileDownloader.fileExists(trekId)
+            val hasTiles = offlineMapManager?.isTrekDownloaded(trekId) ?: true // true if no manager (iOS)
+            
+            val isFullyDownloaded = hasMetadata && hasCoordinates && hasTiles
+            println("TrekRepository: Trek $trekId download status - metadata: $hasMetadata, coords: $hasCoordinates, tiles: $hasTiles")
+            
+            isFullyDownloaded
+        } catch (e: Exception) {
+            println("TrekRepository: Error checking trek download status: ${e.message}")
+            false
+        }
+    }
+
+    override suspend fun getTrekTileSize(trekId: String): Long {
+        return try {
+            offlineMapManager?.getTrekTileSize(trekId) ?: 0L
+        } catch (e: Exception) {
+            println("TrekRepository: Error getting trek tile size: ${e.message}")
+            0L
+        }
+    }
 }
