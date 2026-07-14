@@ -17,4 +17,7 @@ interface TrekDao {
     @Query("SELECT * FROM TrekDetail")
     suspend fun getTreks(): List<TrekDetail>?
 
+    @Query("DELETE FROM TrekDetail WHERE id = :id")
+    suspend fun deleteTrek(id: String)
+
 }

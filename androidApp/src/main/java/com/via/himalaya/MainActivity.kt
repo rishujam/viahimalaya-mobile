@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,6 +34,7 @@ import com.via.himalaya.ui.screens.ExploreScreenRoot
 import com.via.himalaya.ui.screens.ProfileScreenRoot
 import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
+import com.via.himalaya.util.NetworkUtil
 import org.koin.androidx.compose.koinViewModel
 
 //TODO - Collect the sensor and location data of the trekker locally
@@ -42,10 +44,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Download tiles of map for offline use
         //Foreground Notification while downloading
         //If incomplete remove the half downloaded file
-        //If not connected to internet navigate to profile screen
         //Map Caching size limits - can download 3 treks at a time
-        //Remove button on downloaded trek cards
-        //Before showing the list in downloaded treks make sure trek is fully downloaded
 
 //Phase 2
 //TODO - SignInScreen Video
@@ -59,6 +58,7 @@ import org.koin.androidx.compose.koinViewModel
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
 //TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
 //TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
+//TODO - Before showing the list in downloaded treks make sure trek is fully downloaded if not remove the trek meta data
 
 
 class MainActivity : ComponentActivity() {
@@ -88,6 +88,7 @@ fun ViaHimalayaApp(
     permissionHandler: PermissionHandler,
     onAuthCheckComplete: () -> Unit
 ) {
+    val context = LocalContext.current
     val navController = rememberNavController()
     val authViewModel = koinViewModel<AuthViewModel>()
     val authState by authViewModel.state.collectAsState()
@@ -104,10 +105,13 @@ fun ViaHimalayaApp(
     } ?: false
     if (!authState.initialAuthCheckRunning) {
         onAuthCheckComplete()
-        val startDestination = if (authState.userProfile?.email != null) {
-            Route.Explore
-        } else {
-            Route.SignIn
+        val isInternetAvailable = NetworkUtil.isInternetAvailable(context)
+        val isLoggedIn = authState.userProfile?.email != null
+        
+        val startDestination = when {
+            !isLoggedIn -> Route.SignIn
+            isInternetAvailable -> Route.Explore
+            else -> Route.Profile // Offline and logged in -> go to Profile
         }
         Scaffold(
             bottomBar = {
@@ -183,7 +187,7 @@ fun ViaHimalayaApp(
                                 )
                             },
                             onDeleteTrek = { trek ->
-
+                                viewModel.deleteDownloadedTrek(trek)
                             }
                         )
                     }

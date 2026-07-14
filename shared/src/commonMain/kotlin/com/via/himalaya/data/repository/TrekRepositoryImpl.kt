@@ -255,19 +255,16 @@ class TrekRepositoryImpl(
     override suspend fun removeDownloadedTrek(trekId: String): Result<Boolean> {
         return try {
             println("TrekRepository: Removing offline data for trek: $trekId")
-            
-            // Remove map tiles
-            offlineMapManager?.removeTrekTiles(trekId)
-            
-            // Remove coordinates file
-            fileDownloader.deleteFile(trekId)
-            
-            // Remove metadata from database
-            // Note: You may need to add a delete method to TrekDao
-            // trekDao.deleteTrek(trekId)
-            
-            println("TrekRepository: Offline data removed for trek: $trekId")
-            Result.Success(true)
+            val result = offlineMapManager?.removeTrekTiles(trekId)
+            if(result?.isSuccess == true) {
+                println("TrekRepository: Offline data removed for trek: $trekId")
+                fileDownloader.deleteFile(trekId)
+                trekDao.deleteTrek(trekId)
+                println("TrekRepository: removed trek: $trekId")
+                Result.Success(true)
+            } else {
+                Result.Error("Unable to delete tiles", 500)
+            }
         } catch (e: Exception) {
             println("TrekRepository: Error removing offline trek: ${e.message}")
             Result.Error("Error removing offline trek: ${e.message}", 500)

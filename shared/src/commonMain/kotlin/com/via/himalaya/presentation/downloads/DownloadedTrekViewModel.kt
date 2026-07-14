@@ -2,6 +2,7 @@ package com.via.himalaya.presentation.downloads
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.via.himalaya.data.models.Trek
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.Result
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,13 @@ class DownloadedTrekViewModel(
 
     init {
         getDownloadedTreks()
+    }
+
+    fun deleteDownloadedTrek(trek: Trek) = viewModelScope.launch {
+        val result = trekRepository.removeDownloadedTrek(trek.id)
+        if(result is Result.Success) {
+            getDownloadedTreks()
+        }
     }
 
     private fun getDownloadedTreks() = viewModelScope.launch {
