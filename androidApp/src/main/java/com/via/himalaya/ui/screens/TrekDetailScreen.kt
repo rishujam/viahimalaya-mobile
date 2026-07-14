@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,11 +20,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +69,18 @@ fun TrekDetailScreenRoot(
     permissionHandler: PermissionHandler?
 ) {
     val state by viewModel.state.collectAsState()
+    val snackBarHostState = remember { SnackbarHostState() }
+    
+    // Handle error toast
+    LaunchedEffect(state.errorToast) {
+        state.errorToast?.let { errorMessage ->
+            snackBarHostState.showSnackbar(
+                message = errorMessage,
+                withDismissAction = true
+            )
+            viewModel.clearErrorToast()
+        }
+    }
     
     // Request permissions only once when screen is created
     LaunchedEffect(Unit) {
@@ -78,7 +95,8 @@ fun TrekDetailScreenRoot(
         onStartHike = { viewModel.startTrekking(trekId) },
         onStopHike = { viewModel.stopTrekking() },
         permissionHandler = permissionHandler,
-        onDownloadHikeClick = { viewModel.downloadHike() }
+        onDownloadHikeClick = { viewModel.downloadHike() },
+        snackbarHostState = snackBarHostState
     )
 }
 
@@ -89,7 +107,8 @@ fun TrekDetailScreen(
     onStartHike: () -> Unit = {},
     onStopHike: () -> Unit = {},
     onDownloadHikeClick: () -> Unit,
-    permissionHandler: PermissionHandler?
+    permissionHandler: PermissionHandler?,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Box (
         modifier = Modifier
@@ -356,6 +375,21 @@ fun TrekDetailScreen(
                 Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
             }
         }
+        
+        // Snackbar for error messages
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .imePadding()
+                .padding(16.dp)
+        ) { snackbarData ->
+            Snackbar(
+                snackbarData = snackbarData,
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
     }
 }
 
@@ -377,6 +411,7 @@ fun TrekDetailScreenPreview() {
         ),
         onBackClick = {},
         permissionHandler = null,
-        onDownloadHikeClick = {}
+        onDownloadHikeClick = {},
+        snackbarHostState = remember { SnackbarHostState() }
     )
 }

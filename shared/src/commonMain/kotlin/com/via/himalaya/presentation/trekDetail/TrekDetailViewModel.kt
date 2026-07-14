@@ -50,8 +50,7 @@ class TrekDetailViewModel(
             _state.update {
                 it.copy(
                     isLoading = false,
-                    trek = trek.data,
-                    errorState = null
+                    trek = trek.data
                 )
             }
             // After trek is loaded, check if test location is in bounding box
@@ -61,7 +60,7 @@ class TrekDetailViewModel(
             _state.update {
                 it.copy(
                     isLoading = false,
-                    errorState = trek.message
+                    errorToast = trek.message
                 )
             }
         }
@@ -99,15 +98,14 @@ class TrekDetailViewModel(
             _state.update {
                 it.copy(
                     isLoading = false,
-                    geoData = coordinates.data,
-                    errorState = null
+                    geoData = coordinates.data
                 )
             }
         } else {
             _state.update {
                 it.copy(
                     isLoading = false,
-                    errorState = coordinates.message
+                    errorToast = coordinates.message
                 )
             }
         }
@@ -201,10 +199,22 @@ class TrekDetailViewModel(
 
     fun downloadHike() = viewModelScope.launch {
         state.value.trek?.let { trek ->
-            trekRepository.downloadTrekOffline(trek) { progress ->
-                println("in progress downloading tiles: $progress")
+            val downloadedTreks = trekRepository.getDownloadedTreks()
+            val downloadedTrekSize = downloadedTreks.data?.size
+            if(downloadedTrekSize != null && downloadedTrekSize < 3) {
+                trekRepository.downloadTrekOffline(trek) { progress ->
+                    println("in progress downloading tiles: $progress")
+                }
+            } else {
+                _state.update {
+                    it.copy(errorToast = "Maximum 3 treks can be downloaded. Please delete a trek to download more.")
+                }
             }
         }
+    }
+    
+    fun clearErrorToast() {
+        _state.update { it.copy(errorToast = null) }
     }
     
     override fun onCleared() {

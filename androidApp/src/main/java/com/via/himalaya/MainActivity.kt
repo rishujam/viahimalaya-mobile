@@ -42,9 +42,9 @@ import org.koin.androidx.compose.koinViewModel
 
 //TODO - Data Entry in Backend
 //TODO - Download tiles of map for offline use
+        //Check if trek is already downloaded
         //Foreground Notification while downloading
         //If incomplete remove the half downloaded file
-        //Map Caching size limits - can download 3 treks at a time
 
 //Phase 2
 //TODO - SignInScreen Video

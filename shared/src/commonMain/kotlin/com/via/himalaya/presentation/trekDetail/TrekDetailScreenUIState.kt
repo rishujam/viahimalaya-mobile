@@ -7,7 +7,8 @@ import com.via.himalaya.domain.model.TrekGeoData
 data class TrekDetailScreenUIState(
     val trek: TrekDetail? = null,
     val isLoading: Boolean = false,
-    val errorState: String? = null,
+    val errorToast: String? = null,
+    val messageDisplay: String? = null,
     val geoData: TrekGeoData? = null,
     val currentLocation: Loc? = null,
     val isNearTrekStart: Boolean = false,
