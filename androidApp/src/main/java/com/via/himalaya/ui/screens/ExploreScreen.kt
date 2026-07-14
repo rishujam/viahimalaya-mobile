@@ -1,5 +1,6 @@
 package com.via.himalaya.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -78,6 +79,7 @@ fun ExploreScreenRoot(
     )
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ExploreScreen(
     state: ExploreScreenUIState,

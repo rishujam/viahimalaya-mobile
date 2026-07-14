@@ -27,7 +27,7 @@ class DownloadedTrekViewModel(
                 isLoading = true
             )
         }
-        val result = trekRepository.getSavedTreks()
+        val result = trekRepository.getDownloadedTreks()
         if(result is Result.Success) {
             val treks = result.data?.map {
                 it.toTrek()
