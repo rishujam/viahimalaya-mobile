@@ -199,11 +199,15 @@ class TrekDetailViewModel(
 
     fun downloadHike() = viewModelScope.launch {
         state.value.trek?.let { trek ->
-            val downloadedTreks = trekRepository.getDownloadedTreks()
-            val downloadedTrekSize = downloadedTreks.data?.size
+            val downloadedTreks = trekRepository.getDownloadedTreks().data
+            val downloadedTrekSize = downloadedTreks?.size
             if(downloadedTrekSize != null && downloadedTrekSize < 3) {
                 trekRepository.downloadTrekOffline(trek) { progress ->
                     println("in progress downloading tiles: $progress")
+                }
+            } else if(downloadedTreks?.contains(trek) == true) {
+                _state.update {
+                    it.copy(errorToast = "Trek is already downloaded")
                 }
             } else {
                 _state.update {

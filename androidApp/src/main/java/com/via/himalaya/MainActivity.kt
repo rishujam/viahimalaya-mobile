@@ -59,6 +59,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
 //TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 //TODO - Before showing the list in downloaded treks make sure trek is fully downloaded if not remove the trek meta data
+//TODO - On search image of trek is not showing
 
 
 class MainActivity : ComponentActivity() {
