@@ -14,9 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,68 +45,6 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import com.via.himalaya.data.models.Trek
-
-/**
- * Featured Trek Card - Large card with hero image overlay design
- * Based on the Figma design with gradient overlay and information displayed on image
- */
-@Composable
-fun TrekCard(
-    trek: Trek,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .height(280.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.secondary,
-                            MaterialTheme.colorScheme.primary
-                        )
-                    )
-                ),
-            verticalArrangement = Arrangement.Bottom
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.Bottom,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    maxLines = 1,
-                    text = trek.name,
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    maxLines = 1,
-                    text = trek.location,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-        }
-    }
-}
 
 @Preview
 @Composable
@@ -127,7 +71,9 @@ fun CarouselTrekCard(
     isFocused: Boolean,
     onClick: () -> Unit,
     cardHeight: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showDeleteButton: Boolean = false,
+    onDelete: (() -> Unit)? = null
 ) {
     // Animation specification for all transitions
     val animSpec = tween<Dp>(
@@ -220,6 +166,33 @@ fun CarouselTrekCard(
                         )
                     )
             )
+            
+            // Delete button (top-right corner)
+            if (showDeleteButton && onDelete != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.TopEnd
+                ) {
+                    IconButton(
+                        onClick = { onDelete() },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete trek",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
             
             // Text content on top
             Column(

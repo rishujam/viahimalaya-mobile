@@ -32,12 +32,14 @@ import kotlin.math.abs
 @Composable
 fun DownloadedTrekScreenRoot(
     viewModel: DownloadedTrekViewModel,
-    onTrekClicked: (Trek) -> Unit
+    onTrekClicked: (Trek) -> Unit,
+    onDeleteTrek: (Trek) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     DownloadedTrekScreen(
         state = state,
-        onTrekClicked = onTrekClicked
+        onTrekClicked = onTrekClicked,
+        onDeleteTrek = onDeleteTrek
     )
 }
 
@@ -46,6 +48,7 @@ fun DownloadedTrekScreenRoot(
 fun DownloadedTrekScreen(
     state: DownloadedTrekUIState,
     onTrekClicked: (Trek) -> Unit,
+    onDeleteTrek: (Trek) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
     var focusedIndex by remember { mutableIntStateOf(0) }
@@ -112,7 +115,9 @@ fun DownloadedTrekScreen(
                             trek = trek,
                             isFocused = isFocused,
                             onClick = { onTrekClicked(trek) },
-                            cardHeight = cardHeight
+                            cardHeight = cardHeight,
+                            showDeleteButton = true,
+                            onDelete = { onDeleteTrek(trek) }
                         )
                     }
                 }

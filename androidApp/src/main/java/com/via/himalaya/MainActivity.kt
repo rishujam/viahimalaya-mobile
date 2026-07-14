@@ -175,11 +175,17 @@ fun ViaHimalayaApp(
                     }
                     composable<Route.DownloadedTrek> {
                         val viewModel = koinViewModel<DownloadedTrekViewModel>()
-                        DownloadedTrekScreenRoot(viewModel) { trek ->
-                            navController.navigate(
-                                Route.TrekDetail(trek.id, trek.coordinateUrl)
-                            )
-                        }
+                        DownloadedTrekScreenRoot(
+                            viewModel = viewModel,
+                            onTrekClicked = { trek ->
+                                navController.navigate(
+                                    Route.TrekDetail(trek.id, trek.coordinateUrl)
+                                )
+                            },
+                            onDeleteTrek = { trek ->
+
+                            }
+                        )
                     }
                 }
             }
