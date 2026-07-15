@@ -41,8 +41,10 @@ import org.koin.androidx.compose.koinViewModel
         //Create table to store path followed by user mapped to trek id - Done need to test
 
 //TODO - Data Entry in Backend
+//TODO - Add loading while loading signinProfiles
 //TODO - Download tiles of map for offline use
-        //Check if trek is already downloaded
+        //(Bug) If its the last trek in downloaded list and we try to delete it the UI dosent gets updated
+        //On notification allow start downloading
         //Foreground Notification while downloading
         //If incomplete remove the half downloaded file
 

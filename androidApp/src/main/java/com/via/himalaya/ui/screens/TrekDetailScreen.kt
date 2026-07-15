@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,6 +57,7 @@ import com.via.himalaya.domain.model.toGeoJsonString
 import com.via.himalaya.permissions.PermissionHandler
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
+import com.via.himalaya.service.TrekDownloadService
 import com.via.himalaya.ui.components.PrimaryButton
 import com.via.himalaya.ui.components.SecondaryButton
 import com.via.himalaya.util.Constants
@@ -68,6 +70,7 @@ fun TrekDetailScreenRoot(
     onBackClick: () -> Unit = {},
     permissionHandler: PermissionHandler?
 ) {
+    val context = LocalContext.current
     val state by viewModel.state.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
     
@@ -95,7 +98,19 @@ fun TrekDetailScreenRoot(
         onStartHike = { viewModel.startTrekking(trekId) },
         onStopHike = { viewModel.stopTrekking() },
         permissionHandler = permissionHandler,
-        onDownloadHikeClick = { viewModel.downloadHike() },
+        onDownloadHikeClick = {
+            viewModel.validateAndStartDownload { trek ->
+                if (permissionHandler?.hasNotificationPermission() == true) {
+                    TrekDownloadService.startService(
+                        context = context,
+                        trekId = trek.id,
+                        trekName = trek.name
+                    )
+                } else {
+                    permissionHandler?.checkAndRequestNotificationPermission()
+                }
+            }
+        },
         snackbarHostState = snackBarHostState
     )
 }

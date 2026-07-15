@@ -18,6 +18,7 @@ class PermissionHandler(private val activity: ComponentActivity) {
     private var hasPreciseLocation: Boolean = false
     private var isFullyDenied: Boolean = false
     private var shouldShowRationale: Boolean = false
+    private var hasNotificationPermission: Boolean = false
 
     // Launch the dual prompt required for Android 12+
     private val locationPermissionLauncher = activity.registerForActivityResult(
@@ -30,6 +31,14 @@ class PermissionHandler(private val activity: ComponentActivity) {
         isFullyDenied = !hasFineLocation && !hasCoarseLocation
         shouldShowRationale = !hasFineLocation &&
                 activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+    
+    // Notification permission launcher for Android 13+
+    private val notificationPermissionLauncher = activity.registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasNotificationPermission = isGranted
+        Log.d("PermissionHandler", "Notification permission granted: $isGranted")
     }
 
     fun checkAndRequestPermissions() {
@@ -55,6 +64,31 @@ class PermissionHandler(private val activity: ComponentActivity) {
 
     fun hasPreciseLocationPermission(): Boolean {
         return hasPreciseLocation
+    }
+    
+    fun checkAndRequestNotificationPermission(): Boolean {
+        // Notification permission is only required for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = hasPermission(Manifest.permission.POST_NOTIFICATIONS)
+            hasNotificationPermission = hasPermission
+            
+            if (!hasPermission) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return false
+            }
+            return true
+        }
+        // For Android 12 and below, notification permission is granted by default
+        hasNotificationPermission = true
+        return true
+    }
+    
+    fun hasNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            hasPermission(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            true // No permission needed for older versions
+        }
     }
 
     private fun hasPermission(permission: String): Boolean {

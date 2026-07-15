@@ -6,6 +6,7 @@ import com.via.himalaya.data.models.Loc
 import com.via.himalaya.data.models.NavigatorTrek
 import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.RawSensors
+import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
 import com.via.himalaya.domain.SensorListener
@@ -196,22 +197,24 @@ class TrekDetailViewModel(
             )
         }
     }
-
-    fun downloadHike() = viewModelScope.launch {
+    
+    fun validateAndStartDownload(onValidationSuccess: (TrekDetail) -> Unit) = viewModelScope.launch {
         state.value.trek?.let { trek ->
             val downloadedTreks = trekRepository.getDownloadedTreks().data
             val downloadedTrekSize = downloadedTreks?.size
-            if(downloadedTrekSize != null && downloadedTrekSize < 3) {
-                trekRepository.downloadTrekOffline(trek) { progress ->
-                    println("in progress downloading tiles: $progress")
+            when {
+                downloadedTreks?.any { it.id == trek.id } == true -> {
+                    _state.update {
+                        it.copy(errorToast = "Trek is already downloaded")
+                    }
                 }
-            } else if(downloadedTreks?.contains(trek) == true) {
-                _state.update {
-                    it.copy(errorToast = "Trek is already downloaded")
+                downloadedTrekSize != null && downloadedTrekSize >= 3 -> {
+                    _state.update {
+                        it.copy(errorToast = "Maximum 3 treks can be downloaded. Please delete a trek to download more.")
+                    }
                 }
-            } else {
-                _state.update {
-                    it.copy(errorToast = "Maximum 3 treks can be downloaded. Please delete a trek to download more.")
+                else -> {
+                    onValidationSuccess(trek)
                 }
             }
         }

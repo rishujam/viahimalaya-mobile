@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.google.gms)
 }
 
-android {
+android { 
     namespace = "com.via.himalaya"
     compileSdk = 36
     defaultConfig {
