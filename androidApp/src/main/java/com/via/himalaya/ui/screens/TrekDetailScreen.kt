@@ -248,7 +248,7 @@ fun TrekDetailScreen(
         }
         
         // Show message when NOT trekking and not in bounding box
-        if (!state.isTrekking && !state.isNearTrekStart && state.currentLocation != null) {
+        if (!state.isTrekking && !state.isNearTrekStart) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

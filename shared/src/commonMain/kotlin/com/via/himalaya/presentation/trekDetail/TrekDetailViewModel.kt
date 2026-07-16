@@ -117,10 +117,7 @@ class TrekDetailViewModel(
         val coordinates = geoData.geometry.getFlattenedCoordinates()
         
         if (coordinates.isEmpty()) return
-        val currentLocation = _state.value.currentLocation
-        if (currentLocation != null && !_state.value.isNearTrekStart) {
-            return
-        }
+        if (!_state.value.isNearTrekStart) return
 
         _state.update { it.copy(isTrekking = true) }
         val user = _state.value.userEmail
