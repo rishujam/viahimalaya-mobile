@@ -22,7 +22,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.via.himalaya.navigation.Route
 import com.via.himalaya.navigation.bottomNavItems
-import com.via.himalaya.permissions.PermissionHandler
 import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.downloads.DownloadedTrekViewModel
 import com.via.himalaya.presentation.explore.ExploreViewModel
@@ -65,20 +64,16 @@ import org.koin.androidx.compose.koinViewModel
 
 
 class MainActivity : ComponentActivity() {
-
-    private lateinit var permissionLauncher: PermissionHandler
     
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         
         super.onCreate(savedInstanceState)
-        permissionLauncher = PermissionHandler(this)
         var keepSplashScreen = true
         splashScreen.setKeepOnScreenCondition { keepSplashScreen }
         setContent {
             MyApplicationTheme {
                 ViaHimalayaApp(
-                    permissionHandler = permissionLauncher,
                     onAuthCheckComplete = { keepSplashScreen = false }
                 )
             }
@@ -88,7 +83,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ViaHimalayaApp(
-    permissionHandler: PermissionHandler,
     onAuthCheckComplete: () -> Unit
 ) {
     val context = LocalContext.current
@@ -176,9 +170,14 @@ fun ViaHimalayaApp(
                     composable<Route.TrekDetail> { entry ->
                         val viewModel = koinViewModel<TrekDetailViewModel>()
                         val args = entry.toRoute<Route.TrekDetail>()
-                        TrekDetailScreenRoot(viewModel, args.trekId, args.coordinateUrl, {
-                            navController.navigateUp()
-                        }, permissionHandler)
+                        TrekDetailScreenRoot(
+                            viewModel,
+                            args.trekId,
+                            args.coordinateUrl,
+                            {
+                                navController.navigateUp()
+                            }
+                        )
                     }
                     composable<Route.DownloadedTrek> {
                         val viewModel = koinViewModel<DownloadedTrekViewModel>()

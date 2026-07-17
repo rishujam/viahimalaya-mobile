@@ -1,5 +1,10 @@
 package com.via.himalaya.ui.screens
 
+import android.Manifest
+import android.widget.Toast
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.android.gms.common.api.ResolvableApiException
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.Style
@@ -53,27 +60,65 @@ import com.mapbox.maps.extension.compose.style.layers.generated.LineLayer
 import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.rememberGeoJsonSourceState
 import com.via.himalaya.data.models.TrekDetail
+import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.toGeoJsonString
-import com.via.himalaya.permissions.PermissionHandler
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.service.TrekDownloadService
 import com.via.himalaya.ui.components.PrimaryButton
 import com.via.himalaya.ui.components.SecondaryButton
-import com.via.himalaya.util.Constants
+import com.via.himalaya.util.PermissionUtil
+
+private const val TAG = "TrekDetailScreenTag"
 
 @Composable
 fun TrekDetailScreenRoot(
     viewModel: TrekDetailViewModel,
     trekId: String,
     coordinateUrl: String,
-    onBackClick: () -> Unit = {},
-    permissionHandler: PermissionHandler?
+    onBackClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
-    
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        val toastText = if(isGranted) {
+            "Permission granted, try downloading again"
+        } else {
+            "Notification permission is required to download a trek"
+        }
+        Toast.makeText(
+            context,
+            toastText,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        println("$TAG, locationPermissionLauncher result")
+        val hasFineLocation = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val hasCoarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if(hasCoarseLocation && hasFineLocation) {
+            println("$TAG, location permission granted getting initial location")
+            viewModel.getInitialLocation()
+        } else {
+            println("$TAG, location permission denied ")
+        }
+    }
+
+    rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if(result.resultCode == 100) {
+            println("$TAG, Settings is enabled")
+        }
+    }
+
     // Handle error toast
     LaunchedEffect(state.errorToast) {
         state.errorToast?.let { errorMessage ->
@@ -84,12 +129,34 @@ fun TrekDetailScreenRoot(
             viewModel.clearErrorToast()
         }
     }
-    
-    // Request permissions only once when screen is created
+
     LaunchedEffect(Unit) {
-        permissionHandler?.checkAndRequestPermissions()
-        viewModel.getTrekMeta(trekId)
-        viewModel.getCoordinates(coordinateUrl, trekId)
+        println("$TAG, calling initial data setup onetime")
+        viewModel.setInitialData(coordinateUrl, trekId)
+        if(PermissionUtil.hasLocationPermission(context)) {
+            println("$TAG, has location permission getting initial location")
+            viewModel.getInitialLocation()
+        } else {
+            println("$TAG, permission not granted state found")
+            println("$TAG, launching location permission")
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    PermissionUtil.PERMISSION_LOCATION,
+                    PermissionUtil.PERMISSION_LOCATION_PRECISE
+                )
+            )
+        }
+    }
+    val activity = LocalActivity.current
+    LaunchedEffect(state.currentLocation is LocationResponse.SettingDisabled) {
+        if(state.currentLocation is LocationResponse.SettingDisabled) {
+            println("$TAG, setting disabled state found")
+            val ex = (state.currentLocation as? LocationResponse.SettingDisabled)?.exception as? ResolvableApiException
+            activity?.let {
+                println("$TAG, launching location setting")
+                ex?.startResolutionForResult(activity, 100)
+            }
+        }
     }
     
     TrekDetailScreen(
@@ -97,17 +164,18 @@ fun TrekDetailScreenRoot(
         onBackClick = onBackClick,
         onStartHike = { viewModel.startTrekking(trekId) },
         onStopHike = { viewModel.stopTrekking() },
-        permissionHandler = permissionHandler,
         onDownloadHikeClick = {
             viewModel.validateAndStartDownload { trek ->
-                if (permissionHandler?.hasNotificationPermission() == true) {
+                if(PermissionUtil.hasNotificationPermission(context)) {
                     TrekDownloadService.startService(
                         context = context,
                         trekId = trek.id,
                         trekName = trek.name
                     )
                 } else {
-                    permissionHandler?.checkAndRequestNotificationPermission()
+                    notificationPermissionLauncher.launch(
+                        PermissionUtil.PERMISSION_NOTIFICATION
+                    )
                 }
             }
         },
@@ -122,9 +190,10 @@ fun TrekDetailScreen(
     onStartHike: () -> Unit = {},
     onStopHike: () -> Unit = {},
     onDownloadHikeClick: () -> Unit,
-    permissionHandler: PermissionHandler?,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
+    val context = LocalContext.current
+
     Box (
         modifier = Modifier
             .fillMaxSize(),
@@ -166,18 +235,17 @@ fun TrekDetailScreen(
                         bearing(0.0)
                     }
                 }
+
+                // Collect location stream and update camera position
+                val currentStreamLocation by state.locationStream.collectAsStateWithLifecycle(initialValue = null)
                 
-                // Animate camera to current location ONLY when:
-                // 1. User is trekking, OR
-                // 2. User is inside bounding box (isNearTrekStart)
-                // Otherwise, keep camera on the trail path
-                LaunchedEffect(state.currentLocation, state.isTrekking, state.isNearTrekStart) {
+                LaunchedEffect(currentStreamLocation, state.isTrekking, state.isNearTrekStart) {
                     if (state.isTrekking || state.isNearTrekStart) {
-                        state.currentLocation?.let { location ->
+                        currentStreamLocation?.let { location ->
                             mapViewportState.setCameraOptions(
                                 CameraOptions.Builder()
                                     .center(Point.fromLngLat(location.lon, location.lat))
-                                    .zoom(16.0) // Max zoom level for tracking
+                                    .zoom(16.0)
                                     .pitch(45.0)
                                     .bearing(0.0)
                                     .build()
@@ -204,19 +272,16 @@ fun TrekDetailScreen(
                         lineJoin = LineJoinValue.ROUND
                         lineCap = LineCapValue.ROUND
                     }
-                    
-                    // Show current location marker when user has location and is in bounding box
-                    if (state.isNearTrekStart && state.currentLocation != null) {
-                        val location = state.currentLocation
-                        location?.let {
-                            CircleAnnotation(
-                                point = Point.fromLngLat(location.lon, location.lat)
-                            ) {
-                                circleRadius = 10.0
-                                circleColor = Color(0xFF4285F4)
-                                circleStrokeWidth = 3.0
-                                circleStrokeColor = Color.White
-                            }
+
+                    if (state.isNearTrekStart && state.currentLocation is LocationResponse.Location) {
+                        val location = (state.currentLocation as LocationResponse.Location).loc
+                        CircleAnnotation(
+                            point = Point.fromLngLat(location.lon, location.lat)
+                        ) {
+                            circleRadius = 10.0
+                            circleColor = Color(0xFF4285F4)
+                            circleStrokeWidth = 3.0
+                            circleStrokeColor = Color.White
                         }
                     }
                 }
@@ -370,10 +435,14 @@ fun TrekDetailScreen(
                         if (state.isTrekking) {
                             onStopHike()
                         } else {
-                            if(permissionHandler?.hasPreciseLocationPermission() == true) {
+                            if(PermissionUtil.hasLocationPermission(context)) {
                                 onStartHike()
                             } else {
-                                permissionHandler?.checkAndRequestPermissions()
+                                Toast.makeText(
+                                    context,
+                                    "Location permission not granted",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     },
@@ -425,7 +494,6 @@ fun TrekDetailScreenPreview() {
             )
         ),
         onBackClick = {},
-        permissionHandler = null,
         onDownloadHikeClick = {},
         snackbarHostState = remember { SnackbarHostState() }
     )

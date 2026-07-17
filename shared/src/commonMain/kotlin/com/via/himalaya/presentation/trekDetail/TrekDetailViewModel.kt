@@ -10,11 +10,15 @@ import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
 import com.via.himalaya.domain.SensorListener
+import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.getFlattenedCoordinates
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.DummyLocationEmitter
 import com.via.himalaya.util.Result
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,32 +35,62 @@ class TrekDetailViewModel(
 
     private val _state = MutableStateFlow(TrekDetailScreenUIState())
     val state: StateFlow<TrekDetailScreenUIState> = _state.asStateFlow()
-    
+
     private var locationJob: Job? = null
-    
-    init {
-        setInitialData()
-    }
-    
-    private fun setInitialData() = viewModelScope.launch {
-        val loc = locationEmitter.getLocation()
-        val user = authRepository.getCurrentUser()
-        _state.update { it.copy(currentLocation = loc, userEmail = user?.email) }
+
+    fun setInitialData(
+        coordinatesUrl: String,
+        trekId: String
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        launch {
+            val user = authRepository.getCurrentUser()
+            _state.update {
+                it.copy(userEmail = user?.email)
+            }
+        }
+        launch {
+            getTrekMeta(trekId)
+        }
+        launch {
+            getCoordinates(coordinatesUrl, trekId)
+        }
     }
 
-    fun getTrekMeta(trekId: String) = viewModelScope.launch {
+    fun getInitialLocation() = viewModelScope.launch {
+        locationEmitter.getLocation { locationResponse ->
+            _state.update {
+                it.copy(currentLocation = locationResponse)
+            }
+            when(locationResponse) {
+                is LocationResponse.Location -> {
+                    checkLocationInBoundingBox(locationResponse.loc)
+                }
+                is LocationResponse.ErrorFetchingLocation -> {
+                    _state.update {
+                        it.copy(
+                            errorToast = locationResponse.error
+                        )
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    private fun getTrekMeta(trekId: String) = viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
         val trek = trekRepository.getTrek(trekId)
-        if(trek is Result.Success && trek.data != null) {
+        if (trek is Result.Success && trek.data != null) {
             _state.update {
                 it.copy(
                     isLoading = false,
                     trek = trek.data
                 )
             }
-            // After trek is loaded, check if test location is in bounding box
-            checkLocationInBoundingBox()
-            sensorListener.startListening()
+            val currentLocation = _state.value.currentLocation
+            if(currentLocation is LocationResponse.Location) {
+                checkLocationInBoundingBox(currentLocation.loc)
+            }
         } else {
             _state.update {
                 it.copy(
@@ -66,13 +100,11 @@ class TrekDetailViewModel(
             }
         }
     }
-    
-    private fun checkLocationInBoundingBox() {
-        val currentLocation = _state.value.currentLocation ?: return
+
+    private fun checkLocationInBoundingBox(currentLocation: Loc) {
         val trek = _state.value.trek ?: return
         val boundingBox = trek.boundingBox
-        
-        if (boundingBox != null && boundingBox.size >= 4) {
+        if (boundingBox.size >= 4) {
             val isInBox = isLocationInBoundingBox(
                 lat = currentLocation.lat,
                 lon = currentLocation.lon,
@@ -81,21 +113,25 @@ class TrekDetailViewModel(
                 maxLon = boundingBox[2],
                 maxLat = boundingBox[3]
             )
-            
-            println("TrekDetailViewModel: Test location check - " +
-                "lat=${currentLocation.lat}, lon=${currentLocation.lon}, " +
-                "isInBox=$isInBox, boundingBox=$boundingBox")
-            
+            println(
+                "TrekDetailViewModel: Test location check - " +
+                        "lat=${currentLocation.lat}, lon=${currentLocation.lon}, " +
+                        "isInBox=$isInBox, boundingBox=$boundingBox"
+            )
             _state.update {
                 it.copy(isNearTrekStart = isInBox)
+            }
+        } else {
+            _state.update {
+                it.copy(isNearTrekStart = false)
             }
         }
     }
 
-    fun getCoordinates(url: String, trekId: String) = viewModelScope.launch {
+    private fun getCoordinates(url: String, trekId: String) = viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
         val coordinates = trekRepository.getTrekCoordinates(url, trekId)
-        if(coordinates is Result.Success && coordinates.data != null) {
+        if (coordinates is Result.Success && coordinates.data != null) {
             _state.update {
                 it.copy(
                     isLoading = false,
@@ -111,11 +147,12 @@ class TrekDetailViewModel(
             }
         }
     }
-    
-    fun startTrekking(trekId: String){
+
+    fun startTrekking(trekId: String) {
+        sensorListener.startListening()
         val geoData = _state.value.geoData ?: return
         val coordinates = geoData.geometry.getFlattenedCoordinates()
-        
+
         if (coordinates.isEmpty()) return
         if (!_state.value.isNearTrekStart) return
 
@@ -132,46 +169,46 @@ class TrekDetailViewModel(
             )
         }
         locationJob?.cancel()
-        locationJob = viewModelScope.launch {
-            locationEmitter.getLiveLocationStream().collect { location ->
-                _state.update {
-                    it.copy(currentLocation = location)
-                }
-                val sensorData = sensorListener.getSensorData()
-                val rawSensors = RawSensors(
-                    accelerometerX = sensorData.accelerometer?.getOrNull(0)?.toDouble(),
-                    accelerometerY = sensorData.accelerometer?.getOrNull(1)?.toDouble(),
-                    accelerometerZ = sensorData.accelerometer?.getOrNull(2)?.toDouble(),
-                    gyroscopeX = sensorData.gyroscope?.getOrNull(0)?.toDouble(),
-                    gyroscopeY = sensorData.gyroscope?.getOrNull(1)?.toDouble(),
-                    gyroscopeZ = sensorData.gyroscope?.getOrNull(2)?.toDouble(),
-                    magnetometerX = sensorData.magnetometer?.getOrNull(0)?.toDouble(),
-                    magnetometerY = sensorData.magnetometer?.getOrNull(1)?.toDouble(),
-                    magnetometerZ = sensorData.magnetometer?.getOrNull(2)?.toDouble(),
-                    pressure = sensorData.pressure?.toDouble()
-                )
-                trekRepository.updateNavigatorTrek(
-                    navigatorTrekId,
-                    listOf(
-                        Point(
-                            lat = location.lat,
-                            lon = location.lon,
-                            altBaro = sensorData.altBaro?.toDouble(),
-                            altGps = location.altitude,
-                            timestamp = Clock.System.now().toEpochMilliseconds(),
-                            accuracyH = location.accH,
-                            accuracyV = location.accV,
-                            battery = sensorData.battery,
-                            rawSensors = rawSensors,
-                            speed = location.speed,
-                            bearing = location.bearing
-                        )
-                    )
-                )
-            }
-        }
+//        locationJob = viewModelScope.launch {
+//            locationEmitter.getLiveLocationStream().collect { location ->
+//                _state.update {
+//                    it.copy(currentLocation = location)
+//                }
+//                val sensorData = sensorListener.getSensorData()
+//                val rawSensors = RawSensors(
+//                    accelerometerX = sensorData.accelerometer?.getOrNull(0)?.toDouble(),
+//                    accelerometerY = sensorData.accelerometer?.getOrNull(1)?.toDouble(),
+//                    accelerometerZ = sensorData.accelerometer?.getOrNull(2)?.toDouble(),
+//                    gyroscopeX = sensorData.gyroscope?.getOrNull(0)?.toDouble(),
+//                    gyroscopeY = sensorData.gyroscope?.getOrNull(1)?.toDouble(),
+//                    gyroscopeZ = sensorData.gyroscope?.getOrNull(2)?.toDouble(),
+//                    magnetometerX = sensorData.magnetometer?.getOrNull(0)?.toDouble(),
+//                    magnetometerY = sensorData.magnetometer?.getOrNull(1)?.toDouble(),
+//                    magnetometerZ = sensorData.magnetometer?.getOrNull(2)?.toDouble(),
+//                    pressure = sensorData.pressure?.toDouble()
+//                )
+//                trekRepository.updateNavigatorTrek(
+//                    navigatorTrekId,
+//                    listOf(
+//                        Point(
+//                            lat = location.lat,
+//                            lon = location.lon,
+//                            altBaro = sensorData.altBaro?.toDouble(),
+//                            altGps = location.altitude,
+//                            timestamp = Clock.System.now().toEpochMilliseconds(),
+//                            accuracyH = location.accH,
+//                            accuracyV = location.accV,
+//                            battery = sensorData.battery,
+//                            rawSensors = rawSensors,
+//                            speed = location.speed,
+//                            bearing = location.bearing
+//                        )
+//                    )
+//                )
+//            }
+//        }
     }
-    
+
     private fun isLocationInBoundingBox(
         lat: Double,
         lon: Double,
@@ -182,7 +219,7 @@ class TrekDetailViewModel(
     ): Boolean {
         return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon
     }
-    
+
     fun stopTrekking() {
         locationJob?.cancel()
         locationJob = null
@@ -194,33 +231,36 @@ class TrekDetailViewModel(
             )
         }
     }
-    
-    fun validateAndStartDownload(onValidationSuccess: (TrekDetail) -> Unit) = viewModelScope.launch {
-        state.value.trek?.let { trek ->
-            val downloadedTreks = trekRepository.getDownloadedTreks().data
-            val downloadedTrekSize = downloadedTreks?.size
-            when {
-                downloadedTreks?.any { it.id == trek.id } == true -> {
-                    _state.update {
-                        it.copy(errorToast = "Trek is already downloaded")
+
+    fun validateAndStartDownload(onValidationSuccess: (TrekDetail) -> Unit) =
+        viewModelScope.launch {
+            state.value.trek?.let { trek ->
+                val downloadedTreks = trekRepository.getDownloadedTreks().data
+                val downloadedTrekSize = downloadedTreks?.size
+                when {
+                    downloadedTreks?.any { it.id == trek.id } == true -> {
+                        _state.update {
+                            it.copy(errorToast = "Trek is already downloaded")
+                        }
                     }
-                }
-                downloadedTrekSize != null && downloadedTrekSize >= 3 -> {
-                    _state.update {
-                        it.copy(errorToast = "Maximum 3 treks can be downloaded. Please delete a trek to download more.")
+
+                    downloadedTrekSize != null && downloadedTrekSize >= 3 -> {
+                        _state.update {
+                            it.copy(errorToast = "Maximum 3 treks can be downloaded. Please delete a trek to download more.")
+                        }
                     }
-                }
-                else -> {
-                    onValidationSuccess(trek)
+
+                    else -> {
+                        onValidationSuccess(trek)
+                    }
                 }
             }
         }
-    }
-    
+
     fun clearErrorToast() {
         _state.update { it.copy(errorToast = null) }
     }
-    
+
     override fun onCleared() {
         super.onCleared()
         locationJob?.cancel()
