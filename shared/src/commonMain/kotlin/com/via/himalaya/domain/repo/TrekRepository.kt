@@ -20,7 +20,10 @@ interface TrekRepository {
     
     suspend fun searchTreks(query: String): Result<List<Trek>>
     
-    suspend fun getTrekCoordinates(coordinateUrl: String, trekId: String): Result<TrekGeoData>
+    suspend fun getTrekCoordinates(
+        coordinateUrl: String,
+        trekId: String
+    ): Result<TrekGeoData>
 
     suspend fun getDownloadedTreks(): Result<List<TrekDetail>>
 
@@ -40,6 +43,12 @@ interface TrekRepository {
     suspend fun syncNavigatorTrek()
 
     suspend fun getAllNavigatorTreks(): List<NavigatorTrek>
+
+    suspend fun prepareSampleTrekCoordinates(
+        currLat: Double,
+        currLong: Double,
+        trekId: String
+    ): TrekGeoData
 
     //    suspend fun deleteNavigatorTrek(id: String)
 

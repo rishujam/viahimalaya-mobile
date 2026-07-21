@@ -4,8 +4,6 @@ import com.via.himalaya.data.models.Loc
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.TrekGeoData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 data class TrekDetailScreenUIState(
     val trek: TrekDetail? = null,
@@ -13,8 +11,8 @@ data class TrekDetailScreenUIState(
     val errorToast: String? = null,
     val messageDisplay: String? = null,
     val geoData: TrekGeoData? = null,
-    val currentLocation: LocationResponse? = null,
-    val locationStream: Flow<Loc?> = emptyFlow(),
+    val initialLocation: LocationResponse? = null,
+    val liveLocation: Loc? = null,
     val isNearTrekStart: Boolean = false,
     val isTrekking: Boolean = false,
     val userEmail: String? = null

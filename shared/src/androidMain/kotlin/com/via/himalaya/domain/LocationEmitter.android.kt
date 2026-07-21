@@ -16,7 +16,7 @@ import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import com.via.himalaya.data.models.Loc
 import com.via.himalaya.domain.model.LocationResponse
-import com.via.himalaya.util.PermissionUtil
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
@@ -58,7 +58,7 @@ class AndroidLocationEmitter(
         settingsClient.checkLocationSettings(settingsRequest)
             .addOnSuccessListener {
                 Log.d(TAG, "Location settings satisfied, requesting fresh location")
-                val locationCallback = object : LocationCallback() {
+                val callback = object : LocationCallback() {
                     override fun onLocationResult(locationResult: LocationResult) {
                         val location = locationResult.lastLocation
                         if (location != null) {
@@ -71,12 +71,13 @@ class AndroidLocationEmitter(
                             Log.w(TAG, "Location result was null")
                             locationCallback(LocationResponse.ErrorFetchingLocation("Location result was null"))
                         }
+                        // Remove location updates after receiving one location
                         fusedLocationClient.removeLocationUpdates(this)
                     }
                 }
                 fusedLocationClient.requestLocationUpdates(
                     locationRequest,
-                    locationCallback,
+                    callback,
                     Looper.getMainLooper()
                 )
             }
@@ -101,55 +102,56 @@ class AndroidLocationEmitter(
      */
     @SuppressLint("MissingPermission")
     override fun getLiveLocationStream(): Flow<Loc> = callbackFlow {
-//        val locationRequest = LocationRequest.Builder(
-//            Priority.PRIORITY_HIGH_ACCURACY,
-//            10000L // Update interval: 10 seconds
-//        ).apply {
-//            setMinUpdateIntervalMillis(5000L) // Fastest update interval: 5 seconds
-//            setWaitForAccurateLocation(false)
-//        }.build()
-//
-//        // Check location settings first
-//        val settingsRequest = LocationSettingsRequest.Builder()
-//            .addLocationRequest(locationRequest)
-//            .build()
-//
-//        try {
-//            // Use await() to check settings synchronously in the coroutine
-//            settingsClient.checkLocationSettings(settingsRequest).await()
-//            Log.d(TAG, "Location settings satisfied, starting live location stream")
-//
-//            val locationCallback = object : LocationCallback() {
-//                override fun onLocationResult(locationResult: LocationResult) {
-//                    locationResult.lastLocation?.let { location ->
-//                        Log.d(
-//                            TAG,
-//                            "Live location update: ${location.latitude}, ${location.longitude}"
-//                        )
-//                        trySend(location.toLoc())
-//                    }
-//                }
-//            }
-//
-//            fusedLocationClient.requestLocationUpdates(
-//                locationRequest,
-//                locationCallback,
-//                Looper.getMainLooper()
-//            )
-//
-//            awaitClose {
-//                Log.d(TAG, "Stopping live location stream")
-//                fusedLocationClient.removeLocationUpdates(locationCallback)
-//            }
-//        } catch (exception: Exception) {
-//            if (exception is ResolvableApiException) {
-//                Log.e(TAG, "Location settings not satisfied for live stream", exception)
-////                close(LocationSettingsException("Location settings need to be enabled", exception))
-//            } else {
-//                Log.e(TAG, "Failed to start live location stream", exception)
-//                close(exception)
-//            }
-//        }
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            10000L // Update interval: 10 seconds
+        ).apply {
+            setMinUpdateIntervalMillis(5000L) // Fastest update interval: 5 seconds
+            setWaitForAccurateLocation(false)
+        }.build()
+
+        // Check location settings first
+        val settingsRequest = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+            .build()
+
+        try {
+            // Use await() to check settings synchronously in the coroutine
+            Log.d(TAG, "Location settings satisfied, starting live location stream")
+            val locationCallback = object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    locationResult.lastLocation?.let { location ->
+                        Log.d(
+                            TAG,
+                            "Live location update: ${location.latitude}, ${location.longitude}"
+                        )
+                        trySend(location.toLoc())
+                    }
+                }
+            }
+            settingsClient.checkLocationSettings(settingsRequest)
+                .addOnSuccessListener {
+                    fusedLocationClient.requestLocationUpdates(
+                        locationRequest,
+                        locationCallback,
+                        Looper.getMainLooper()
+                    )
+                }
+                .addOnFailureListener {
+                    println("Location Settings disabled")
+                }
+            awaitClose {
+                Log.d(TAG, "Stopping live location stream")
+                fusedLocationClient.removeLocationUpdates(locationCallback)
+            }
+        } catch (exception: Exception) {
+            if (exception is ResolvableApiException) {
+                Log.e(TAG, "Location settings not satisfied for live stream", exception)
+            } else {
+                Log.e(TAG, "Failed to start live location stream", exception)
+                close(exception)
+            }
+        }
     }
 
     private fun Location.toLoc(): Loc {

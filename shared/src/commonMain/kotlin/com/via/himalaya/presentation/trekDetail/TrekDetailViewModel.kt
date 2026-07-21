@@ -11,14 +11,13 @@ import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
 import com.via.himalaya.domain.SensorListener
 import com.via.himalaya.domain.model.LocationResponse
+import com.via.himalaya.domain.model.calculateBoundingBox
 import com.via.himalaya.domain.model.getFlattenedCoordinates
 import com.via.himalaya.domain.repo.TrekRepository
-import com.via.himalaya.util.DummyLocationEmitter
 import com.via.himalaya.util.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,7 +58,7 @@ class TrekDetailViewModel(
     fun getInitialLocation() = viewModelScope.launch {
         locationEmitter.getLocation { locationResponse ->
             _state.update {
-                it.copy(currentLocation = locationResponse)
+                it.copy(initialLocation = locationResponse)
             }
             when(locationResponse) {
                 is LocationResponse.Location -> {
@@ -87,7 +86,7 @@ class TrekDetailViewModel(
                     trek = trek.data
                 )
             }
-            val currentLocation = _state.value.currentLocation
+            val currentLocation = _state.value.initialLocation
             if(currentLocation is LocationResponse.Location) {
                 checkLocationInBoundingBox(currentLocation.loc)
             }
@@ -169,44 +168,44 @@ class TrekDetailViewModel(
             )
         }
         locationJob?.cancel()
-//        locationJob = viewModelScope.launch {
-//            locationEmitter.getLiveLocationStream().collect { location ->
-//                _state.update {
-//                    it.copy(currentLocation = location)
-//                }
-//                val sensorData = sensorListener.getSensorData()
-//                val rawSensors = RawSensors(
-//                    accelerometerX = sensorData.accelerometer?.getOrNull(0)?.toDouble(),
-//                    accelerometerY = sensorData.accelerometer?.getOrNull(1)?.toDouble(),
-//                    accelerometerZ = sensorData.accelerometer?.getOrNull(2)?.toDouble(),
-//                    gyroscopeX = sensorData.gyroscope?.getOrNull(0)?.toDouble(),
-//                    gyroscopeY = sensorData.gyroscope?.getOrNull(1)?.toDouble(),
-//                    gyroscopeZ = sensorData.gyroscope?.getOrNull(2)?.toDouble(),
-//                    magnetometerX = sensorData.magnetometer?.getOrNull(0)?.toDouble(),
-//                    magnetometerY = sensorData.magnetometer?.getOrNull(1)?.toDouble(),
-//                    magnetometerZ = sensorData.magnetometer?.getOrNull(2)?.toDouble(),
-//                    pressure = sensorData.pressure?.toDouble()
-//                )
-//                trekRepository.updateNavigatorTrek(
-//                    navigatorTrekId,
-//                    listOf(
-//                        Point(
-//                            lat = location.lat,
-//                            lon = location.lon,
-//                            altBaro = sensorData.altBaro?.toDouble(),
-//                            altGps = location.altitude,
-//                            timestamp = Clock.System.now().toEpochMilliseconds(),
-//                            accuracyH = location.accH,
-//                            accuracyV = location.accV,
-//                            battery = sensorData.battery,
-//                            rawSensors = rawSensors,
-//                            speed = location.speed,
-//                            bearing = location.bearing
-//                        )
-//                    )
-//                )
-//            }
-//        }
+        locationJob = viewModelScope.launch {
+            locationEmitter.getLiveLocationStream().collect { location ->
+                _state.update {
+                    it.copy(liveLocation = location)
+                }
+                val sensorData = sensorListener.getSensorData()
+                val rawSensors = RawSensors(
+                    accelerometerX = sensorData.accelerometer?.getOrNull(0)?.toDouble(),
+                    accelerometerY = sensorData.accelerometer?.getOrNull(1)?.toDouble(),
+                    accelerometerZ = sensorData.accelerometer?.getOrNull(2)?.toDouble(),
+                    gyroscopeX = sensorData.gyroscope?.getOrNull(0)?.toDouble(),
+                    gyroscopeY = sensorData.gyroscope?.getOrNull(1)?.toDouble(),
+                    gyroscopeZ = sensorData.gyroscope?.getOrNull(2)?.toDouble(),
+                    magnetometerX = sensorData.magnetometer?.getOrNull(0)?.toDouble(),
+                    magnetometerY = sensorData.magnetometer?.getOrNull(1)?.toDouble(),
+                    magnetometerZ = sensorData.magnetometer?.getOrNull(2)?.toDouble(),
+                    pressure = sensorData.pressure?.toDouble()
+                )
+                trekRepository.updateNavigatorTrek(
+                    navigatorTrekId,
+                    listOf(
+                        Point(
+                            lat = location.lat,
+                            lon = location.lon,
+                            altBaro = sensorData.altBaro?.toDouble(),
+                            altGps = location.altitude,
+                            timestamp = Clock.System.now().toEpochMilliseconds(),
+                            accuracyH = location.accH,
+                            accuracyV = location.accV,
+                            battery = sensorData.battery,
+                            rawSensors = rawSensors,
+                            speed = location.speed,
+                            bearing = location.bearing
+                        )
+                    )
+                )
+            }
+        }
     }
 
     private fun isLocationInBoundingBox(
@@ -226,7 +225,7 @@ class TrekDetailViewModel(
         _state.update {
             it.copy(
                 isTrekking = false,
-                currentLocation = null,
+                liveLocation = null,
                 isNearTrekStart = false
             )
         }

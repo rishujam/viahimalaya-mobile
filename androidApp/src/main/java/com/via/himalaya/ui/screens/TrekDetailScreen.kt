@@ -148,10 +148,10 @@ fun TrekDetailScreenRoot(
         }
     }
     val activity = LocalActivity.current
-    LaunchedEffect(state.currentLocation is LocationResponse.SettingDisabled) {
-        if(state.currentLocation is LocationResponse.SettingDisabled) {
+    LaunchedEffect(state.initialLocation is LocationResponse.SettingDisabled) {
+        if(state.initialLocation is LocationResponse.SettingDisabled) {
             println("$TAG, setting disabled state found")
-            val ex = (state.currentLocation as? LocationResponse.SettingDisabled)?.exception as? ResolvableApiException
+            val ex = (state.initialLocation as? LocationResponse.SettingDisabled)?.exception as? ResolvableApiException
             activity?.let {
                 println("$TAG, launching location setting")
                 ex?.startResolutionForResult(activity, 100)
@@ -236,12 +236,9 @@ fun TrekDetailScreen(
                     }
                 }
 
-                // Collect location stream and update camera position
-                val currentStreamLocation by state.locationStream.collectAsStateWithLifecycle(initialValue = null)
-                
-                LaunchedEffect(currentStreamLocation, state.isTrekking, state.isNearTrekStart) {
-                    if (state.isTrekking || state.isNearTrekStart) {
-                        currentStreamLocation?.let { location ->
+                LaunchedEffect(state.initialLocation, state.isNearTrekStart) {
+                    if (state.isNearTrekStart && state.initialLocation is LocationResponse.Location) {
+                        (state.initialLocation as? LocationResponse.Location)?.loc?.let { location ->
                             mapViewportState.setCameraOptions(
                                 CameraOptions.Builder()
                                     .center(Point.fromLngLat(location.lon, location.lat))
@@ -273,15 +270,17 @@ fun TrekDetailScreen(
                         lineCap = LineCapValue.ROUND
                     }
 
-                    if (state.isNearTrekStart && state.currentLocation is LocationResponse.Location) {
-                        val location = (state.currentLocation as LocationResponse.Location).loc
-                        CircleAnnotation(
-                            point = Point.fromLngLat(location.lon, location.lat)
-                        ) {
-                            circleRadius = 10.0
-                            circleColor = Color(0xFF4285F4)
-                            circleStrokeWidth = 3.0
-                            circleStrokeColor = Color.White
+                    if (state.isNearTrekStart) {
+                        val location = state.liveLocation
+                        location?.let {
+                            CircleAnnotation(
+                                point = Point.fromLngLat(location.lon, location.lat)
+                            ) {
+                                circleRadius = 10.0
+                                circleColor = Color(0xFF4285F4)
+                                circleStrokeWidth = 3.0
+                                circleStrokeColor = Color.White
+                            }
                         }
                     }
                 }

@@ -13,18 +13,23 @@ import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
 import com.via.himalaya.data.local.OfflineMapManager
 import com.via.himalaya.domain.model.TrekGeoData
+import com.via.himalaya.domain.model.TrekGeometry
 import com.via.himalaya.domain.model.Treks
+import com.via.himalaya.domain.model.getFlattenedCoordinates
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
-import io.ktor.client.request.post
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.random.Random
 
 class TrekRepositoryImpl(
     private val apiClient: HttpClient,
@@ -81,7 +86,10 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun getTrekCoordinates(coordinateUrl: String, trekId: String): Result<TrekGeoData> {
+    override suspend fun getTrekCoordinates(
+        coordinateUrl: String,
+        trekId: String
+    ): Result<TrekGeoData> {
         return try {
             if (fileDownloader.fileExists(trekId)) {
                 println("TrekRepository: Loading coordinates from local storage for trek: $trekId")
@@ -104,7 +112,6 @@ class TrekRepositoryImpl(
                     append(HttpHeaders.Accept, ContentType.Application.Json.toString())
                 }
             }
-            
             if (response.status.value == 200) {
                 val geoData = response.body<TrekGeoData>()
                 try {
@@ -113,7 +120,7 @@ class TrekRepositoryImpl(
                 } catch (e: Exception) {
                     println("TrekRepository: Failed to cache coordinates: ${e.message}")
                 }
-                
+
                 Result.Success(geoData)
             } else {
                 Result.Error("Failed to fetch coordinates: ${response.status.description}", response.status.value)
@@ -306,5 +313,72 @@ class TrekRepositoryImpl(
         } catch (e: Exception) {
             println("Error syncing navigator trek: ${e.message}")
         }
+    }
+
+    override suspend fun prepareSampleTrekCoordinates(
+        currLat: Double,
+        currLong: Double,
+        trekId: String
+    ): TrekGeoData {
+        val singleLineCoordinates = mutableListOf<List<Double>>()
+
+        val earthRadius = 6371000.0 // Earth's radius in meters
+        var currentLat = currLat
+        var currentLng = currLong
+
+        // GeoJSON standard ordering: [longitude, latitude]
+        singleLineCoordinates.add(listOf(currentLng, currentLat))
+
+        var bearing = Random.nextDouble(0.0, 360.0)
+
+        for (i in 1 until 30) {
+            val distance = Random.nextDouble(5.0, 10.0)
+            bearing += Random.nextDouble(-20.0, 20.0)
+
+            val bearingRad = bearing * (PI / 180.0)
+            val latRad = currentLat * (PI / 180.0)
+
+            val deltaLat = (distance * cos(bearingRad)) / earthRadius
+            val deltaLng = (distance * sin(bearingRad)) / (earthRadius * cos(latRad))
+
+            currentLat += deltaLat * (180.0 / PI)
+            currentLng += deltaLng * (180.0 / PI)
+
+            // Store as [longitude, latitude]
+            singleLineCoordinates.add(listOf(currentLng, currentLat))
+        }
+
+        return TrekGeoData(
+            id = trekId,
+            name = "test",
+            geometry = TrekGeometry(
+                type = "LineString",
+                coordinates = listOf(singleLineCoordinates)
+            )
+        )
+    }
+
+    fun TrekGeometry.calculateBoundingBox(): List<Double> {
+        val flattenedCoordinates = getFlattenedCoordinates()
+        if (flattenedCoordinates.isEmpty()) return emptyList()
+
+        var minLng = Double.MAX_VALUE
+        var minLat = Double.MAX_VALUE
+        var maxLng = -Double.MAX_VALUE // Fixed: Do not use Double.MIN_VALUE here
+        var maxLat = -Double.MAX_VALUE // Fixed: Do not use Double.MIN_VALUE here
+
+        flattenedCoordinates.forEach { coordinate ->
+            if (coordinate.size >= 2) {
+                val lng = coordinate[0]
+                val lat = coordinate[1]
+
+                minLng = minOf(minLng, lng)
+                maxLng = maxOf(maxLng, lng)
+                minLat = minOf(minLat, lat)
+                maxLat = maxOf(maxLat, lat)
+            }
+        }
+
+        return listOf(minLng, minLat, maxLng, maxLat)
     }
 }
