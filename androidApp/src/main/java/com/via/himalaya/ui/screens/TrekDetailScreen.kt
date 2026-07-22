@@ -378,7 +378,7 @@ fun TrekDetailScreen(
                             Text(
                                 text = state.trek?.distance.orEmpty(),
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Spacer(
@@ -400,7 +400,7 @@ fun TrekDetailScreen(
                             Text(
                                 text = "4h 30m",
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Spacer(
@@ -422,7 +422,7 @@ fun TrekDetailScreen(
                             Text(
                                 text = state.trek?.elevation.orEmpty(),
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }

@@ -315,7 +315,7 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun prepareSampleTrekCoordinates(
+    override fun prepareSampleTrekCoordinates(
         currLat: Double,
         currLong: Double,
         trekId: String

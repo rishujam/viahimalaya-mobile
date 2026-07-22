@@ -44,7 +44,7 @@ interface TrekRepository {
 
     suspend fun getAllNavigatorTreks(): List<NavigatorTrek>
 
-    suspend fun prepareSampleTrekCoordinates(
+    fun prepareSampleTrekCoordinates(
         currLat: Double,
         currLong: Double,
         trekId: String

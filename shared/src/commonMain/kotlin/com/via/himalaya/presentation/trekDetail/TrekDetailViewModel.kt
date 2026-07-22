@@ -6,6 +6,7 @@ import com.via.himalaya.data.models.Loc
 import com.via.himalaya.data.models.NavigatorTrek
 import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.RawSensors
+import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
@@ -62,6 +63,27 @@ class TrekDetailViewModel(
             }
             when(locationResponse) {
                 is LocationResponse.Location -> {
+//                    val coordinates = trekRepository.prepareSampleTrekCoordinates(
+//                        locationResponse.loc.lat,
+//                        locationResponse.loc.lon,
+//                        "test"
+//                    )
+//                    val boundingBox = coordinates.geometry.calculateBoundingBox()
+//                    val trek = TrekDetail(
+//                        id = "test",
+//                        name = "test",
+//                        location = "India",
+//                        distance = "0",
+//                        elevation = "0",
+//                        boundingBox = boundingBox,
+//                        coordinateUrl = ""
+//                    )
+//                    _state.update {
+//                        it.copy(
+//                            trek = trek,
+//                            geoData = coordinates
+//                        )
+//                    }
                     checkLocationInBoundingBox(locationResponse.loc)
                 }
                 is LocationResponse.ErrorFetchingLocation -> {
