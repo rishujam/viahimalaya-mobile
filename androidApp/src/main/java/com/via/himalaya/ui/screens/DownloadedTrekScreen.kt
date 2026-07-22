@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -100,25 +101,39 @@ fun DownloadedTrekScreen(
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Available height for LazyColumn (between header and bottom nav)
-                val availableHeight = maxHeight
-                // Card height = available height - peek space for next card
-                val cardHeight = availableHeight - 120.dp
-
-                LazyColumn(
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    itemsIndexed(state.treks) { index, trek ->
-                        val isFocused = index == focusedIndex
-                        CarouselTrekCard(
-                            trek = trek,
-                            isFocused = isFocused,
-                            onClick = { onTrekClicked(trek) },
-                            cardHeight = cardHeight,
-                            showDeleteButton = true,
-                            onDelete = { onDeleteTrek(trek) }
+                if (state.treks.isEmpty()) {
+                    // Show "No items" message when list is empty
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No items",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 16.sp
                         )
+                    }
+                } else {
+                    // Available height for LazyColumn (between header and bottom nav)
+                    val availableHeight = maxHeight
+                    // Card height = available height - peek space for next card
+                    val cardHeight = availableHeight - 120.dp
+
+                    LazyColumn(
+                        state = listState,
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        itemsIndexed(state.treks) { index, trek ->
+                            val isFocused = index == focusedIndex
+                            CarouselTrekCard(
+                                trek = trek,
+                                isFocused = isFocused,
+                                onClick = { onTrekClicked(trek) },
+                                cardHeight = cardHeight,
+                                showDeleteButton = true,
+                                onDelete = { onDeleteTrek(trek) }
+                            )
+                        }
                     }
                 }
             }

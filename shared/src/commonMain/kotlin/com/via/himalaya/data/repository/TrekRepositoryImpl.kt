@@ -199,9 +199,9 @@ class TrekRepositoryImpl(
     override suspend fun getDownloadedTreks(): Result<List<TrekDetail>> {
         try {
             val treks = trekDao.getTreks()
-            return if(!treks.isNullOrEmpty()) {
+            return treks?.let {
                 Result.Success(treks)
-            } else {
+            } ?: run {
                 Result.Error("No treks found", 204)
             }
         } catch (e: Exception) {
