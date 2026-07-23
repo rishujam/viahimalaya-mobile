@@ -74,6 +74,7 @@ fun SignInScreenRoot(
         onGoogleSignInClick = {
             scope.launch {
                 try {
+                    viewModel.startLoading()
                     val idToken = getGoogleIdToken(context)
                     viewModel.onGoogleIdToken(idToken)
                 } catch (e: GetCredentialException) {

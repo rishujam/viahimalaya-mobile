@@ -40,10 +40,10 @@ import org.koin.androidx.compose.koinViewModel
         //Create table to store path followed by user mapped to trek id - Done need to test
 
 //TODO - Data Entry in Backend
+        //Update existing photos
 //TODO - Download tiles of map for offline use
         //On notification allow start downloading
         //Foreground Notification while downloading
-        //If incomplete remove the half downloaded file
 
 //Phase 2
 //TODO - SignInScreen Video

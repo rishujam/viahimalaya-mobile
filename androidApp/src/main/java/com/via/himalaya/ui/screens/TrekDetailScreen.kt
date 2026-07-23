@@ -1,6 +1,9 @@
 package com.via.himalaya.ui.screens
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,6 +26,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
@@ -33,7 +38,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import com.google.android.gms.common.api.ResolvableApiException
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
@@ -81,6 +88,7 @@ fun TrekDetailScreenRoot(
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
+    var showPermissionSettingsDialog by remember { mutableStateOf(false) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -97,25 +105,26 @@ fun TrekDetailScreenRoot(
         ).show()
     }
 
+    val activity = LocalActivity.current
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        println("$TAG, locationPermissionLauncher result")
         val hasFineLocation = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
         val hasCoarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        activity?.let {
+            val showRationale = shouldShowRequestPermissionRationale(activity, PermissionUtil.PERMISSION_LOCATION_PRECISE)
+            println("$TAG, showRationale location: $showRationale")
+            if(!showRationale && (!hasFineLocation || !hasCoarseLocation)) {
+                showPermissionSettingsDialog = true
+            }
+        }
+        println("$TAG, locationPermissionLauncher result")
         if(hasCoarseLocation && hasFineLocation) {
             println("$TAG, location permission granted getting initial location")
             viewModel.getInitialLocation()
         } else {
             println("$TAG, location permission denied ")
-        }
-    }
-
-    rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if(result.resultCode == 100) {
-            println("$TAG, Settings is enabled")
         }
     }
 
@@ -147,7 +156,7 @@ fun TrekDetailScreenRoot(
             )
         }
     }
-    val activity = LocalActivity.current
+
     LaunchedEffect(state.initialLocation is LocationResponse.SettingDisabled) {
         if(state.initialLocation is LocationResponse.SettingDisabled) {
             println("$TAG, setting disabled state found")
@@ -162,7 +171,23 @@ fun TrekDetailScreenRoot(
     TrekDetailScreen(
         state = state,
         onBackClick = onBackClick,
-        onStartHike = { viewModel.startTrekking(trekId) },
+        onStartHike = {
+            if(PermissionUtil.hasLocationPermission(context)) {
+                viewModel.startTrekking(trekId)
+            } else {
+                Toast.makeText(
+                    context,
+                    "Location permission not granted",
+                    Toast.LENGTH_SHORT
+                ).show()
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        PermissionUtil.PERMISSION_LOCATION,
+                        PermissionUtil.PERMISSION_LOCATION_PRECISE
+                    )
+                )
+            }
+        },
         onStopHike = { viewModel.stopTrekking() },
         onDownloadHikeClick = {
             viewModel.validateAndStartDownload { trek ->
@@ -181,6 +206,41 @@ fun TrekDetailScreenRoot(
         },
         snackbarHostState = snackBarHostState
     )
+
+    if (showPermissionSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionSettingsDialog = false },
+            title = { Text(text = "Location permission required") },
+            text = {
+                Text(
+                    text = "If you want to navigate a hike, you need to grant location permission."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPermissionSettingsDialog = false
+                        val intent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null)
+                        ).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text(text = "Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showPermissionSettingsDialog = false }
+                ) {
+                    Text(text = "Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -434,15 +494,7 @@ fun TrekDetailScreen(
                         if (state.isTrekking) {
                             onStopHike()
                         } else {
-                            if(PermissionUtil.hasLocationPermission(context)) {
-                                onStartHike()
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Location permission not granted",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            onStartHike()
                         }
                     },
                     modifier = Modifier.fillMaxWidth()

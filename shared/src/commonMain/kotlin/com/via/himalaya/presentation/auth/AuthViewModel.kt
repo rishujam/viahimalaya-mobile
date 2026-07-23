@@ -39,6 +39,12 @@ class AuthViewModel(
         }
     }
 
+    fun startLoading() = viewModelScope.launch {
+        _state.update {
+            it.copy(isLoading = true)
+        }
+    }
+
     /** Called with the Google ID token retrieved by the platform sign-in UI. */
     fun onGoogleIdToken(idToken: String) = viewModelScope.launch {
         _state.update {
