@@ -44,6 +44,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Download tiles of map for offline use
         //On notification allow start downloading
         //Foreground Notification while downloading
+//TODO Create test trek
 
 //Phase 2
 //TODO - SignInScreen Video
