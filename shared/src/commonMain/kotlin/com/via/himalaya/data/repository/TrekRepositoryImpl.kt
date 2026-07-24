@@ -22,6 +22,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
@@ -309,7 +311,25 @@ class TrekRepositoryImpl(
     override suspend fun syncNavigatorTrek() {
         try {
             val navigatorTreks = navigatorDao.getAllNavigatorTreks()
-            //TODO - Sync navigator treks to server
+            for (navigatorTrek in navigatorTreks) {
+                try {
+                    val response = apiClient.post("$BASE_URL/api/navigator-trek/upload") {
+                        contentType(ContentType.Application.Json)
+                        headers {
+                            append(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                            append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                        }
+                        setBody(navigatorTrek)
+                    }
+                    if (response.status.value == 201) {
+                        println("TrekRepository: Synced navigator trek ${navigatorTrek.id}")
+                    } else {
+                        println("TrekRepository: Failed to sync navigator trek ${navigatorTrek.id}: ${response.status.description}")
+                    }
+                } catch (e: Exception) {
+                    println("TrekRepository: Error syncing navigator trek ${navigatorTrek.id}: ${e.message}")
+                }
+            }
         } catch (e: Exception) {
             println("Error syncing navigator trek: ${e.message}")
         }

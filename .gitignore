@@ -11,3 +11,6 @@ xcuserdata
 androidApp/src/main/res/values/mapbox_access_token.xml
 /mapbox-docs
 androidApp/google-services.json
+keystore.properties
+*.jks
+*.keystore

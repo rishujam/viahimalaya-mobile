@@ -14,8 +14,8 @@ android {
         applicationId = "com.via.himalaya"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 4
+        versionName = "1.3"
     }
     buildFeatures {
         compose = true
@@ -33,6 +33,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        create("releaseDebug") {
+            // Same minify/shrink/proguard setup as release, just signed with the
+            // debug key so this variant is installable for local testing without
+            // needing the production upload key.
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
         }
     }
     compileOptions {
