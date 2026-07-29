@@ -61,6 +61,11 @@ class TrekDetailViewModel(
             _state.update {
                 it.copy(initialLocation = locationResponse)
             }
+            if(locationResponse is LocationResponse.Location) {
+                _state.update {
+                    it.copy(liveLocation = locationResponse.loc)
+                }
+            }
             when(locationResponse) {
                 is LocationResponse.Location -> {
 //                    val coordinates = trekRepository.prepareSampleTrekCoordinates(
@@ -247,8 +252,7 @@ class TrekDetailViewModel(
         _state.update {
             it.copy(
                 isTrekking = false,
-                liveLocation = null,
-                isNearTrekStart = false
+                liveLocation = null
             )
         }
     }
