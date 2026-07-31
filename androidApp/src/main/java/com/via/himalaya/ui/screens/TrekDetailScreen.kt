@@ -1,6 +1,7 @@
 package com.via.himalaya.ui.screens
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -47,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,12 +72,11 @@ import com.mapbox.maps.extension.compose.MapboxMapScope
 import com.mapbox.maps.extension.compose.annotation.rememberIconImage
 import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotation
 import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.Arrangement as LayoutArrangement
+import androidx.browser.customtabs.CustomTabsIntent
 import com.via.himalaya.R
 import com.via.himalaya.data.models.readableType
 import com.via.himalaya.data.models.PoiCategory
 import com.via.himalaya.data.models.TrekPoi
-import com.via.himalaya.data.models.toGeoJsonString
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.toGeoJsonString
@@ -446,6 +447,21 @@ fun TrekDetailScreen(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                // Hidden entirely when the trek has no write-up, rather than
+                // showing a dead link.
+                state.trek?.detailsUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                    Text(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .clickable { openDetailsLink(context, url) },
+                        text = "View details",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF1A73E8),
+                        textDecoration = TextDecoration.Underline
+                    )
+                }
                 if(!state.isTrekking) {
                     Row(
                         modifier = Modifier
@@ -726,6 +742,27 @@ private fun PoiDetailCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+/**
+ * Opens the trek write-up in a Custom Tab, so the user stays inside the app's
+ * task and back returns straight to the map - it matters when the destination
+ * is a funnel page. Falls back to any installed browser.
+ */
+private fun openDetailsLink(context: Context, url: String) {
+    val uri = Uri.parse(url)
+    try {
+        CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+            .launchUrl(context, uri)
+    } catch (e: Exception) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+        } catch (e2: Exception) {
+            Toast.makeText(context, "No browser available", Toast.LENGTH_SHORT).show()
         }
     }
 }

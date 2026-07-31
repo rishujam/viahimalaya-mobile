@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "e98ef6eb2af62a8908c603d3384f5600",
+    "identityHash": "90534a891be665a84919f4ce072dc858",
     "entities": [
       {
         "tableName": "TrekDetail",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `location` TEXT NOT NULL, `distance` TEXT NOT NULL, `elevation` TEXT NOT NULL, `boundingBox` TEXT NOT NULL, `coordinateUrl` TEXT NOT NULL, `imageUrl` TEXT, `poiUrl` TEXT, `poiUpdatedAt` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `location` TEXT NOT NULL, `distance` TEXT NOT NULL, `elevation` TEXT NOT NULL, `boundingBox` TEXT NOT NULL, `coordinateUrl` TEXT NOT NULL, `imageUrl` TEXT, `poiUrl` TEXT, `poiUpdatedAt` TEXT, `detailsUrl` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -64,6 +64,11 @@
             "fieldPath": "poiUpdatedAt",
             "columnName": "poiUpdatedAt",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "detailsUrl",
+            "columnName": "detailsUrl",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -76,7 +81,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e98ef6eb2af62a8908c603d3384f5600')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '90534a891be665a84919f4ce072dc858')"
     ]
   }
 }

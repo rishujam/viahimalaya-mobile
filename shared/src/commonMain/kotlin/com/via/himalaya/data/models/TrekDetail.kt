@@ -18,7 +18,9 @@ data class TrekDetail(
      * Bundle version last seen for this trek. The R2 key never changes, so this
      * is the only signal that a regenerated bundle needs re-downloading.
      */
-    val poiUpdatedAt: String? = null
+    val poiUpdatedAt: String? = null,
+    /** External write-up. Read from Room for downloaded treks, so it must live here. */
+    val detailsUrl: String? = null
 ) {
 
     fun toTrek(): Trek {
@@ -32,7 +34,8 @@ data class TrekDetail(
             boundingBox = boundingBox,
             imageUrl = imageUrl,
             poiUrl = poiUrl,
-            poiUpdatedAt = poiUpdatedAt
+            poiUpdatedAt = poiUpdatedAt,
+            detailsUrl = detailsUrl
         )
     }
 

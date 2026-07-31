@@ -59,7 +59,9 @@ data class TrekDto(
     @SerialName("poi_url")
     val poiUrl: String? = null,
     @SerialName("poi_updated_at")
-    val poiUpdatedAt: String? = null
+    val poiUpdatedAt: String? = null,
+    @SerialName("details_url")
+    val detailsUrl: String? = null
 ) {
     fun toTrek(): Trek {
         return Trek(
@@ -72,7 +74,8 @@ data class TrekDto(
             coordinateUrl = coordinateUrl,
             imageUrl = imageUrl,
             poiUrl = poiUrl,
-            poiUpdatedAt = poiUpdatedAt
+            poiUpdatedAt = poiUpdatedAt,
+            detailsUrl = detailsUrl
         )
     }
 }
@@ -107,7 +110,8 @@ data class TrekDetailData(
             coordinateUrl = trek.coordinateUrl,
             imageUrl = trek.imageUrl,
             poiUrl = trek.poiUrl,
-            poiUpdatedAt = trek.poiUpdatedAt
+            poiUpdatedAt = trek.poiUpdatedAt,
+            detailsUrl = trek.detailsUrl
         )
     }
 }

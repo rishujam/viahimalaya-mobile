@@ -23,13 +23,15 @@ abstract class TrekDatabase : RoomDatabase() {
         const val DATABASE_NAME = "trek_db"
 
         /**
-         * Adds the POI bundle pointers. Both nullable, so downloaded treks from
-         * v1 survive the upgrade and simply re-fetch their POIs on next open.
+         * Adds the POI bundle pointers and the external details link. All
+         * nullable, so downloaded treks from v1 survive the upgrade and simply
+         * re-fetch on next open.
          */
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(connection: SQLiteConnection) {
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN poiUrl TEXT")
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN poiUpdatedAt TEXT")
+                connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN detailsUrl TEXT")
             }
         }
     }

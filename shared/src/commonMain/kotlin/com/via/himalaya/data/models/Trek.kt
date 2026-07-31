@@ -10,5 +10,6 @@ data class Trek(
     val coordinateUrl: String,
     val imageUrl: String? = null,
     val poiUrl: String? = null,
-    val poiUpdatedAt: String? = null
+    val poiUpdatedAt: String? = null,
+    val detailsUrl: String? = null
 )

@@ -77,4 +77,5 @@ dependencies {
     implementation(libs.splash)
     implementation(libs.coil.compose)
     implementation(libs.play.services.location)
+    implementation(libs.androidx.browser)
 }
