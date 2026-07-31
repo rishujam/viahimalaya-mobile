@@ -113,6 +113,7 @@ class TrekDetailViewModel(
                     trek = trek.data
                 )
             }
+            getPois(trek.data)
             val currentLocation = _state.value.initialLocation
             if(currentLocation is LocationResponse.Location) {
                 checkLocationInBoundingBox(currentLocation.loc)
@@ -124,6 +125,26 @@ class TrekDetailViewModel(
                     errorToast = trek.message
                 )
             }
+        }
+    }
+
+    /**
+     * POIs are supplementary, so a failure is logged and swallowed - the trail
+     * still renders. Treks generated before the POI pipeline have no poiUrl.
+     */
+    private fun getPois(trek: TrekDetail) = viewModelScope.launch(Dispatchers.IO) {
+        val poiUrl = trek.poiUrl
+        if (poiUrl.isNullOrBlank()) {
+            println("TrekDetailViewModel: No POI bundle for trek ${trek.id}")
+            return@launch
+        }
+        when (val result = trekRepository.getTrekPois(poiUrl, trek.id, trek.poiUpdatedAt)) {
+            is Result.Success -> {
+                val pois = result.data?.pois.orEmpty()
+                println("TrekDetailViewModel: Loaded ${pois.size} POIs for trek ${trek.id}")
+                _state.update { it.copy(pois = pois) }
+            }
+            else -> println("TrekDetailViewModel: Failed to load POIs: ${result.message}")
         }
     }
 

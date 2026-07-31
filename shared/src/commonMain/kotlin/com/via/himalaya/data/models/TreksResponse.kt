@@ -55,7 +55,11 @@ data class TrekDto(
     @SerialName("created_at")
     val createdAt: String,
     @SerialName("image_url")
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    @SerialName("poi_url")
+    val poiUrl: String? = null,
+    @SerialName("poi_updated_at")
+    val poiUpdatedAt: String? = null
 ) {
     fun toTrek(): Trek {
         return Trek(
@@ -66,7 +70,9 @@ data class TrekDto(
             elevation = elevation,
             boundingBox = boundingBox,
             coordinateUrl = coordinateUrl,
-            imageUrl = imageUrl
+            imageUrl = imageUrl,
+            poiUrl = poiUrl,
+            poiUpdatedAt = poiUpdatedAt
         )
     }
 }
@@ -99,7 +105,9 @@ data class TrekDetailData(
             elevation = trek.elevation,
             boundingBox = trek.boundingBox,
             coordinateUrl = trek.coordinateUrl,
-            imageUrl = trek.imageUrl
+            imageUrl = trek.imageUrl,
+            poiUrl = trek.poiUrl,
+            poiUpdatedAt = trek.poiUpdatedAt
         )
     }
 }

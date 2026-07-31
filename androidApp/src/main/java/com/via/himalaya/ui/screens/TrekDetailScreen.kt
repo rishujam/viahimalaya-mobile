@@ -66,6 +66,16 @@ import com.mapbox.maps.extension.compose.style.layers.generated.LineJoinValue
 import com.mapbox.maps.extension.compose.style.layers.generated.LineLayer
 import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.rememberGeoJsonSourceState
+import com.mapbox.maps.extension.compose.MapboxMapScope
+import com.mapbox.maps.extension.compose.annotation.rememberIconImage
+import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotation
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.Arrangement as LayoutArrangement
+import com.via.himalaya.R
+import com.via.himalaya.data.models.readableType
+import com.via.himalaya.data.models.PoiCategory
+import com.via.himalaya.data.models.TrekPoi
+import com.via.himalaya.data.models.toGeoJsonString
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.toGeoJsonString
@@ -253,6 +263,7 @@ fun TrekDetailScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val context = LocalContext.current
+    var selectedPoi by remember { mutableStateOf<TrekPoi?>(null) }
 
     Box (
         modifier = Modifier
@@ -330,6 +341,11 @@ fun TrekDetailScreen(
                         lineCap = LineCapValue.ROUND
                     }
 
+                    PoiMarkers(
+                        pois = state.pois,
+                        onPoiClick = { selectedPoi = it }
+                    )
+
                     if (state.isNearTrekStart) {
                         val location = state.liveLocation
                         location?.let {
@@ -371,8 +387,23 @@ fun TrekDetailScreen(
             }
         }
         
+        // Tapped POI takes the top slot, pushing the trekking-area banner aside.
+        selectedPoi?.let { poi ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 80.dp, start = 16.dp, end = 16.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                PoiDetailCard(
+                    poi = poi,
+                    onDismiss = { selectedPoi = null }
+                )
+            }
+        }
+
         // Show message when NOT trekking and not in bounding box
-        if (!state.isTrekking && !state.isNearTrekStart) {
+        if (!state.isTrekking && !state.isNearTrekStart && selectedPoi == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -548,4 +579,153 @@ fun TrekDetailScreenPreview() {
         onDownloadHikeClick = {},
         snackbarHostState = remember { SnackbarHostState() }
     )
+}
+
+
+
+/** Marker drawable per category, falling back to the question mark. */
+private fun poiIconRes(category: String): Int = when (category) {
+    PoiCategory.WATER -> R.drawable.ic_poi_water
+    PoiCategory.HOT_SPRING -> R.drawable.ic_poi_hot_spring
+    PoiCategory.WATERFALL -> R.drawable.ic_poi_waterfall
+    PoiCategory.LAKE -> R.drawable.ic_poi_lake
+    PoiCategory.CAMP_SITE -> R.drawable.ic_poi_camp_site
+    PoiCategory.STAY -> R.drawable.ic_poi_stay
+    PoiCategory.SHELTER -> R.drawable.ic_poi_shelter
+    PoiCategory.LANDMARK -> R.drawable.ic_poi_landmark
+    PoiCategory.WATER_CROSSING -> R.drawable.ic_poi_water_crossing
+    else -> R.drawable.ic_poi_other
+}
+
+/**
+ * One tappable marker per POI.
+ *
+ * Rendered in PoiCategory.DRAW_ORDER so a water crossing is never buried under a
+ * guest house. Icons are keyed by category, so Mapbox uploads ten images to the
+ * style rather than one per marker.
+ */
+@Composable
+private fun MapboxMapScope.PoiMarkers(
+    pois: List<TrekPoi>,
+    onPoiClick: (TrekPoi) -> Unit
+) {
+    if (pois.isEmpty()) return
+
+    PoiCategory.DRAW_ORDER.forEach { category ->
+        val inCategory = pois.filter { it.category == category }
+        if (inCategory.isEmpty()) return@forEach
+
+        val icon = rememberIconImage(
+            key = category,
+            painter = painterResource(poiIconRes(category))
+        )
+
+        inCategory.forEach { poi ->
+            PointAnnotation(point = Point.fromLngLat(poi.lon, poi.lat)) {
+                iconImage = icon
+                // Things beyond the trailhead are context, not part of the walk.
+                iconOpacity = if (poi.isOnRoute) 1.0 else 0.55
+                interactionsState.onClicked {
+                    onPoiClick(poi)
+                    true
+                }
+            }
+        }
+    }
+}
+
+/** Detail card shown when a marker is tapped. */
+@Composable
+private fun PoiDetailCard(
+    poi: TrekPoi,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.background)
+            .padding(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            Icon(
+                painter = painterResource(poiIconRes(poi.category)),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(34.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = poi.name ?: PoiCategory.label(poi.category),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                // The exact OSM kind - a water pin still says spring vs well.
+                Text(
+                    modifier = Modifier.padding(top = 2.dp),
+                    text = "${PoiCategory.label(poi.category)} \u00B7 ${poi.readableType()}",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                val position = if (poi.isOnRoute) {
+                    "km ${poi.distAlongKm} along \u00B7 ${poi.offsetM} m off trail"
+                } else {
+                    "Near the trailhead \u00B7 ${poi.offsetM} m off trail"
+                }
+                Text(
+                    modifier = Modifier.padding(top = 6.dp),
+                    text = position,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                poi.eleM?.let {
+                    Text(
+                        modifier = Modifier.padding(top = 2.dp),
+                        text = "${it.toInt()} m",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Anything useful the mapper recorded: phone, capacity, wifi...
+                val extras = poi.tags.filterKeys { it != "name" && it != "name:en" }
+                if (extras.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    extras.forEach { (key, value) ->
+                        Text(
+                            text = "${key.replace('_', ' ')}: $value",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (poi.approxCenter) {
+                    Text(
+                        modifier = Modifier.padding(top = 6.dp),
+                        text = "Approximate position",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .clickable { onDismiss() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "\u2715",
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
 }

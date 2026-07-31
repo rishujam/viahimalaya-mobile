@@ -8,6 +8,7 @@ import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.models.TrekDetailData
+import com.via.himalaya.data.models.TrekPoiBundle
 import com.via.himalaya.data.models.TrekSearchData
 import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
@@ -51,7 +52,16 @@ class TrekRepositoryImpl(
         // This provides the best possible offline quality (~30-60MB per trek)
         private const val MIN_ZOOM = 11
         private const val MAX_ZOOM = 16  // Maximum possible for offline maps
+
+        /** POIs live beside the coordinates file, which is keyed on the bare trek id. */
+        private fun poiFileName(trekId: String) = "${trekId}_pois"
     }
+
+    /**
+     * Tolerant of new fields so a bundle regenerated with extra keys does not
+     * crash an older build.
+     */
+    private val poiJson = Json { ignoreUnknownKeys = true }
 
     override suspend fun getTreks(
         page: Int,
@@ -129,6 +139,59 @@ class TrekRepositoryImpl(
             }
         } catch (e: Exception) {
             Result.Error("Error fetching coordinates: ${e.message}", 500)
+        }
+    }
+
+    override suspend fun getTrekPois(
+        poiUrl: String,
+        trekId: String,
+        poiUpdatedAt: String?
+    ): Result<TrekPoiBundle> {
+        val fileName = poiFileName(trekId)
+        return try {
+            // The cached copy is only good if it was generated from the same
+            // bundle version the API is currently advertising.
+            if (fileDownloader.fileExists(fileName)) {
+                val localData = fileDownloader.readFile(fileName)
+                if (localData != null) {
+                    try {
+                        val bundle = poiJson.decodeFromString<TrekPoiBundle>(localData)
+                        val isCurrent = poiUpdatedAt == null ||
+                                bundle.generatedAt == null ||
+                                bundle.generatedAt == poiUpdatedAt
+                        if (isCurrent) {
+                            println("TrekRepository: Loaded ${bundle.pois.size} POIs from local storage for trek: $trekId")
+                            return Result.Success(bundle)
+                        }
+                        println("TrekRepository: Cached POIs are stale for trek: $trekId (have ${bundle.generatedAt}, want $poiUpdatedAt)")
+                    } catch (e: Exception) {
+                        println("TrekRepository: Failed to parse local POIs: ${e.message}")
+                    }
+                }
+            }
+
+            println("TrekRepository: Fetching POIs from network for trek: $trekId")
+            val response = apiClient.get(poiUrl) {
+                contentType(ContentType.Application.Json)
+                headers {
+                    append(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                }
+            }
+            if (response.status.value == 200) {
+                val body = response.body<String>()
+                val bundle = poiJson.decodeFromString<TrekPoiBundle>(body)
+                try {
+                    fileDownloader.downloadFile(poiUrl, fileName)
+                    println("TrekRepository: POIs cached locally for trek: $trekId")
+                } catch (e: Exception) {
+                    println("TrekRepository: Failed to cache POIs: ${e.message}")
+                }
+                Result.Success(bundle)
+            } else {
+                Result.Error("Failed to fetch POIs: ${response.status.description}", response.status.value)
+            }
+        } catch (e: Exception) {
+            Result.Error("Error fetching POIs: ${e.message}", 500)
         }
     }
 
@@ -228,6 +291,18 @@ class TrekRepositoryImpl(
                 }
                 onProgress(0.2f)
                 println("TrekRepository: Trek coordinates downloaded")
+
+                // POIs are small and optional - a failure here must not block the
+                // download, the trail is still perfectly usable without them.
+                trek.poiUrl?.let { poiUrl ->
+                    val poisResult = getTrekPois(poiUrl, trek.id, trek.poiUpdatedAt)
+                    if (poisResult is Result.Success) {
+                        println("TrekRepository: Cached ${poisResult.data?.pois?.size ?: 0} POIs for trek: ${trek.id}")
+                    } else {
+                        println("TrekRepository: POI download failed, continuing: ${(poisResult as? Result.Error)?.message}")
+                    }
+                }
+
                 val coordinatesJson = fileDownloader.readFile(trek.id)
                     ?: return Result.Error("Failed to read coordinates file for tile download", 500)
                 val tilesResult = offlineMapManager.downloadTrekTiles(
@@ -268,6 +343,7 @@ class TrekRepositoryImpl(
             if(result?.isSuccess == true) {
                 println("TrekRepository: Offline data removed for trek: $trekId")
                 fileDownloader.deleteFile(trekId)
+                fileDownloader.deleteFile(poiFileName(trekId))
                 trekDao.deleteTrek(trekId)
                 println("TrekRepository: removed trek: $trekId")
                 Result.Success(true)

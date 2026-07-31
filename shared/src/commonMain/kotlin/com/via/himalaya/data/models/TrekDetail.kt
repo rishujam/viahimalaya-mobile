@@ -12,7 +12,13 @@ data class TrekDetail(
     val elevation: String,
     val boundingBox: List<Double>,
     val coordinateUrl: String,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val poiUrl: String? = null,
+    /**
+     * Bundle version last seen for this trek. The R2 key never changes, so this
+     * is the only signal that a regenerated bundle needs re-downloading.
+     */
+    val poiUpdatedAt: String? = null
 ) {
 
     fun toTrek(): Trek {
@@ -24,7 +30,9 @@ data class TrekDetail(
             elevation = elevation,
             coordinateUrl = coordinateUrl,
             boundingBox = boundingBox,
-            imageUrl = imageUrl
+            imageUrl = imageUrl,
+            poiUrl = poiUrl,
+            poiUpdatedAt = poiUpdatedAt
         )
     }
 
