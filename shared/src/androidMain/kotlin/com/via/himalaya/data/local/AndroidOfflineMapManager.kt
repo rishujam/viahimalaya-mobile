@@ -8,11 +8,12 @@ import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
 import com.mapbox.maps.GlyphsRasterizationMode
 import com.mapbox.maps.OfflineManager
-import com.mapbox.maps.Style
 import com.mapbox.maps.StylePackLoadOptions
 import com.mapbox.maps.TilesetDescriptorOptions
-import com.via.himalaya.data.local.OfflineMapManager
+import com.via.himalaya.util.Constants
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -26,9 +27,21 @@ import kotlin.coroutines.resume
  * It uses Mapbox's TileStore and OfflineManager APIs to download style packs and tile regions.
  */
 class AndroidOfflineMapManager(
-    private val tileStore: TileStore,
-    private val offlineManager: OfflineManager
+    private val tileStore: TileStore
 ) : OfflineMapManager {
+
+    /**
+     * Mapbox's OfflineManager is thread-affine - it must be called from the
+     * thread that created it, and calling it elsewhere fails silently: no
+     * exception, no callback, the coroutine just hangs.
+     *
+     * Creating it lazily on the first Main-dispatched call, and only ever
+     * touching it from Main, keeps creation and use on the same thread no
+     * matter which thread Koin happened to resolve this object on.
+     *
+     * TileStore has no such constraint.
+     */
+    private val offlineManager: OfflineManager by lazy { OfflineManager() }
     
     companion object {
         private const val TAG = "OfflineMapManager"
@@ -42,7 +55,8 @@ class AndroidOfflineMapManager(
     override suspend fun downloadStylePack(
         styleUri: String,
         onProgress: (Float) -> Unit
-    ): Result<Boolean> = suspendCancellableCoroutine { continuation ->
+    ): Result<Boolean> = withContext(Dispatchers.Main) {
+        suspendCancellableCoroutine { continuation ->
         try {
             val stylePackOptions = StylePackLoadOptions.Builder()
                 .glyphsRasterizationMode(GlyphsRasterizationMode.IDEOGRAPHS_RASTERIZED_LOCALLY)
@@ -77,6 +91,7 @@ class AndroidOfflineMapManager(
             Log.e(TAG, "Error downloading style pack", e)
             continuation.resume(Result.failure(e))
         }
+        }
     }
 
     override suspend fun downloadTrekTiles(
@@ -85,7 +100,8 @@ class AndroidOfflineMapManager(
         minZoom: Int,
         maxZoom: Int,
         onProgress: (Float) -> Unit
-    ): Result<Boolean> = suspendCancellableCoroutine { continuation ->
+    ): Result<Boolean> = withContext(Dispatchers.Main) {
+        suspendCancellableCoroutine { continuation ->
         try {
             // 1. Parse GeoJSON and calculate bounding box
             val boundingBox = calculateBoundingBoxFromGeoJson(coordinatesJson)
@@ -101,7 +117,7 @@ class AndroidOfflineMapManager(
             
             // 3. Create tileset descriptor
             val tilesetDescriptorOptions = TilesetDescriptorOptions.Builder()
-                .styleURI(Style.STANDARD)
+                .styleURI(Constants.Map.STYLE_URI)
                 .minZoom(minZoom.toByte())
                 .maxZoom(maxZoom.toByte())
                 .build()
@@ -148,9 +164,26 @@ class AndroidOfflineMapManager(
             Log.e(TAG, "Error downloading trek tiles for $trekId", e)
             continuation.resume(Result.failure(e))
         }
+        }
     }
 
-    override suspend fun removeTrekTiles(trekId: String): Result<Boolean> = 
+    override suspend fun isStylePackDownloaded(styleUri: String): Boolean =
+        withContext(Dispatchers.Main) {
+        suspendCancellableCoroutine { continuation ->
+            try {
+                offlineManager.getStylePack(styleUri) { expected ->
+                    val present = expected.isValue && expected.value != null
+                    Log.d(TAG, "Style pack present for $styleUri: $present")
+                    continuation.resume(present)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking style pack", e)
+                continuation.resume(false)
+            }
+        }
+    }
+
+    override suspend fun removeTrekTiles(trekId: String): Result<Boolean> =
         suspendCancellableCoroutine { continuation ->
             try {
                 tileStore.removeTileRegion(trekId) { expected ->

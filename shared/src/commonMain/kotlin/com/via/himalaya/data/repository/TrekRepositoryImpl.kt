@@ -18,6 +18,7 @@ import com.via.himalaya.domain.model.TrekGeometry
 import com.via.himalaya.domain.model.Treks
 import com.via.himalaya.domain.model.getFlattenedCoordinates
 import com.via.himalaya.domain.repo.TrekRepository
+import com.via.himalaya.util.Constants
 import com.via.himalaya.util.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -28,6 +29,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlin.math.PI
 import kotlin.math.cos
@@ -45,13 +47,26 @@ class TrekRepositoryImpl(
     companion object {
         private const val BASE_URL = "https://viahimalaya.com"
         const val DEFAULT_API_KEY = "ea6265827acc4132d98dc8e37727f36fda3b91e9c4c6d79b4cb5b6c89d9fa6cf"
-        // Zoom levels for offline maps
-        // IMPORTANT: Mapbox tile packs have predefined zoom ranges: 0-5, 6-10, 11-14, 15-16
-        // Maximum offline zoom is 16 (zoom 17-22 only available online via dynamic tile generation)
-        // Setting minZoom=11, maxZoom=16 downloads tile packs for ranges 11-14 and 15-16
-        // This provides the best possible offline quality (~30-60MB per trek)
-        private const val MIN_ZOOM = 11
-        private const val MAX_ZOOM = 16  // Maximum possible for offline maps
+        // Mapbox groups tiles into packs with fixed zoom ranges, and you always
+        // get the whole pack:
+        //
+        //     index  0 -> zoom 0-5    (~1.4K tiles, global)
+        //     index  6 -> zoom 6-10   (~341 tiles)
+        //     index 11 -> zoom 11-14  (~85 tiles)
+        //     index 12 -> zoom 15-16  (~320 tiles)
+        //
+        // minZoom was 11, which meant zooming out even two steps from the trek's
+        // default camera fell off the downloaded range and went blurry. Asking
+        // for 6 costs exactly the same as asking for 8 - both pull the entire
+        // 6-10 pack - so there is no reason not to take the wider range.
+        //
+        // Dropping to 0 would add the global 0-5 pack, which is ~1.4K raster
+        // tiles for a view of the whole subcontinent nobody needs.
+        private const val MIN_ZOOM = 6
+        // Hard platform ceiling: Mapbox only serves offline tiles to zoom 16.
+        // Beyond that the SDK upscales z16, so close-in zoom is blurry offline
+        // and there is nothing we can do about it.
+        private const val MAX_ZOOM = 16
 
         /** POIs live beside the coordinates file, which is keyed on the bare trek id. */
         private fun poiFileName(trekId: String) = "${trekId}_pois"
@@ -148,28 +163,28 @@ class TrekRepositoryImpl(
         poiUpdatedAt: String?
     ): Result<TrekPoiBundle> {
         val fileName = poiFileName(trekId)
-        return try {
-            // The cached copy is only good if it was generated from the same
-            // bundle version the API is currently advertising.
-            if (fileDownloader.fileExists(fileName)) {
-                val localData = fileDownloader.readFile(fileName)
-                if (localData != null) {
-                    try {
-                        val bundle = poiJson.decodeFromString<TrekPoiBundle>(localData)
-                        val isCurrent = poiUpdatedAt == null ||
-                                bundle.generatedAt == null ||
-                                bundle.generatedAt == poiUpdatedAt
-                        if (isCurrent) {
-                            println("TrekRepository: Loaded ${bundle.pois.size} POIs from local storage for trek: $trekId")
-                            return Result.Success(bundle)
-                        }
-                        println("TrekRepository: Cached POIs are stale for trek: $trekId (have ${bundle.generatedAt}, want $poiUpdatedAt)")
-                    } catch (e: Exception) {
-                        println("TrekRepository: Failed to parse local POIs: ${e.message}")
-                    }
-                }
-            }
 
+        // Read the cache up front so it can still serve as a fallback if the
+        // network is unreachable, even when it looks out of date.
+        val cached: TrekPoiBundle? = if (fileDownloader.fileExists(fileName)) {
+            try {
+                fileDownloader.readFile(fileName)
+                    ?.let { poiJson.decodeFromString<TrekPoiBundle>(it) }
+            } catch (e: Exception) {
+                println("TrekRepository: Failed to parse local POIs: ${e.message}")
+                null
+            }
+        } else null
+
+        if (cached != null && isSameInstant(cached.generatedAt, poiUpdatedAt)) {
+            println("TrekRepository: Loaded ${cached.pois.size} POIs from local storage for trek: $trekId")
+            return Result.Success(cached)
+        }
+        if (cached != null) {
+            println("TrekRepository: Cached POIs may be stale for trek: $trekId (have ${cached.generatedAt}, want $poiUpdatedAt)")
+        }
+
+        return try {
             println("TrekRepository: Fetching POIs from network for trek: $trekId")
             val response = apiClient.get(poiUrl) {
                 contentType(ContentType.Application.Json)
@@ -187,11 +202,21 @@ class TrekRepositoryImpl(
                     println("TrekRepository: Failed to cache POIs: ${e.message}")
                 }
                 Result.Success(bundle)
+            } else if (cached != null) {
+                println("TrekRepository: POI fetch returned ${response.status.value}, serving cached bundle")
+                Result.Success(cached)
             } else {
                 Result.Error("Failed to fetch POIs: ${response.status.description}", response.status.value)
             }
         } catch (e: Exception) {
-            Result.Error("Error fetching POIs: ${e.message}", 500)
+            // Offline. A stale bundle beats no bundle - the trek is being walked
+            // right now and those water points are still where they were.
+            if (cached != null) {
+                println("TrekRepository: POI fetch failed (${e.message}), serving cached bundle for trek: $trekId")
+                Result.Success(cached)
+            } else {
+                Result.Error("Error fetching POIs: ${e.message}", 500)
+            }
         }
     }
 
@@ -303,6 +328,27 @@ class TrekRepositoryImpl(
                     }
                 }
 
+                // Fonts, sprites and the style JSON itself. Without these the
+                // style cannot load offline at all and the map comes up blank,
+                // however many tiles are on disk. Shared across every trek and
+                // a no-op once cached, so it is cheap to repeat.
+                val stylePackResult = offlineMapManager.downloadStylePack(
+                    styleUri = Constants.Map.STYLE_URI,
+                    onProgress = { styleProgress ->
+                        onProgress(0.2f + (styleProgress * 0.1f))
+                    }
+                )
+                if (stylePackResult.isFailure) {
+                    val error = stylePackResult.exceptionOrNull()
+                    println("TrekRepository: Style pack download failed: ${error?.message}")
+                    return Result.Error(
+                        "Failed to prepare offline map style: ${error?.message}",
+                        500
+                    )
+                }
+                onProgress(0.3f)
+                println("TrekRepository: Style pack ready")
+
                 val coordinatesJson = fileDownloader.readFile(trek.id)
                     ?: return Result.Error("Failed to read coordinates file for tile download", 500)
                 val tilesResult = offlineMapManager.downloadTrekTiles(
@@ -311,7 +357,7 @@ class TrekRepositoryImpl(
                     minZoom = MIN_ZOOM,
                     maxZoom = MAX_ZOOM,
                     onProgress = { tileProgress ->
-                        onProgress(0.2f + (tileProgress * 0.7f))
+                        onProgress(0.3f + (tileProgress * 0.6f))
                     }
                 )
                 if (tilesResult.isSuccess) {
@@ -361,9 +407,13 @@ class TrekRepositoryImpl(
             val hasMetadata = trekDao.getTrek(trekId) != null
             val hasCoordinates = fileDownloader.fileExists(trekId)
             val hasTiles = offlineMapManager?.isTrekDownloaded(trekId) ?: true // true if no manager (iOS)
-            
-            val isFullyDownloaded = hasMetadata && hasCoordinates && hasTiles
-            println("TrekRepository: Trek $trekId download status - metadata: $hasMetadata, coords: $hasCoordinates, tiles: $hasTiles")
+            // Tiles render nothing without the style. Builds before the style
+            // fix downloaded tiles but no style pack, so this reports them as
+            // incomplete and the user re-downloads into a working state.
+            val hasStylePack = offlineMapManager?.isStylePackDownloaded(Constants.Map.STYLE_URI) ?: true
+
+            val isFullyDownloaded = hasMetadata && hasCoordinates && hasTiles && hasStylePack
+            println("TrekRepository: Trek $trekId download status - metadata: $hasMetadata, coords: $hasCoordinates, tiles: $hasTiles, style: $hasStylePack")
             
             isFullyDownloaded
         } catch (e: Exception) {
@@ -476,5 +526,23 @@ class TrekRepositoryImpl(
         }
 
         return listOf(minLng, minLat, maxLng, maxLat)
+    }
+
+    /**
+     * Postgres serialises timestamptz as "2026-07-30T16:37:54.000Z" while the
+     * generator writes "2026-07-31T15:24:11+00:00". Same kind of value, different
+     * text, so compare parsed instants rather than raw strings.
+     *
+     * Unparseable or absent on either side counts as a match: a cached bundle we
+     * cannot date is still more use than none.
+     */
+    private fun isSameInstant(a: String?, b: String?): Boolean {
+        if (a == null || b == null || a == b) return true
+        return try {
+            Instant.parse(a) == Instant.parse(b)
+        } catch (e: Exception) {
+            println("TrekRepository: Could not compare timestamps '$a' and '$b'")
+            false
+        }
     }
 }

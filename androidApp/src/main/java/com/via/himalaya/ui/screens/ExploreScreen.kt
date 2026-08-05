@@ -216,7 +216,7 @@ fun ExploreScreen(
                     }
 
                     // Loading indicator at the bottom when paginating
-                    if (state.isLoading && state.treks.isNotEmpty()) {
+                    if (state.isLoading) {
                         item {
                             Box(
                                 modifier = Modifier

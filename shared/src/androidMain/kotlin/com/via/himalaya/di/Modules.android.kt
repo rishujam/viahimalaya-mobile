@@ -5,7 +5,6 @@ import com.mapbox.bindgen.Value
 import com.mapbox.common.MapboxOptions
 import com.mapbox.common.TileStore
 import com.mapbox.common.TileStoreOptions
-import com.mapbox.maps.OfflineManager
 import com.mapbox.maps.mapsOptions
 import com.via.himalaya.data.local.AndroidFileDownloader
 import com.via.himalaya.data.local.DatabaseFactory
@@ -48,10 +47,11 @@ actual val platformModule: Module
                     Value.valueOf(500L * 1024 * 1024) // 500 MB
                 )
                 
-                val offlineManager = OfflineManager()
                 Log.d("ViaHimalaya", "✅ OfflineMapManager configured: 500MB disk quota")
-                
-                AndroidOfflineMapManager(tileStore, offlineManager)
+
+                // OfflineManager is created inside, lazily on the main thread -
+                // it is thread-affine and Koin can resolve this from anywhere.
+                AndroidOfflineMapManager(tileStore)
             } catch (e: Exception) {
                 Log.e("ViaHimalaya", "❌ Error configuring OfflineMapManager", e)
                 throw e

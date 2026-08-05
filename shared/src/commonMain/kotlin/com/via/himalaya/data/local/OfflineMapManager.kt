@@ -65,6 +65,16 @@ interface OfflineMapManager {
     suspend fun isTrekDownloaded(trekId: String): Boolean
 
     /**
+     * Whether the style pack for [styleUri] is cached.
+     *
+     * Tiles alone are not enough - without the style JSON, fonts and sprites the
+     * map cannot render offline at all. Treated as part of "is this trek
+     * downloaded", so builds that shipped without a style pack report themselves
+     * as incomplete and re-download instead of failing silently on the trail.
+     */
+    suspend fun isStylePackDownloaded(styleUri: String): Boolean
+
+    /**
      * Gets the size of downloaded tiles in bytes.
      *
      * @param trekId The trek identifier

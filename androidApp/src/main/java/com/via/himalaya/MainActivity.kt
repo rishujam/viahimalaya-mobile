@@ -38,28 +38,23 @@ import org.koin.androidx.compose.koinViewModel
 
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
-
 //TODO - Data Entry in Backend
         //Update existing photos
-//TODO - Download tiles of map for offline use
-        //On notification allow start downloading
-        //Foreground Notification while downloading
-//TODO Create test trek
-
-//Phase 2
-//TODO - SignInScreen Video
 //TODO - (Bug) Coming back to explore page the state of isFocused in not maintained
-//TODO - Add view on google maps (the destination)
+//TODO - Add view on google maps for a POI (the destination)
+//TODO -
+
+//TODO - Create test trek
+//TODO - Add a comment option of the POI so user can comment or rate
+//TODO - Elevation Data using DEM
 //TODO - SignIn Page improved video branding
 //TODO - Add span in LazyColumn
 //TODO - Listen to location only when device is moving - optimize battery
 //TODO - Font fix all over the app
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
-//TODO - If location permission is denied 2 times show a dialog to go to settings and allow permission.
 //TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 //TODO - Before showing the list in downloaded treks make sure trek is fully downloaded if not remove the trek meta data
-//TODO - On search image of trek is not showing
 
 
 class MainActivity : ComponentActivity() {

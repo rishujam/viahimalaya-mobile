@@ -56,7 +56,6 @@ import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import com.google.android.gms.common.api.ResolvableApiException
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
-import com.mapbox.maps.Style
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotation
@@ -85,6 +84,7 @@ import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.service.TrekDownloadService
 import com.via.himalaya.ui.components.PrimaryButton
 import com.via.himalaya.ui.components.SecondaryButton
+import com.via.himalaya.util.Constants
 import com.via.himalaya.util.PermissionUtil
 
 private const val TAG = "TrekDetailScreenTag"
@@ -328,7 +328,7 @@ fun TrekDetailScreen(
                     mapViewportState = mapViewportState,
                     style = {
                         MapStyle(
-                            style = Style.SATELLITE_STREETS
+                            style = Constants.Map.STYLE_URI
                         )
                     }
                 ) {
