@@ -40,15 +40,14 @@ import org.koin.androidx.compose.koinViewModel
         //Create table to store path followed by user mapped to trek id - Done need to test
 //TODO - Data Entry in Backend
         //Update existing photos
-//TODO - (Bug) Coming back to explore page the state of isFocused in not maintained
 //TODO - Add view on google maps for a POI (the destination)
-//TODO -
+//TODO - When notification permission denied 2 times navigate to settings
+//TODO - When notification permission allowed start the download instead of toast
 
 //TODO - Create test trek
 //TODO - Add a comment option of the POI so user can comment or rate
 //TODO - Elevation Data using DEM
 //TODO - SignIn Page improved video branding
-//TODO - Add span in LazyColumn
 //TODO - Listen to location only when device is moving - optimize battery
 //TODO - Font fix all over the app
 //TODO - Profile Page

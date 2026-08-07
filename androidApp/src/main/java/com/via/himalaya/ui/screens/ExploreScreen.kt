@@ -1,6 +1,10 @@
 package com.via.himalaya.ui.screens
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,8 +32,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -79,6 +83,7 @@ fun ExploreScreenRoot(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ExploreScreen(
@@ -89,29 +94,37 @@ fun ExploreScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
-    var focusedIndex by remember { mutableIntStateOf(0) }
-
-    // Focus detection: Track which card is closest to viewport center
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                if (visibleItems.isNotEmpty()) {
-                    val viewportHeight = listState.layoutInfo.viewportEndOffset
-                    val center = viewportHeight / 2
-                    val focused = visibleItems.minByOrNull { item ->
-                        val itemCenter = item.offset + item.size / 2
-                        abs(itemCenter - center)
-                    }?.index
-                    if (focused != null && focused != focusedIndex) {
-                        focusedIndex = focused
-                    }
-                }
-            }
+    val snapLayoutInfoProvider = remember(listState) {
+        SnapLayoutInfoProvider(listState, SnapPosition.Start)
     }
 
-    // Reset focus when search results change
-    LaunchedEffect(state.treks.size) {
-        focusedIndex = 0
+    // Focus detection: the card closest to viewport center. Derived from the list
+    // instead of held in its own state so it survives this screen leaving
+    // composition — listState is saveable, so navigating to a trek and back
+    // restores the scroll position and the focused card follows it.
+    val focusedIndex by remember(listState) {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val center = layoutInfo.viewportEndOffset / 2
+            val closest = layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                abs((item.offset + item.size / 2) - center)
+            }
+            // layoutInfo is empty until the first measure pass but the restored
+            // scroll position isn't, so fall back to it rather than blurring
+            // every card for a frame on the way back from the detail screen.
+            closest?.index ?: listState.firstVisibleItemIndex
+        }
+    }
+
+    // Search swaps the whole result set out, so send the list back to the top and
+    // let focus follow. Keyed on the query the ViewModel applied rather than on
+    // treks.size, so paginating in another page no longer yanks focus to index 0.
+    var lastAppliedQuery by remember { mutableStateOf(state.searchQuery) }
+    LaunchedEffect(state.searchQuery) {
+        if (state.searchQuery != lastAppliedQuery) {
+            lastAppliedQuery = state.searchQuery
+            listState.scrollToItem(0)
+        }
     }
 
     LaunchedEffect(searchQuery, state.isSearching) {
@@ -203,6 +216,14 @@ fun ExploreScreen(
 
                 LazyColumn(
                     state = listState,
+                    // One card at a time: releasing the drag settles on whichever
+                    // card is showing more of itself, so the list never rests
+                    // between two. SnapPosition.Start keeps the settled card at
+                    // offset 0, which means firstVisibleItemIndex, the snap
+                    // target and the focused card are always the same item — so
+                    // the position saved on the way to a trek restores to a card
+                    // that is unambiguously in focus on the way back.
+                    flingBehavior = rememberSnapFlingBehavior(snapLayoutInfoProvider),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     itemsIndexed(state.treks) { index, trek ->
