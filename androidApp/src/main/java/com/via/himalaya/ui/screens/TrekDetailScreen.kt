@@ -104,16 +104,19 @@ fun TrekDetailScreenRoot(
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
-        val toastText = if(isGranted) {
-            "Permission granted, try downloading again"
+        if(isGranted) {
+            TrekDownloadService.startService(
+                context = context,
+                trekId = trekId,
+                trekName = state.trek?.name.orEmpty()
+            )
         } else {
-            "Notification permission is required to download a trek"
+            Toast.makeText(
+                context,
+                "Notification permission is required to download a trek",
+                Toast.LENGTH_SHORT
+            ).show()
         }
-        Toast.makeText(
-            context,
-            toastText,
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     val activity = LocalActivity.current

@@ -300,6 +300,10 @@ class TrekDetailViewModel(
                         onValidationSuccess(trek)
                     }
                 }
+            } ?: run {
+                _state.update {
+                    it.copy(errorToast = "Trek details not present yet...")
+                }
             }
         }
 
