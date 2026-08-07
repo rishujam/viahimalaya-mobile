@@ -43,9 +43,12 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Add view on google maps for a POI (the destination)
 //TODO - When notification permission denied 2 times navigate to settings
 //TODO - When notification permission allowed start the download instead of toast
+//TODO - When viewpoint is clicked the small box shows up with detail but when I tap outside or drag outside for the map it should get closed
+//TODO - Rate and comment on viewpoint - offline first sync it later when internet is there.
+        //Create api for comment/rate POI
+//TODO - Add poi while trekking - offline first sync it later when internet is there.
 
 //TODO - Create test trek
-//TODO - Add a comment option of the POI so user can comment or rate
 //TODO - Elevation Data using DEM
 //TODO - SignIn Page improved video branding
 //TODO - Listen to location only when device is moving - optimize battery
@@ -54,6 +57,7 @@ import org.koin.androidx.compose.koinViewModel
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
 //TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 //TODO - Before showing the list in downloaded treks make sure trek is fully downloaded if not remove the trek meta data
+//TODO - Thumbnail is not downloaded when trek is downloaded
 
 
 class MainActivity : ComponentActivity() {
