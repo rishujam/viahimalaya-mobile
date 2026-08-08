@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
@@ -7,7 +9,28 @@ plugins {
     alias(libs.plugins.google.gms)
 }
 
-android { 
+// Secrets come from local.properties (gitignored) or the environment for CI.
+// Read through providers rather than a plain file read: configuration cache is
+// on, and an untracked read would bake a stale value into the next build when
+// local.properties changes.
+val localProperties = providers.fileContents(
+    rootProject.layout.projectDirectory.file("local.properties")
+).asText.map { text -> Properties().apply { load(text.reader()) } }
+
+fun secret(name: String): String =
+    localProperties.map { it.getProperty(name).orEmpty() }
+        .orElse(providers.environmentVariable(name))
+        .getOrElse("")
+
+val viaHimalayaApiKey = secret("VIAHIMALAYA_API_KEY")
+if (viaHimalayaApiKey.isBlank()) {
+    logger.warn(
+        "VIAHIMALAYA_API_KEY is not set in local.properties or the environment - " +
+            "every API call in this build will come back 401."
+    )
+}
+
+android {
     namespace = "com.via.himalaya"
     compileSdk = 36
     defaultConfig {
@@ -16,9 +39,16 @@ android {
         targetSdk = 36
         versionCode = 6
         versionName = "1.5"
+
+        buildConfigField("String", "API_BASE_URL", "\"https://viahimalaya.com\"")
+        buildConfigField("String", "API_KEY", "\"$viaHimalayaApiKey\"")
     }
     buildFeatures {
         compose = true
+        // Only androidApp generates BuildConfig. The shared module declares the
+        // same namespace, so enabling it there too would produce a second
+        // com.via.himalaya.BuildConfig.
+        buildConfig = true
     }
     packaging {
         resources {

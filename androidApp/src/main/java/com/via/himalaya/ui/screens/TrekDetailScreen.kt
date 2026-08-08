@@ -54,8 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import com.google.android.gms.common.api.ResolvableApiException
+import androidx.compose.ui.input.pointer.pointerInput
+import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.extension.compose.DisposableMapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotation
@@ -70,6 +73,8 @@ import com.mapbox.maps.extension.compose.style.sources.generated.rememberGeoJson
 import com.mapbox.maps.extension.compose.MapboxMapScope
 import com.mapbox.maps.extension.compose.annotation.rememberIconImage
 import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotation
+import com.mapbox.maps.plugin.gestures.OnMoveListener
+import com.mapbox.maps.plugin.gestures.gestures
 import androidx.compose.ui.res.painterResource
 import androidx.browser.customtabs.CustomTabsIntent
 import com.via.himalaya.R
@@ -329,12 +334,35 @@ fun TrekDetailScreen(
                 MapboxMap(
                     modifier = Modifier.fillMaxSize(),
                     mapViewportState = mapViewportState,
+                    // Markers consume their own taps, so anything reaching here is
+                    // a tap on bare map - dismiss the detail card. Returns false so
+                    // the click still propagates; we only observe it.
+                    onMapClickListener = {
+                        selectedPoi = null
+                        false
+                    },
                     style = {
                         MapStyle(
                             style = Constants.Map.STYLE_URI
                         )
                     }
                 ) {
+                    // Panning the map dismisses the card too - it is anchored to a
+                    // marker that is about to slide out from under it.
+                    DisposableMapEffect(Unit) { mapView ->
+                        val moveListener = object : OnMoveListener {
+                            override fun onMoveBegin(detector: MoveGestureDetector) {
+                                selectedPoi = null
+                            }
+
+                            override fun onMove(detector: MoveGestureDetector) = false
+
+                            override fun onMoveEnd(detector: MoveGestureDetector) = Unit
+                        }
+                        mapView.gestures.addOnMoveListener(moveListener)
+                        onDispose { mapView.gestures.removeOnMoveListener(moveListener) }
+                    }
+
                     LineLayer(
                         layerId = "trek-trail-line-layer",
                         sourceState = trailSource
@@ -665,6 +693,16 @@ private fun PoiDetailCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.background)
+            // The card sits over the MapView, which is a plain Android view - with
+            // nothing consuming here, taps and drags fall straight through to the
+            // map and dismiss the card the user is trying to read.
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent().changes.forEach { it.consume() }
+                    }
+                }
+            }
             .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {

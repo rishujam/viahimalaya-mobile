@@ -15,4 +15,12 @@ interface AuthRepository {
 
     suspend fun getCurrentUser(): UserProfile?
 
+    /**
+     * Firebase ID token for authenticating API calls, or null when signed out.
+     *
+     * Fetch this per request rather than storing it: it expires after an hour,
+     * so a copy kept in preferences is stale almost immediately. Firebase keeps
+     * a long-lived refresh token on disk and mints a new one when needed.
+     */
+    suspend fun getIdToken(): String?
 }

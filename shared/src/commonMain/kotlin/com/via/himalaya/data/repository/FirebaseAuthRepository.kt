@@ -25,8 +25,8 @@ class FirebaseAuthRepository(
             val credential = GoogleAuthProvider.credential(idToken = idToken, accessToken = null)
             val user = auth.signInWithCredential(credential).user
                 ?: return Result.Error("Google sign-in returned no user.", -1)
-            userPreferences.saveUserInfo(user.email.orEmpty(), user.displayName.orEmpty())
-            Result.Success(user.toUserProfile())
+            val firebaseToken = user.getIdToken(false)
+            Result.Success(user.toUserProfile(firebaseToken))
         } catch (e: Exception) {
             tracker.track(Constants.Events.API_ERROR, mapOf("error" to e.message.toString()))
             Result.Error(e.message ?: "Google sign-in failed.", -1)
@@ -34,23 +34,39 @@ class FirebaseAuthRepository(
     }
 
     override suspend fun signOut() {
-        userPreferences.clearUserEmail()
         auth.signOut()
     }
 
+    /**
+     * Firebase decides whether anyone is signed in, not our preferences.
+     *
+     * This is still a local read - Firebase restores the session from disk at
+     * startup - so it works with no internet. Preferences were the wrong source
+     * of truth: they survive a session being revoked or signed out on another
+     * device, which left the app looking signed in while every call failed.
+     * They stay on as a fallback for the display fields only.
+     */
     override suspend fun getCurrentUser(): UserProfile? {
-        val email = userPreferences.getUserEmail()
-        val name = userPreferences.getName()
-        return if(email.isNullOrEmpty()) {
-            null
-        } else {
-            UserProfile(email = email, name = name.orEmpty())
-        }
+        val user = auth.currentUser ?: return null
+        return UserProfile(
+            email = user.email.orEmpty(),
+            name = user.displayName,
+            photoUrl = user.photoURL.orEmpty(),
+            firebaseToken = user.getIdToken(false)
+        )
     }
+
+    /**
+     * `false` means "use the cached token unless it is about to expire", so this
+     * costs nothing on the common path. Forcing a refresh would put a network
+     * round trip in front of every API call.
+     */
+    override suspend fun getIdToken(): String? = auth.currentUser?.getIdToken(false)
 }
 
-private fun FirebaseUser.toUserProfile(): UserProfile = UserProfile(
+private fun FirebaseUser.toUserProfile(token: String?): UserProfile = UserProfile(
     email = email.orEmpty(),
     name = displayName.orEmpty(),
     photoUrl = photoURL.orEmpty(),
+    firebaseToken = token
 )

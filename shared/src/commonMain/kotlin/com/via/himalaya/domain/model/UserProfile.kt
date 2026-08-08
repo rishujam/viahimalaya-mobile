@@ -5,5 +5,6 @@ data class UserProfile(
     val name: String? = null,
     val email: String,
     val treks: Int = 0,
-    val distance: Int = 0
+    val distance: Int = 0,
+    val firebaseToken: String?
 )

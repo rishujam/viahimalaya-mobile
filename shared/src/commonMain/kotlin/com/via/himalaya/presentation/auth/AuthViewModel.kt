@@ -78,8 +78,6 @@ class AuthViewModel(
     }
 
     fun signOut() = viewModelScope.launch {
-        val user = authRepository.getCurrentUser()
-        println("AuthViewModel: Signing out user: $user")
         authRepository.signOut()
         _state.update { it.copy(userProfile = null) }
         println("AuthViewModel: User signed out successfully")

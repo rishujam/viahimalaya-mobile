@@ -13,6 +13,7 @@ import com.via.himalaya.data.models.TrekSearchData
 import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
 import com.via.himalaya.data.local.OfflineMapManager
+import com.via.himalaya.data.remote.ApiConfig
 import com.via.himalaya.domain.model.TrekGeoData
 import com.via.himalaya.domain.model.TrekGeometry
 import com.via.himalaya.domain.model.Treks
@@ -42,11 +43,10 @@ class TrekRepositoryImpl(
     private val navigatorDao: NavigatorDao,
     private val fileDownloader: FileDownloader,
     private val offlineMapManager: OfflineMapManager?,
+    private val apiConfig: ApiConfig,
 ) : TrekRepository {
 
     companion object {
-        private const val BASE_URL = "https://viahimalaya.com"
-        const val DEFAULT_API_KEY = "ea6265827acc4132d98dc8e37727f36fda3b91e9c4c6d79b4cb5b6c89d9fa6cf"
         // Mapbox groups tiles into packs with fixed zoom ranges, and you always
         // get the whole pack:
         //
@@ -85,11 +85,11 @@ class TrekRepositoryImpl(
     ): Result<Treks> {
         return try {
             val response = apiClient
-                .get("$BASE_URL/api/treks") {
+                .get("${apiConfig.baseUrl}/api/treks") {
                     contentType(ContentType.Application.Json)
                     headers {
                         append(HttpHeaders.Accept, ContentType.Application.Json.toString())
-                        append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                        append(HttpHeaders.Authorization, "Bearer ${apiConfig.apiKey}")
                     }
                     url {
                         parameters.append("page", page.toString())
@@ -222,11 +222,11 @@ class TrekRepositoryImpl(
 
     override suspend fun searchTreks(query: String): Result<List<Trek>> {
         return try {
-            val response = apiClient.get("$BASE_URL/api/treks/search") {
+            val response = apiClient.get("${apiConfig.baseUrl}/api/treks/search") {
                 contentType(ContentType.Application.Json)
                 headers {
                     append(HttpHeaders.Accept, ContentType.Application.Json.toString())
-                    append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                    append(HttpHeaders.Authorization, "Bearer ${apiConfig.apiKey}")
                 }
                 url {
                     parameters.append("q", query)
@@ -260,11 +260,11 @@ class TrekRepositoryImpl(
             localTrek?.let {
                 Result.Success(localTrek)
             } ?: run {
-                val response = apiClient.get("$BASE_URL/api/treks/$id") {
+                val response = apiClient.get("${apiConfig.baseUrl}/api/treks/$id") {
                     contentType(ContentType.Application.Json)
                     headers {
                         append(HttpHeaders.Accept, ContentType.Application.Json.toString())
-                        append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                        append(HttpHeaders.Authorization, "Bearer ${apiConfig.apiKey}")
                     }
                 }
                 return when (response.status.value) {
@@ -439,11 +439,11 @@ class TrekRepositoryImpl(
             val navigatorTreks = navigatorDao.getAllNavigatorTreks()
             for (navigatorTrek in navigatorTreks) {
                 try {
-                    val response = apiClient.post("$BASE_URL/api/navigator-trek/upload") {
+                    val response = apiClient.post("${apiConfig.baseUrl}/api/navigator-trek/upload") {
                         contentType(ContentType.Application.Json)
                         headers {
                             append(HttpHeaders.Accept, ContentType.Application.Json.toString())
-                            append(HttpHeaders.Authorization, "Bearer $DEFAULT_API_KEY")
+                            append(HttpHeaders.Authorization, "Bearer ${apiConfig.apiKey}")
                         }
                         setBody(navigatorTrek)
                     }

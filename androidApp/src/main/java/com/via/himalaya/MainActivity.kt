@@ -1,6 +1,7 @@
 package com.via.himalaya
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -43,7 +44,6 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Add view on google maps for a POI (the destination)
 //TODO - When notification permission denied 2 times navigate to settings
 //TODO - When notification permission allowed start the download instead of toast
-//TODO - When viewpoint is clicked the small box shows up with detail but when I tap outside or drag outside for the map it should get closed
 //TODO - Rate and comment on viewpoint - offline first sync it later when internet is there.
         //Create api for comment/rate POI
 //TODO - Add poi while trekking - offline first sync it later when internet is there.
@@ -58,6 +58,7 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 //TODO - Before showing the list in downloaded treks make sure trek is fully downloaded if not remove the trek meta data
 //TODO - Thumbnail is not downloaded when trek is downloaded
+//TODO - Add interactive screenshots in play store listing
 
 
 class MainActivity : ComponentActivity() {
