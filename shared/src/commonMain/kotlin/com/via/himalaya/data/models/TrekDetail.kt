@@ -20,7 +20,17 @@ data class TrekDetail(
      */
     val poiUpdatedAt: String? = null,
     /** External write-up. Read from Room for downloaded treks, so it must live here. */
-    val detailsUrl: String? = null
+    val detailsUrl: String? = null,
+    /**
+     * Ground height every 100 m along the trail, driving the elevation slider.
+     *
+     * Null for any trek the backend has not profiled yet, and for treks
+     * downloaded before this column existed - the slider is simply not drawn in
+     * that case. Stored on the entity rather than fetched separately because
+     * getTrek() reads Room first for downloaded treks, so anything the UI needs
+     * has to survive here.
+     */
+    val elevationProfile: List<TrekElevationPoint>? = null
 ) {
 
     fun toTrek(): Trek {

@@ -10,10 +10,11 @@ import com.via.himalaya.data.models.TrekDetail
 
 @Database(
     entities = [TrekDetail::class],
-    version = 2
+    version = 3
 )
 @TypeConverters(
-    DoubleListTypeConverter::class
+    DoubleListTypeConverter::class,
+    ElevationProfileTypeConverter::class
 )
 abstract class TrekDatabase : RoomDatabase() {
 
@@ -32,6 +33,20 @@ abstract class TrekDatabase : RoomDatabase() {
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN poiUrl TEXT")
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN poiUpdatedAt TEXT")
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN detailsUrl TEXT")
+            }
+        }
+
+        /**
+         * Adds the elevation profile behind the detail screen's slider.
+         *
+         * Nullable and left empty for existing rows: a trek downloaded before
+         * this simply shows no slider until it is re-downloaded, which is the
+         * same state as a trek the backend has not profiled yet. Nothing else
+         * degrades, so there is no reason to force a re-download.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN elevationProfile TEXT")
             }
         }
     }

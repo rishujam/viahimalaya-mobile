@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="34dp" android:height="34dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <!-- Deliberately larger and bluer than any POI pin: while the slider is held
+         this is the only marker on the map, and it has to read instantly as
+         "you, here" rather than as another point of interest. -->
+    <path android:fillColor="#1E88E5" android:strokeColor="#FFFFFF" android:strokeWidth="1.4"
+        android:pathData="M12,22 A10,10 0 1,1 12,2 A10,10 0 1,1 12,22 Z"/>
+    <!-- head -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M13.1,6.2 m-1.5,0 a1.5,1.5 0 1,0 3,0 a1.5,1.5 0 1,0 -3,0"/>
+    <!-- torso and legs mid-stride -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="1.5"
+        android:strokeLineCap="round" android:fillColor="@android:color/transparent"
+        android:pathData="M13.2,9 L11.4,12.6 L9.2,17.6 M11.4,12.6 L14.2,15.1 L14.6,18.4"/>
+    <!-- trekking pole -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="1.3"
+        android:strokeLineCap="round" android:fillColor="@android:color/transparent"
+        android:pathData="M13.4,10.2 L16.4,12.2 M16.6,10.6 L16.2,17.8"/>
+</vector>

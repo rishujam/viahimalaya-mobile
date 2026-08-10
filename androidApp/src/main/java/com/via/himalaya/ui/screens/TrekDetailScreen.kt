@@ -91,6 +91,10 @@ import com.via.himalaya.ui.components.PrimaryButton
 import com.via.himalaya.ui.components.SecondaryButton
 import com.via.himalaya.util.Constants
 import com.via.himalaya.util.PermissionUtil
+import com.via.himalaya.ui.components.ElevationSlider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.runtime.mutableIntStateOf
 
 private const val TAG = "TrekDetailScreenTag"
 
@@ -274,6 +278,76 @@ fun TrekDetailScreen(
     val context = LocalContext.current
     var selectedPoi by remember { mutableStateOf<TrekPoi?>(null) }
 
+    // Empty for treks the backend has not profiled yet, and for treks downloaded
+    // before the Room column existed. Both cases mean the same thing: no slider.
+    val elevationPoints = state.trek?.elevationProfile.orEmpty()
+
+    // Total ascent, summed from the profile we already ship - no schema or API
+    // change needed. This is the number that separates 25 flat kilometres from
+    // 25 hard ones, which max elevation on its own cannot say.
+    val totalClimbM = remember(elevationPoints) {
+        if (elevationPoints.size < 2) null
+        else elevationPoints
+            .zipWithNext { a, b -> (b.elevationM - a.elevationM).coerceAtLeast(0) }
+            .sum()
+    }
+    var elevationIndex by remember(elevationPoints) { mutableIntStateOf(0) }
+    var isScrubbing by remember { mutableStateOf(false) }
+
+    // The slider has to stop where the detail sheet starts, and that sheet is as
+    // tall as its contents - so measure it rather than guessing a height that
+    // would drift the moment a line of text wraps.
+    var sheetHeightPx by remember { mutableIntStateOf(0) }
+    val sheetHeight = with(LocalDensity.current) { sheetHeightPx.toDp() }
+
+    // Hoisted out of the map block so the elevation slider can drive the camera
+    // too. Its initial-camera lambda is gone with it: that lambda only runs on
+    // first composition, which up here is before the trek has loaded, so the
+    // framing moved into the effect below where the bounds actually exist.
+    val mapViewportState = rememberMapViewportState()
+
+    LaunchedEffect(state.trek?.boundingBox) {
+        val boundingBox = state.trek?.boundingBox ?: return@LaunchedEffect
+        if (boundingBox.size < 4) return@LaunchedEffect
+
+        val lngDiff = kotlin.math.abs(boundingBox[2] - boundingBox[0])
+        val latDiff = kotlin.math.abs(boundingBox[3] - boundingBox[1])
+        val zoomLevel = when (maxOf(lngDiff, latDiff)) {
+            in 1.0..Double.MAX_VALUE -> 9.0
+            in 0.5..1.0 -> 10.0
+            in 0.2..0.5 -> 11.0
+            in 0.1..0.2 -> 12.0
+            else -> 13.0
+        }
+        mapViewportState.setCameraOptions(
+            CameraOptions.Builder()
+                .center(
+                    Point.fromLngLat(
+                        (boundingBox[0] + boundingBox[2]) / 2,
+                        (boundingBox[1] + boundingBox[3]) / 2
+                    )
+                )
+                .zoom(zoomLevel)
+                .pitch(45.0)
+                .bearing(0.0)
+                .build()
+        )
+    }
+
+    // Follow the trekker while scrubbing. Centre only - zoom, pitch and bearing
+    // stay as the user left them, and an animated ease would lag behind a drag
+    // that keeps issuing new targets.
+    LaunchedEffect(isScrubbing, elevationIndex) {
+        if (!isScrubbing) return@LaunchedEffect
+        elevationPoints.getOrNull(elevationIndex)?.let { point ->
+            mapViewportState.setCameraOptions(
+                CameraOptions.Builder()
+                    .center(Point.fromLngLat(point.lon, point.lat))
+                    .build()
+            )
+        }
+    }
+
     Box (
         modifier = Modifier
             .fillMaxSize(),
@@ -287,34 +361,6 @@ fun TrekDetailScreen(
             val trailSource = rememberGeoJsonSourceState(sourceId = "trek-trail-source")
             geoJsonString?.let {
                 trailSource.data = GeoJSONData(geoJsonString)
-
-                val mapViewportState = rememberMapViewportState {
-                    setCameraOptions {
-                        // Use bounding box to calculate center and appropriate zoom
-                        if (boundingBox?.size != null && boundingBox.size >= 4) {
-                            val centerLng = (boundingBox[0] + boundingBox[2]) / 2
-                            val centerLat = (boundingBox[1] + boundingBox[3]) / 2
-                            center(Point.fromLngLat(centerLng, centerLat))
-
-                            // Calculate zoom level based on bounding box size
-                            val lngDiff = kotlin.math.abs(boundingBox[2] - boundingBox[0])
-                            val latDiff = kotlin.math.abs(boundingBox[3] - boundingBox[1])
-                            val maxDiff = maxOf(lngDiff, latDiff)
-
-                            // Adjust zoom based on bounding box size
-                            val zoomLevel = when {
-                                maxDiff > 1.0 -> 9.0
-                                maxDiff > 0.5 -> 10.0
-                                maxDiff > 0.2 -> 11.0
-                                maxDiff > 0.1 -> 12.0
-                                else -> 13.0
-                            }
-                            zoom(zoomLevel)
-                        }
-                        pitch(45.0)
-                        bearing(0.0)
-                    }
-                }
 
                 LaunchedEffect(state.initialLocation, state.isNearTrekStart) {
                     if (state.isNearTrekStart && state.initialLocation is LocationResponse.Location) {
@@ -332,7 +378,7 @@ fun TrekDetailScreen(
                 }
 
                 MapboxMap(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().padding(bottom = 64.dp),
                     mapViewportState = mapViewportState,
                     // Markers consume their own taps, so anything reaching here is
                     // a tap on bare map - dismiss the detail card. Returns false so
@@ -373,10 +419,27 @@ fun TrekDetailScreen(
                         lineCap = LineCapValue.ROUND
                     }
 
-                    PoiMarkers(
-                        pois = state.pois,
-                        onPoiClick = { selectedPoi = it }
-                    )
+                    // Scrubbing and browsing are mutually exclusive: leaving the
+                    // pins up would bury the trekker among them, and the whole
+                    // point of the gesture is to follow one marker.
+                    if (!isScrubbing) {
+                        PoiMarkers(
+                            pois = state.pois,
+                            onPoiClick = { selectedPoi = it }
+                        )
+                    } else {
+                        elevationPoints.getOrNull(elevationIndex)?.let { point ->
+                            val trekkerIcon = rememberIconImage(
+                                key = "trekker",
+                                painter = painterResource(R.drawable.ic_trekker)
+                            )
+                            PointAnnotation(
+                                point = Point.fromLngLat(point.lon, point.lat)
+                            ) {
+                                iconImage = trekkerIcon
+                            }
+                        }
+                    }
 
                     if (state.isNearTrekStart) {
                         val location = state.liveLocation
@@ -419,6 +482,34 @@ fun TrekDetailScreen(
             }
         }
         
+        // Runs from the top of the screen down to the detail sheet. Declared
+        // after the map so it sits above it and wins the touch, and before the
+        // sheet so the sheet still draws over the bottom of the track.
+        if (elevationPoints.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 24.dp, bottom = sheetHeight + 8.dp, end = 4.dp),
+                contentAlignment = Alignment.TopEnd
+            ) {
+                ElevationSlider(
+                    points = elevationPoints,
+                    index = elevationIndex,
+                    isEngaged = isScrubbing,
+                    onIndexChange = { elevationIndex = it },
+                    onEngagedChange = { engaged ->
+                        isScrubbing = engaged
+                        // A tapped POI card would otherwise sit over the trail
+                        // the user is now scrubbing along.
+                        if (engaged) selectedPoi = null
+                    },
+                    // Full width: the slider pins its own graph to the right edge
+                    // and uses the rest of the row to lay the readout out.
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+
         // Tapped POI takes the top slot, pushing the trekking-area banner aside.
         selectedPoi?.let { poi ->
             Box(
@@ -461,6 +552,7 @@ fun TrekDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .onSizeChanged { sheetHeightPx = it.height }
                 .clip(RoundedCornerShape(topEnd = 14.dp, topStart = 14.dp))
                 .background(MaterialTheme.colorScheme.background)
         ) {
@@ -479,6 +571,30 @@ fun TrekDetailScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                // Replaces a three-column box with dividers and a background.
+                // Two or three facts do not need that furniture, and dropping it
+                // gave back around 90dp - which the elevation slider inherits,
+                // since its travel is bounded by the height of this sheet.
+                //
+                // Built from whatever is actually present: climb needs a profile,
+                // and a trek without one still shows distance and max.
+                val stats = buildList {
+                    state.trek?.distance?.takeIf { it.isNotBlank() }?.let { add(it) }
+                    totalClimbM?.let { add("↑ %,d m".format(it)) }
+                    state.trek?.elevation?.takeIf { it.isNotBlank() }
+                        // "4,283 m" alone reads as though it might be the climb.
+                        ?.let { add("Max $it") }
+                }
+                if (stats.isNotEmpty()) {
+                    Text(
+                        modifier = Modifier.padding(top = 10.dp),
+                        text = stats.joinToString("   ·   "),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
                 // Hidden entirely when the trek has no write-up, rather than
                 // showing a dead link.
                 state.trek?.detailsUrl?.takeIf { it.isNotBlank() }?.let { url ->
@@ -492,78 +608,6 @@ fun TrekDetailScreen(
                         color = Color(0xFF1A73E8),
                         textDecoration = TextDecoration.Underline
                     )
-                }
-                if(!state.isTrekking) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 20.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.onPrimary),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(vertical = 16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "DISTANCE",
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = state.trek?.distance.orEmpty(),
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Spacer(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(36.dp)
-                                .background(MaterialTheme.colorScheme.outline)
-                        )
-                        Column(
-                            modifier = Modifier
-                                .padding(vertical = 16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "DURATION",
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "4h 30m",
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Spacer(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(36.dp)
-                                .background(MaterialTheme.colorScheme.outline)
-                        )
-                        Column(
-                            modifier = Modifier
-                                .padding(vertical = 16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "ELEVATION",
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = state.trek?.elevation.orEmpty(),
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
                 }
                 Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
                 PrimaryButton(

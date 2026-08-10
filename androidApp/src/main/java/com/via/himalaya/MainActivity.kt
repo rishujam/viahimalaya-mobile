@@ -37,6 +37,14 @@ import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import com.via.himalaya.util.NetworkUtil
 import org.koin.androidx.compose.koinViewModel
 
+//Features
+//TODO - Sun position using DEM - P4
+//TODO - Duration hardcoded fix - P1
+//TODO - Campsite using DEM - P3
+//TODO - Planning the Trek - P2
+//TODO - Users can add POI - P5
+        //Personalized itinerary for multiday trek
+
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
 //TODO - Data Entry in Backend
@@ -46,20 +54,17 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - When notification permission allowed start the download instead of toast
 //TODO - Rate and comment on viewpoint - offline first sync it later when internet is there.
         //Create api for comment/rate POI
-//TODO - Add poi while trekking - offline first sync it later when internet is there.
-
 //TODO - Create test trek
-//TODO - Elevation Data using DEM
 //TODO - SignIn Page improved video branding
 //TODO - Listen to location only when device is moving - optimize battery
 //TODO - Font fix all over the app
 //TODO - Profile Page
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
-//TODO - Currently we check user login with local pref not with firebase auth need to keep in sync with firebase auth
 //TODO - Before showing the list in downloaded treks make sure trek is fully downloaded if not remove the trek meta data
 //TODO - Thumbnail is not downloaded when trek is downloaded
 //TODO - Add interactive screenshots in play store listing
-
+//TODO - AI Enabled search using local model if possible
+//TODO - GeoFencing for sending notifications
 
 class MainActivity : ComponentActivity() {
     

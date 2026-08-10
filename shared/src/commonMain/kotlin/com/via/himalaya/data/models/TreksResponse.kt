@@ -61,7 +61,14 @@ data class TrekDto(
     @SerialName("poi_updated_at")
     val poiUpdatedAt: String? = null,
     @SerialName("details_url")
-    val detailsUrl: String? = null
+    val detailsUrl: String? = null,
+    /**
+     * Samples every 100 m as [lat, lon, metres]. Only the detail endpoint sends
+     * this - the list and search endpoints leave it out to stay small - so it is
+     * null on every trek that came from a list.
+     */
+    @SerialName("elevation_profile")
+    val elevationProfile: List<List<Double>>? = null
 ) {
     fun toTrek(): Trek {
         return Trek(
@@ -111,7 +118,8 @@ data class TrekDetailData(
             imageUrl = trek.imageUrl,
             poiUrl = trek.poiUrl,
             poiUpdatedAt = trek.poiUpdatedAt,
-            detailsUrl = trek.detailsUrl
+            detailsUrl = trek.detailsUrl,
+            elevationProfile = trek.elevationProfile?.toElevationPoints()
         )
     }
 }

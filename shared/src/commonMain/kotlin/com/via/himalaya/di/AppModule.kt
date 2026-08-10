@@ -38,7 +38,7 @@ val sharedModule = module {
     single {
         get<DatabaseFactory>()
             .create()
-            .addMigrations(TrekDatabase.MIGRATION_1_2)
+            .addMigrations(TrekDatabase.MIGRATION_1_2, TrekDatabase.MIGRATION_2_3)
             .setDriver(BundledSQLiteDriver())
             .build()
     }
