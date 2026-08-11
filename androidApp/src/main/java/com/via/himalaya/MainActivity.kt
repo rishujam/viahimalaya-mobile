@@ -38,12 +38,15 @@ import com.via.himalaya.util.NetworkUtil
 import org.koin.androidx.compose.koinViewModel
 
 //Features
-//TODO - Sun position using DEM - P4
-//TODO - Duration hardcoded fix - P1
-//TODO - Campsite using DEM - P3
-//TODO - Planning the Trek - P2
-//TODO - Users can add POI - P5
+//TODO - Local Notifications while trekking to let them know how much left - P3
+//TODO - Sun position using DEM - P3
+//TODO - Campsite using DEM - P2
+//TODO - Planning the Trek - P1
         //Personalized itinerary for multiday trek
+//TODO - Users can add POI - P4
+//TODO - Filter treks based on no of days it will take
+//TODO - A different version of Explore page which will show map of treks just like google map for treks - P3
+//Features End
 
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
