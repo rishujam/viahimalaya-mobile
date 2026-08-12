@@ -13,6 +13,14 @@ sealed interface Route {
     @Serializable
     data class TrekDetail(val trekId: String, val coordinateUrl: String) : Route
 
+    /**
+     * Multi-day planning for a trek. Carries the same two arguments as
+     * [TrekDetail] because it loads the same geometry - planning is a different
+     * question about the same trail, not a different trail.
+     */
+    @Serializable
+    data class TrekPlan(val trekId: String, val coordinateUrl: String) : Route
+
     @Serializable
     data object Profile : Route
 

@@ -34,6 +34,7 @@ import com.via.himalaya.ui.screens.ExploreScreenRoot
 import com.via.himalaya.ui.screens.ProfileScreenRoot
 import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
+import com.via.himalaya.ui.screens.TrekPlanScreenRoot
 import com.via.himalaya.util.NetworkUtil
 import org.koin.androidx.compose.koinViewModel
 
@@ -180,9 +181,25 @@ fun ViaHimalayaApp(
                             viewModel,
                             args.trekId,
                             args.coordinateUrl,
-                            {
-                                navController.navigateUp()
+                            onBackClick = { navController.navigateUp() },
+                            onPlanClick = {
+                                navController.navigate(
+                                    Route.TrekPlan(args.trekId, args.coordinateUrl)
+                                )
                             }
+                        )
+                    }
+                    composable<Route.TrekPlan> { entry ->
+                        // Its own ViewModel instance, scoped to this back stack
+                        // entry - planning state should not leak back into the
+                        // detail screen when the user returns.
+                        val viewModel = koinViewModel<TrekDetailViewModel>()
+                        val args = entry.toRoute<Route.TrekPlan>()
+                        TrekPlanScreenRoot(
+                            viewModel = viewModel,
+                            trekId = args.trekId,
+                            coordinateUrl = args.coordinateUrl,
+                            onBackClick = { navController.navigateUp() }
                         )
                     }
                     composable<Route.DownloadedTrek> {

@@ -55,26 +55,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import com.google.android.gms.common.api.ResolvableApiException
 import androidx.compose.ui.input.pointer.pointerInput
-import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
-import com.mapbox.maps.extension.compose.DisposableMapEffect
-import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotation
-import com.mapbox.maps.extension.compose.style.ColorValue
-import com.mapbox.maps.extension.compose.style.DoubleValue
-import com.mapbox.maps.extension.compose.style.MapStyle
-import com.mapbox.maps.extension.compose.style.layers.generated.LineCapValue
-import com.mapbox.maps.extension.compose.style.layers.generated.LineJoinValue
-import com.mapbox.maps.extension.compose.style.layers.generated.LineLayer
-import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
-import com.mapbox.maps.extension.compose.style.sources.generated.rememberGeoJsonSourceState
 import com.mapbox.maps.extension.compose.MapboxMapScope
 import com.mapbox.maps.extension.compose.annotation.rememberIconImage
 import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotation
-import com.mapbox.maps.plugin.gestures.OnMoveListener
-import com.mapbox.maps.plugin.gestures.gestures
 import androidx.compose.ui.res.painterResource
 import androidx.browser.customtabs.CustomTabsIntent
 import com.via.himalaya.R
@@ -89,12 +76,12 @@ import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.service.TrekDownloadService
 import com.via.himalaya.ui.components.PrimaryButton
 import com.via.himalaya.ui.components.SecondaryButton
-import com.via.himalaya.util.Constants
 import com.via.himalaya.util.PermissionUtil
 import com.via.himalaya.ui.components.ElevationSlider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.mutableIntStateOf
+import com.via.himalaya.ui.components.TrekMap
 
 private const val TAG = "TrekDetailScreenTag"
 
@@ -103,7 +90,8 @@ fun TrekDetailScreenRoot(
     viewModel: TrekDetailViewModel,
     trekId: String,
     coordinateUrl: String,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onPlanClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
@@ -212,6 +200,7 @@ fun TrekDetailScreenRoot(
             }
         },
         onStopHike = { viewModel.stopTrekking() },
+        onPlanClick = onPlanClick,
         onDownloadHikeClick = {
             viewModel.validateAndStartDownload { trek ->
                 if(PermissionUtil.hasNotificationPermission(context)) {
@@ -273,6 +262,7 @@ fun TrekDetailScreen(
     onStartHike: () -> Unit = {},
     onStopHike: () -> Unit = {},
     onDownloadHikeClick: () -> Unit,
+    onPlanClick: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val context = LocalContext.current
@@ -301,38 +291,8 @@ fun TrekDetailScreen(
     val sheetHeight = with(LocalDensity.current) { sheetHeightPx.toDp() }
 
     // Hoisted out of the map block so the elevation slider can drive the camera
-    // too. Its initial-camera lambda is gone with it: that lambda only runs on
-    // first composition, which up here is before the trek has loaded, so the
-    // framing moved into the effect below where the bounds actually exist.
+    // too. Bounds framing lives inside TrekMap, which every screen shares.
     val mapViewportState = rememberMapViewportState()
-
-    LaunchedEffect(state.trek?.boundingBox) {
-        val boundingBox = state.trek?.boundingBox ?: return@LaunchedEffect
-        if (boundingBox.size < 4) return@LaunchedEffect
-
-        val lngDiff = kotlin.math.abs(boundingBox[2] - boundingBox[0])
-        val latDiff = kotlin.math.abs(boundingBox[3] - boundingBox[1])
-        val zoomLevel = when (maxOf(lngDiff, latDiff)) {
-            in 1.0..Double.MAX_VALUE -> 9.0
-            in 0.5..1.0 -> 10.0
-            in 0.2..0.5 -> 11.0
-            in 0.1..0.2 -> 12.0
-            else -> 13.0
-        }
-        mapViewportState.setCameraOptions(
-            CameraOptions.Builder()
-                .center(
-                    Point.fromLngLat(
-                        (boundingBox[0] + boundingBox[2]) / 2,
-                        (boundingBox[1] + boundingBox[3]) / 2
-                    )
-                )
-                .zoom(zoomLevel)
-                .pitch(45.0)
-                .bearing(0.0)
-                .build()
-        )
-    }
 
     // Follow the trekker while scrubbing. Centre only - zoom, pitch and bearing
     // stay as the user left them, and an animated ease would lag behind a drag
@@ -357,11 +317,8 @@ fun TrekDetailScreen(
         if (state.geoData != null && state.trek != null) {
             val geoJsonString = state.geoData?.geometry?.toGeoJsonString()
             val boundingBox = state.trek?.boundingBox
-            
-            val trailSource = rememberGeoJsonSourceState(sourceId = "trek-trail-source")
-            geoJsonString?.let {
-                trailSource.data = GeoJSONData(geoJsonString)
 
+            geoJsonString?.let {
                 LaunchedEffect(state.initialLocation, state.isNearTrekStart) {
                     if (state.isNearTrekStart && state.initialLocation is LocationResponse.Location) {
                         (state.initialLocation as? LocationResponse.Location)?.loc?.let { location ->
@@ -377,48 +334,17 @@ fun TrekDetailScreen(
                     }
                 }
 
-                MapboxMap(
-                    modifier = Modifier.fillMaxSize().padding(bottom = 64.dp),
+                TrekMap(
+                    geoJson = geoJsonString,
+                    boundingBox = boundingBox,
                     mapViewportState = mapViewportState,
-                    // Markers consume their own taps, so anything reaching here is
-                    // a tap on bare map - dismiss the detail card. Returns false so
-                    // the click still propagates; we only observe it.
-                    onMapClickListener = {
-                        selectedPoi = null
-                        false
-                    },
-                    style = {
-                        MapStyle(
-                            style = Constants.Map.STYLE_URI
-                        )
-                    }
+                    modifier = Modifier.fillMaxSize().padding(bottom = 64.dp),
+                    // A card anchored to a marker has to go when the map is
+                    // tapped elsewhere, and when the marker slides out from
+                    // under it on a pan.
+                    onMapTap = { selectedPoi = null },
+                    onMapPan = { selectedPoi = null }
                 ) {
-                    // Panning the map dismisses the card too - it is anchored to a
-                    // marker that is about to slide out from under it.
-                    DisposableMapEffect(Unit) { mapView ->
-                        val moveListener = object : OnMoveListener {
-                            override fun onMoveBegin(detector: MoveGestureDetector) {
-                                selectedPoi = null
-                            }
-
-                            override fun onMove(detector: MoveGestureDetector) = false
-
-                            override fun onMoveEnd(detector: MoveGestureDetector) = Unit
-                        }
-                        mapView.gestures.addOnMoveListener(moveListener)
-                        onDispose { mapView.gestures.removeOnMoveListener(moveListener) }
-                    }
-
-                    LineLayer(
-                        layerId = "trek-trail-line-layer",
-                        sourceState = trailSource
-                    ) {
-                        lineColor = ColorValue(Color(0xFF4285F4))
-                        lineWidth = DoubleValue(5.0)
-                        lineJoin = LineJoinValue.ROUND
-                        lineCap = LineCapValue.ROUND
-                    }
-
                     // Scrubbing and browsing are mutually exclusive: leaving the
                     // pins up would bury the trekker among them, and the whole
                     // point of the gesture is to follow one marker.
@@ -623,11 +549,24 @@ fun TrekDetailScreen(
                 )
                 if(!state.isTrekking) {
                     Spacer(modifier = Modifier.fillMaxWidth().height(16.dp))
-                    SecondaryButton(
-                        text = "Download for offline",
-                        onClick = { onDownloadHikeClick() },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // Side by side rather than stacked: a third full-width button
+                    // would grow this sheet, and the sheet's height is what caps
+                    // the elevation slider's travel.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SecondaryButton(
+                            text = "Plan",
+                            onClick = { onPlanClick() },
+                            modifier = Modifier.weight(1f)
+                        )
+                        SecondaryButton(
+                            text = "Download",
+                            onClick = { onDownloadHikeClick() },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
             }
@@ -675,7 +614,7 @@ fun TrekDetailScreenPreview() {
 
 
 /** Marker drawable per category, falling back to the question mark. */
-private fun poiIconRes(category: String): Int = when (category) {
+internal fun poiIconRes(category: String): Int = when (category) {
     PoiCategory.WATER -> R.drawable.ic_poi_water
     PoiCategory.HOT_SPRING -> R.drawable.ic_poi_hot_spring
     PoiCategory.WATERFALL -> R.drawable.ic_poi_waterfall
@@ -727,7 +666,7 @@ private fun MapboxMapScope.PoiMarkers(
 
 /** Detail card shown when a marker is tapped. */
 @Composable
-private fun PoiDetailCard(
+internal fun PoiDetailCard(
     poi: TrekPoi,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
