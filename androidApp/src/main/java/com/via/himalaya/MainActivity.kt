@@ -43,8 +43,6 @@ import org.koin.androidx.compose.koinViewModel
 //TODO - Local Notifications while trekking to let them know how much left - P3
 //TODO - Sun position using DEM - P3
 //TODO - Campsite using DEM - P2
-//TODO - Planning the Trek - P1
-        //Personalized itinerary for multiday trek
 //TODO - Users can add POI - P4
 //TODO - Filter treks based on no of days it will take
 //TODO - A different version of Explore page which will show map of treks just like google map for treks - P3
