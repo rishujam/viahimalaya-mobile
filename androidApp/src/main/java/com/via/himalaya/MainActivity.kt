@@ -27,6 +27,7 @@ import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.downloads.DownloadedTrekViewModel
 import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
+import com.via.himalaya.presentation.trekPlan.TrekPlanViewModel
 import com.via.himalaya.ui.MyApplicationTheme
 import com.via.himalaya.ui.components.BottomNavigationBar
 import com.via.himalaya.ui.screens.DownloadedTrekScreenRoot
@@ -194,9 +195,11 @@ fun ViaHimalayaApp(
                         // entry - planning state should not leak back into the
                         // detail screen when the user returns.
                         val viewModel = koinViewModel<TrekDetailViewModel>()
+                        val planViewModel = koinViewModel<TrekPlanViewModel>()
                         val args = entry.toRoute<Route.TrekPlan>()
                         TrekPlanScreenRoot(
                             viewModel = viewModel,
+                            planViewModel = planViewModel,
                             trekId = args.trekId,
                             coordinateUrl = args.coordinateUrl,
                             onBackClick = { navController.navigateUp() }

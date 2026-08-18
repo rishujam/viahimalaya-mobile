@@ -7,18 +7,21 @@ import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import com.via.himalaya.data.models.TrekDetail
+import com.via.himalaya.data.models.TrekPlan
 
 @Database(
-    entities = [TrekDetail::class],
-    version = 3
+    entities = [TrekDetail::class, TrekPlan::class],
+    version = 4
 )
 @TypeConverters(
     DoubleListTypeConverter::class,
-    ElevationProfileTypeConverter::class
+    ElevationProfileTypeConverter::class,
+    PlannedDayListTypeConverter::class
 )
 abstract class TrekDatabase : RoomDatabase() {
 
     abstract val trekDao: TrekDao
+    abstract val trekPlanDao: TrekPlanDao
 
     companion object {
         const val DATABASE_NAME = "trek_db"
@@ -47,6 +50,37 @@ abstract class TrekDatabase : RoomDatabase() {
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(connection: SQLiteConnection) {
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN elevationProfile TEXT")
+            }
+        }
+
+        /**
+         * Adds saved itineraries.
+         *
+         * Deliberately no foreign key to TrekDetail: a plan outlives the
+         * download it was made alongside, and can exist for a trek that was
+         * never downloaded. The index is on trekId because every read is "the
+         * plans for this trek" - planId is only ever used to delete one.
+         *
+         * NOT NULL with defaults on the columns Room expects non-null, so the
+         * generated schema and this statement agree; Room validates them against
+         * each other on open and throws if they drift.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS TrekPlan (
+                        planId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        trekId TEXT NOT NULL,
+                        days TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_TrekPlan_trekId ON TrekPlan (trekId)"
+                )
             }
         }
     }

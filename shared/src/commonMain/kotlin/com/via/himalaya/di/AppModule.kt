@@ -9,6 +9,9 @@ import com.via.himalaya.data.local.UserPreferences
 import com.via.himalaya.data.local.UserPreferencesImpl
 import com.via.himalaya.data.remote.HttpClientFactory
 import com.via.himalaya.data.repository.FirebaseAuthRepository
+import com.via.himalaya.data.repository.TrekPlanRepositoryImpl
+import com.via.himalaya.domain.repo.TrekPlanRepository
+import com.via.himalaya.presentation.trekPlan.TrekPlanViewModel
 import com.via.himalaya.data.repository.TrekRepositoryImpl
 import com.via.himalaya.domain.Tracker
 import com.via.himalaya.domain.repo.AuthRepository
@@ -38,12 +41,17 @@ val sharedModule = module {
     single {
         get<DatabaseFactory>()
             .create()
-            .addMigrations(TrekDatabase.MIGRATION_1_2, TrekDatabase.MIGRATION_2_3)
+            .addMigrations(
+                TrekDatabase.MIGRATION_1_2,
+                TrekDatabase.MIGRATION_2_3,
+                TrekDatabase.MIGRATION_3_4
+            )
             .setDriver(BundledSQLiteDriver())
             .build()
     }
 
     single { get<TrekDatabase>().trekDao }
+    single { get<TrekDatabase>().trekPlanDao }
 
     single {
         get<NavigatorDatabaseFactory>()
@@ -58,8 +66,10 @@ val sharedModule = module {
     single<UserPreferences> { UserPreferencesImpl(get()) }
 
     singleOf(::TrekRepositoryImpl).bind<TrekRepository>()
+    singleOf(::TrekPlanRepositoryImpl).bind<TrekPlanRepository>()
     viewModelOf(::ExploreViewModel)
     viewModelOf(::TrekDetailViewModel)
+    viewModelOf(::TrekPlanViewModel)
     singleOf(::FirebaseAuthRepository).bind<AuthRepository>()
     viewModelOf(::AuthViewModel)
     viewModelOf(::DownloadedTrekViewModel)
