@@ -65,7 +65,6 @@ import org.koin.androidx.compose.koinViewModel
         //User Pref: Create datastore to store profile object (email, name, treks, distance)
 //TODO - Before showing the list in downloaded treks make sure trek is fully downloaded if not remove the trek meta data
 //TODO - Thumbnail is not downloaded when trek is downloaded
-//TODO - Add interactive screenshots in play store listing
 //TODO - AI Enabled search using local model if possible
 //TODO - GeoFencing for sending notifications
 

@@ -127,11 +127,31 @@ fun TrekGeometry.getFlattenedCoordinates(): List<List<Double>> {
 }
 
 /**
- * Extension function to convert TrekGeometry to GeoJSON string for Mapbox
+ * GeoJSON for the Mapbox line layer.
+ *
+ * Keeps a MultiLineString as a MultiLineString rather than flattening it. A flat
+ * list has no notion of where one path stops and the next begins, so Mapbox drew
+ * a single continuous line through every part - on Beas Kund that produced a 2.7
+ * km straight edge across the map between two unconnected sections of trail, and
+ * every multi-segment trek had smaller versions of the same thing.
+ *
+ * The geometry from OSM is passed through untouched; only how it is described to
+ * Mapbox changes.
  */
 fun TrekGeometry.toGeoJsonString(): String {
-    val flattenedCoordinates = getFlattenedCoordinates()
-    
+    val isMulti = type == "MultiLineString" && coordinates.size > 1
+    val geometryJson = if (isMulti) {
+        """
+                    "type": "MultiLineString",
+                    "coordinates": ${segmentsToJsonArray(coordinates)}
+        """.trimIndent()
+    } else {
+        """
+                    "type": "LineString",
+                    "coordinates": ${coordinatesToJsonArray(getFlattenedCoordinates())}
+        """.trimIndent()
+    }
+
     return """
     {
         "type": "FeatureCollection",
@@ -140,8 +160,7 @@ fun TrekGeometry.toGeoJsonString(): String {
                 "type": "Feature",
                 "properties": {},
                 "geometry": {
-                    "type": "LineString",
-                    "coordinates": ${coordinatesToJsonArray(flattenedCoordinates)}
+                    $geometryJson
                 }
             }
         ]
@@ -160,6 +179,15 @@ private fun coordinatesToJsonArray(coordinates: List<List<Double>>): String {
     ) { coordinate ->
         "[${coordinate.joinToString(",")}]"
     }
+}
+
+/** One nesting level up from [coordinatesToJsonArray]: a list of line segments. */
+private fun segmentsToJsonArray(segments: List<List<List<Double>>>): String {
+    return segments.joinToString(
+        prefix = "[",
+        postfix = "]",
+        separator = ","
+    ) { segment -> coordinatesToJsonArray(segment) }
 }
 
 /**

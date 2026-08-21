@@ -14,3 +14,6 @@ androidApp/google-services.json
 keystore.properties
 *.jks
 *.keystore
+osmraw.json
+poi.json
+treks.json
