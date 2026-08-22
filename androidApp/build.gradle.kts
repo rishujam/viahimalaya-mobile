@@ -37,8 +37,8 @@ android {
         applicationId = "com.via.himalaya"
         minSdk = 24
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.9"
+        versionCode = 11
+        versionName = "2.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://viahimalaya.com\"")
         buildConfigField("String", "API_KEY", "\"$viaHimalayaApiKey\"")
