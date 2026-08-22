@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.via.himalaya.domain.repo.AppConfigRepository
 import com.via.himalaya.navigation.Route
 import com.via.himalaya.navigation.bottomNavItems
 import com.via.himalaya.presentation.auth.AuthViewModel
@@ -38,6 +40,7 @@ import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import com.via.himalaya.ui.screens.TrekPlanScreenRoot
 import com.via.himalaya.util.NetworkUtil
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 //Features
 //TODO - Local Notifications while trekking to let them know how much left - P3
@@ -50,8 +53,6 @@ import org.koin.androidx.compose.koinViewModel
 
 //TODO - Collect the sensor and location data of the trekker locally
         //Create table to store path followed by user mapped to trek id - Done need to test
-//TODO - Data Entry in Backend
-        //Update existing photos
 //TODO - Add view on google maps for a POI (the destination)
 //TODO - When notification permission denied 2 times navigate to settings
 //TODO - When notification permission allowed start the download instead of toast
@@ -92,6 +93,19 @@ fun ViaHimalayaApp(
 ) {
     val context = LocalContext.current
     val navController = rememberNavController()
+
+    // Remote config, fetched once per process.
+    //
+    // Keyed on Unit rather than on auth or connectivity: /api/app-config takes
+    // no token, and this must not sit behind the sign-in gate or wait on the
+    // auth check that gates the splash screen. It cannot fail loudly — the
+    // repository swallows everything — so nothing downstream depends on it
+    // finishing, or finishing before anything else.
+    val appConfigRepository = koinInject<AppConfigRepository>()
+    LaunchedEffect(Unit) {
+        appConfigRepository.refresh()
+    }
+
     val authViewModel = koinViewModel<AuthViewModel>()
     val authState by authViewModel.state.collectAsState()
     val navBackStackEntry by navController.currentBackStackEntryAsState()

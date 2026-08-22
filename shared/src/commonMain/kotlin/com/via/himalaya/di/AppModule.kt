@@ -9,7 +9,11 @@ import com.via.himalaya.data.local.UserPreferences
 import com.via.himalaya.data.local.UserPreferencesImpl
 import com.via.himalaya.data.remote.HttpClientFactory
 import com.via.himalaya.data.repository.FirebaseAuthRepository
+import com.via.himalaya.data.repository.AppConfigRepositoryImpl
+import com.via.himalaya.data.repository.FeedbackRepositoryImpl
 import com.via.himalaya.data.repository.TrekPlanRepositoryImpl
+import com.via.himalaya.domain.repo.AppConfigRepository
+import com.via.himalaya.domain.repo.FeedbackRepository
 import com.via.himalaya.domain.repo.TrekPlanRepository
 import com.via.himalaya.presentation.trekPlan.TrekPlanViewModel
 import com.via.himalaya.data.repository.TrekRepositoryImpl
@@ -67,6 +71,8 @@ val sharedModule = module {
 
     singleOf(::TrekRepositoryImpl).bind<TrekRepository>()
     singleOf(::TrekPlanRepositoryImpl).bind<TrekPlanRepository>()
+    singleOf(::AppConfigRepositoryImpl).bind<AppConfigRepository>()
+    singleOf(::FeedbackRepositoryImpl).bind<FeedbackRepository>()
     viewModelOf(::ExploreViewModel)
     viewModelOf(::TrekDetailViewModel)
     viewModelOf(::TrekPlanViewModel)

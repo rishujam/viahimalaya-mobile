@@ -36,22 +36,24 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.via.himalaya.data.models.Trek
+import com.via.himalaya.domain.model.BannerAction
 import com.via.himalaya.presentation.explore.ExploreScreenUIEvent
 import com.via.himalaya.presentation.explore.ExploreScreenUIState
 import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.ui.components.CarouselTrekCard
+import com.via.himalaya.ui.components.RequestTrekBanner
+import com.via.himalaya.ui.components.RequestTrekDialog
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlin.math.abs
 
@@ -75,6 +77,16 @@ fun ExploreScreenRoot(
         }
     }
 
+    LaunchedEffect(state.messageDisplay) {
+        state.messageDisplay?.let { message ->
+            snackBarHostState.showSnackbar(
+                message = message,
+                withDismissAction = true
+            )
+            viewModel.onEvent(ExploreScreenUIEvent.ClearMessageDisplay)
+        }
+    }
+
     ExploreScreen(
         state = state,
         onTrekClicked = onTrekClicked,
@@ -93,6 +105,21 @@ fun ExploreScreen(
     snackbarHostState: SnackbarHostState
 ) {
     var searchQuery by remember { mutableStateOf("") }
+
+    // Saveable so a rotation with the dialog open keeps both the dialog and
+    // whatever has been typed into it.
+    var showRequestDialog by rememberSaveable { mutableStateOf(false) }
+    var requestText by rememberSaveable { mutableStateOf("") }
+
+    // Discard the draft only once it has actually landed. messageDisplay is set
+    // by nothing but a successful feedback submit today — if it ever carries
+    // another message, this needs its own signal rather than borrowing that one.
+    LaunchedEffect(state.messageDisplay) {
+        if (state.messageDisplay != null) {
+            requestText = ""
+        }
+    }
+
     val listState = rememberLazyListState()
     val snapLayoutInfoProvider = remember(listState) {
         SnapLayoutInfoProvider(listState, SnapPosition.Start)
@@ -206,6 +233,27 @@ fun ExploreScreen(
                 )
             )
 
+            // Above the carousel rather than inside it. The LazyColumn's
+            // focus/blur compares a trek's index in state.treks against a
+            // LazyColumn slot index, and those agree only while treks are the
+            // list's only items — a banner in slot 0 would focus the wrong card.
+            val banner = state.banner
+            if (banner != null && !state.isBannerHidden) {
+                RequestTrekBanner(
+                    banner = banner,
+                    onClick = {
+                        // Exhaustive on purpose: a new BannerAction must be
+                        // given behaviour here before it will compile, rather
+                        // than falling through to a tap that does nothing.
+                        when (banner.action) {
+                            BannerAction.REQUEST_TREK_DIALOG -> showRequestDialog = true
+                        }
+                    },
+                    onHide = { onEvent(ExploreScreenUIEvent.OnHideBanner) },
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -254,6 +302,23 @@ fun ExploreScreen(
                     }
                 }
             }
+        }
+
+        if (showRequestDialog) {
+            RequestTrekDialog(
+                text = requestText,
+                onTextChange = { requestText = it },
+                onSubmit = {
+                    onEvent(ExploreScreenUIEvent.OnRequestTrek(requestText.trim()))
+                    // Dialog closes straight away so the send feels instant, but
+                    // the draft is deliberately kept — the request may still
+                    // fail, and this app's users are the ones on bad
+                    // connections. Reopening the banner restores what they
+                    // wrote instead of asking them to type it again.
+                    showRequestDialog = false
+                },
+                onDismiss = { showRequestDialog = false }
+            )
         }
 
         // Snackbar for error messages
