@@ -20,7 +20,8 @@ import com.via.himalaya.presentation.auth.ProfileScreenUIState
 fun ProfileScreenRoot(
     viewModel: AuthViewModel,
     onSignOutCompleted: () -> Unit,
-    onDownloadedTrekClicked: () -> Unit
+    onDownloadedTrekClicked: () -> Unit,
+    onAboutClicked: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     ProfileScreen(
@@ -29,7 +30,8 @@ fun ProfileScreenRoot(
             viewModel.signOut()
             onSignOutCompleted()
         },
-        onDownloadedTrekClicked = onDownloadedTrekClicked
+        onDownloadedTrekClicked = onDownloadedTrekClicked,
+        onAboutClicked = onAboutClicked
     )
 }
 
@@ -37,7 +39,8 @@ fun ProfileScreenRoot(
 fun ProfileScreen(
     state: ProfileScreenUIState,
     onSignOut: () -> Unit,
-    onDownloadedTrekClicked: () -> Unit
+    onDownloadedTrekClicked: () -> Unit,
+    onAboutClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -118,9 +121,14 @@ fun ProfileScreen(
             }
             ProfileMenuItem(
                 icon = Icons.Default.Info,
-                title = "About",
-                subtitle = "Learn more about ViaHimalaya"
-            )
+                title = "About & credits",
+                // Names the data sources rather than saying "learn more",
+                // because reaching this screen is how the OpenStreetMap and
+                // Copernicus attribution stays discoverable.
+                subtitle = "Version, data sources and licences"
+            ) {
+                onAboutClicked()
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))

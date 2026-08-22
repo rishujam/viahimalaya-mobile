@@ -32,6 +32,7 @@ import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.presentation.trekPlan.TrekPlanViewModel
 import com.via.himalaya.ui.MyApplicationTheme
 import com.via.himalaya.ui.components.BottomNavigationBar
+import com.via.himalaya.ui.screens.AboutScreenRoot
 import com.via.himalaya.ui.screens.DownloadedTrekScreenRoot
 import com.via.himalaya.ui.screens.ExploreScreenRoot
 import com.via.himalaya.ui.screens.ProfileScreenRoot
@@ -183,8 +184,14 @@ fun ViaHimalayaApp(
                             },
                             onDownloadedTrekClicked = {
                                 navController.navigate(Route.DownloadedTrek)
+                            },
+                            onAboutClicked = {
+                                navController.navigate(Route.About)
                             }
                         )
+                    }
+                    composable<Route.About> {
+                        AboutScreenRoot(onBack = { navController.popBackStack() })
                     }
                     composable<Route.TrekDetail> { entry ->
                         val viewModel = koinViewModel<TrekDetailViewModel>()

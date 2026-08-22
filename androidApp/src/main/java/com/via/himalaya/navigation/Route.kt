@@ -30,4 +30,11 @@ sealed interface Route {
     @Serializable
     data object DownloadedTrek : Route
 
+    /**
+     * About and data credits. Carries the OpenStreetMap and Copernicus
+     * attribution their licences require, so it has to stay reachable.
+     */
+    @Serializable
+    data object About : Route
+
 }
