@@ -165,7 +165,7 @@
 <body>
     <div class="container">
         <h1>Privacy Policy for ViaHimalaya</h1>
-        <p class="last-updated"><strong>Last Updated:</strong> July 15, 2026</p>
+        <p class="last-updated"><strong>Last Updated:</strong> October 23, 2026</p>
         
         <p>ViaHimalaya ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application (the "App").</p>
         
@@ -176,58 +176,62 @@
         <h3>1.1 Personal Information</h3>
         <p>When you sign in to ViaHimalaya using Google Sign-In, we collect:</p>
         <ul>
-            <li><strong>Email address</strong> - Used for account identification and authentication</li>
+            <li><strong>Email address</strong> - Used for account identification and authentication, and stored with the trek paths and messages you send us (see 1.2 and 1.6)</li>
             <li><strong>Name</strong> - Displayed in your profile</li>
             <li><strong>Profile picture</strong> - Displayed in your profile</li>
+            <li><strong>User ID</strong> - A unique identifier that Firebase Authentication assigns to your account</li>
         </ul>
-        <p>This information is provided by Google through Firebase Authentication and is used solely for user authentication and profile display purposes.</p>
+        <p>This information is provided by Google through Firebase Authentication. We use it to sign you in, to display your profile, and to link the data described in this policy to your account.</p>
 
         <h3>1.2 Location Data</h3>
-        <p>We collect precise location data when you use the App for trek navigation:</p>
+        <p>While the App is open, it uses your device's precise location (through Google Play services) to show where you are on the map. The App does not request background location access, so it does not collect location when you are not using it.</p>
+        <p>When you tap <strong>Start trekking</strong> on a trek, the App also records your path and uploads it to our servers. Each recorded point includes:</p>
         <ul>
-            <li><strong>GPS coordinates</strong> - Real-time latitude, longitude, and altitude</li>
-            <li><strong>Location accuracy</strong> - GPS accuracy measurements</li>
-            <li><strong>Location timestamps</strong> - When each location point was recorded</li>
-            <li><strong>Trek paths</strong> - The complete route you follow during a trek</li>
+            <li><strong>GPS coordinates</strong> - Latitude and longitude, with the time each point was recorded</li>
+            <li><strong>Altitude</strong> - From GPS and, where your device has one, the barometer</li>
+            <li><strong>Accuracy, speed and bearing</strong> - As reported by your device</li>
+            <li><strong>Battery level</strong> - Your device's battery percentage at that moment</li>
+            <li><strong>Sensor readings</strong> - See 1.3</li>
         </ul>
         
         <div class="important">
-            <strong>Important:</strong> Your location data is collected during active trek sessions and is synced to our servers to:
+            <strong>Important:</strong> Recorded paths are stored on our servers together with your email address and the trek you were on. We use them to:
             <ul>
-                <li>Enable trek history and statistics</li>
-                <li>Provide route analysis and insights</li>
-                <li>Improve trek route recommendations</li>
-                <li>Allow you to access your trek history across devices</li>
+                <li>Check and improve the accuracy of trek routes, elevation data and navigation</li>
+                <li>Analyze how routes are walked and how the App performs in the field</li>
             </ul>
+            <p>The App does not currently show recorded paths back to you, and they are not synced between your devices.</p>
         </div>
 
         <h3>1.3 Sensor Data</h3>
-        <p>We collect data from your device sensors during trek tracking:</p>
+        <p>While you are recording a trek, the App reads your device's motion and environment sensors and attaches the readings to each recorded point (see 1.2):</p>
         <ul>
-            <li><strong>Accelerometer data</strong> - For motion detection and step counting</li>
+            <li><strong>Accelerometer data</strong> - For motion detection</li>
             <li><strong>Gyroscope data</strong> - For orientation and movement tracking</li>
             <li><strong>Barometer data</strong> - For altitude and elevation measurements</li>
             <li><strong>Magnetometer data</strong> - For compass direction</li>
         </ul>
-        <p>This sensor data is used to enhance navigation accuracy and provide detailed trek statistics.</p>
+        <p>This sensor data is uploaded with your recorded path and is used to improve navigation and elevation accuracy.</p>
 
         <h3>1.4 Trek Activity Data</h3>
-        <p>We collect information about your trek activities:</p>
+        <p>We collect information about your trek activity:</p>
         <ul>
-            <li><strong>Trek routes taken</strong> - Which treks you have completed</li>
-            <li><strong>Trek statistics</strong> - Distance traveled, elevation gain, duration</li>
-            <li><strong>Trek timestamps</strong> - Start and end times of your treks</li>
-            <li><strong>Downloaded treks</strong> - Which trek maps you have downloaded for offline use</li>
+            <li><strong>Which trek you recorded</strong> - The trek you were on when you started a recording, and the start time and duration of that recording</li>
+            <li><strong>Downloaded treks</strong> - Trek maps and data you download for offline use are stored on your device. Our servers see the download request like any other internet request (see 1.5), but we do not link it to your account.</li>
         </ul>
 
-        <h3>1.5 Device Information</h3>
-        <p>We may collect:</p>
+        <h3>1.5 Device, Usage and Crash Information</h3>
+        <p>We use Google's Firebase Analytics and Firebase Crashlytics to understand how the App is used and to find and fix crashes. These services collect:</p>
         <ul>
-            <li>Device model and manufacturer</li>
-            <li>Operating system version</li>
-            <li>App version</li>
-            <li>Device identifiers (for crash reporting and analytics)</li>
+            <li><strong>Usage events</strong> - For example, that the App was opened, and when a sign-in error occurs</li>
+            <li><strong>Crash reports</strong> - When the App crashes: the technical details of the crash and the state of the App at that moment</li>
+            <li><strong>Device information</strong> - Device model and manufacturer, operating system version, App version, language, and your approximate region (derived from your IP address)</li>
+            <li><strong>Identifiers</strong> - A random installation ID generated by Firebase, an app-specific user ID that is not your email address, and your device's advertising ID if one is available</li>
         </ul>
+        <p>Our servers (see Section 9) also receive the technical information that accompanies any internet request, such as your IP address, the time of the request and the type of device.</p>
+
+        <h3>1.6 Messages You Send Us</h3>
+        <p>If you use the in-app form to request a trek or send feedback, we store your message together with your email address and the time you sent it. We use it to read and respond to your request and to decide which treks to add.</p>
 
         <h2>2. How We Use Your Information</h2>
         
@@ -235,24 +239,22 @@
         <ul>
             <li><strong>Authentication</strong> - To verify your identity and provide secure access</li>
             <li><strong>Navigation</strong> - To show your real-time position on trek routes</li>
-            <li><strong>Trek Tracking</strong> - To record your trek path and generate statistics</li>
+            <li><strong>Trek Recording</strong> - To record your path when you start a trek</li>
             <li><strong>Offline Maps</strong> - To provide downloaded trek maps for offline use</li>
             <li><strong>Profile Management</strong> - To display your account information</li>
         </ul>
 
         <h3>2.2 Service Improvement</h3>
         <ul>
-            <li><strong>Route Analysis</strong> - To analyze popular routes and improve trek recommendations</li>
+            <li><strong>Route Analysis</strong> - To analyze recorded routes and improve trek route and elevation data</li>
             <li><strong>App Performance</strong> - To identify and fix bugs and crashes</li>
             <li><strong>Feature Development</strong> - To understand which features are most used</li>
             <li><strong>Quality Assurance</strong> - To ensure accurate GPS tracking and navigation</li>
         </ul>
 
-        <h3>2.3 User Experience</h3>
+        <h3>2.3 Support</h3>
         <ul>
-            <li><strong>Trek History</strong> - To show your completed treks and statistics</li>
-            <li><strong>Cross-Device Sync</strong> - To access your trek data on multiple devices</li>
-            <li><strong>Personalization</strong> - To recommend treks based on your activity</li>
+            <li><strong>Requests and Feedback</strong> - To read and respond to the trek requests and feedback you send us</li>
         </ul>
 
         <h2>3. How We Share Your Information</h2>
@@ -271,10 +273,12 @@
         <h3>3.2 We MAY Share Your Information With:</h3>
         <p><strong>Service Providers:</strong></p>
         <ul>
-            <li><strong>Firebase (Google)</strong> - For authentication and cloud storage</li>
-            <li><strong>Cloud hosting providers</strong> - For secure data storage and backup</li>
+            <li><strong>Google (Firebase)</strong> - Authentication, analytics and crash reporting</li>
+            <li><strong>Cloudflare</strong> - Hosting, content delivery and file storage for our servers</li>
+            <li><strong>Neon</strong> - Hosting for the database that stores your recorded treks and messages</li>
+            <li><strong>Mapbox</strong> - Map display and offline map downloads</li>
         </ul>
-        <p>These service providers are contractually obligated to protect your data and use it only for providing services to us.</p>
+        <p>Cloudflare and Neon process data on our behalf to run the service. Google and Mapbox also collect some data under their own privacy policies; see Section 9.</p>
 
         <p><strong>Legal Requirements:</strong></p>
         <p>We may disclose your information if required by law, court order, or government regulation, or if we believe disclosure is necessary to:</p>
@@ -289,8 +293,8 @@
         
         <h3>4.1 Where Your Data is Stored</h3>
         <ul>
-            <li><strong>Local Storage:</strong> Trek maps, downloaded routes, and cached data are stored locally on your device</li>
-            <li><strong>Cloud Storage:</strong> Your account information, trek history, and synced trek paths are stored securely on our servers (Firebase/Google Cloud)</li>
+            <li><strong>Local Storage:</strong> Trek maps, downloaded routes, your recorded trek paths, and cached data are stored locally on your device</li>
+            <li><strong>Cloud Storage:</strong> Your sign-in account is held by Firebase Authentication (Google). A copy of your recorded trek paths and the messages you send us are stored in our database, which is hosted by Neon; our servers run on Cloudflare</li>
         </ul>
 
         <h3>4.2 Security Measures</h3>
@@ -298,7 +302,7 @@
         <ul>
             <li><strong>Encryption in Transit:</strong> All data transmitted between your device and our servers uses HTTPS/TLS encryption</li>
             <li><strong>Encryption at Rest:</strong> Sensitive data stored on our servers is encrypted</li>
-            <li><strong>Authentication:</strong> Secure authentication via Google Sign-In and Firebase</li>
+            <li><strong>Sign-in:</strong> Handled by Google Sign-In and Firebase Authentication - we never see or store a password</li>
             <li><strong>Access Controls:</strong> Limited access to user data by authorized personnel only</li>
             <li><strong>Regular Security Audits:</strong> Periodic review of security practices</li>
         </ul>
@@ -312,23 +316,20 @@
         <h3>5.1 How Long We Keep Your Data</h3>
         <ul>
             <li><strong>Account Information:</strong> Retained as long as your account is active</li>
-            <li><strong>Trek History:</strong> Retained indefinitely unless you request deletion</li>
-            <li><strong>Location Data:</strong> Trek paths are retained to provide historical records</li>
-            <li><strong>Sensor Data:</strong> Aggregated sensor data may be retained for analytics</li>
+            <li><strong>Recorded Trek Paths and Sensor Data:</strong> Retained on our servers, linked to your email address, until you ask us to delete them</li>
+            <li><strong>Messages You Send Us:</strong> Retained, linked to your email address, until you ask us to delete them</li>
+            <li><strong>Analytics and Crash Data:</strong> Held by Google and kept for the periods set in Google's own policies</li>
             <li><strong>Cached Data:</strong> Local device data is retained until you clear app data or uninstall</li>
         </ul>
 
         <h3>5.2 Data Deletion</h3>
-        <p>You can request deletion of your data at any time by:</p>
-        <ul>
-            <li>Deleting your account through the App settings or contacting us at rishuparashar7@gmail.com</li>
-        </ul>
+        <p>You can request deletion of your data at any time by emailing us at rishuparashar7@gmail.com from the address you signed in with.</p>
         
-        <p>Upon account deletion, we will:</p>
+        <p>Upon your request, we will:</p>
         <ul>
             <li>Delete your account information within 30 days</li>
-            <li>Remove your trek history and location data</li>
-            <li>Anonymize any aggregated analytics data</li>
+            <li>Remove your recorded trek paths, sensor data and messages from our database</li>
+            <li>Delete the analytics data associated with your user ID where Google's tools allow it</li>
         </ul>
         
         <p>Some data may be retained for legal or security purposes as required by law.</p>
@@ -382,26 +383,31 @@
             <li>Google may collect additional data as per their privacy policy</li>
         </ul>
 
-        <h3>9.2 Google Cloud Platform</h3>
-        <p>We use Google Cloud Platform for data storage and hosting:</p>
+        <h3>9.2 Firebase Analytics and Crashlytics (Google)</h3>
+        <p>We use Firebase Analytics and Firebase Crashlytics to understand how the App is used and to fix crashes (see 1.5):</p>
         <ul>
-            <li>Google Cloud Privacy Policy: <a href="https://cloud.google.com/terms/cloud-privacy-notice" target="_blank">https://cloud.google.com/terms/cloud-privacy-notice</a></li>
-            <li>Your data is stored securely on Google's infrastructure</li>
-            <li>Google acts as a data processor on our behalf</li>
+            <li>Firebase privacy information: <a href="https://firebase.google.com/support/privacy" target="_blank">https://firebase.google.com/support/privacy</a></li>
+            <li>Google's Privacy Policy applies: <a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a></li>
+            <li>On Android, your location is obtained through Google Play services, which is also governed by Google's Privacy Policy</li>
         </ul>
 
-        <h3>9.3 Map Data Providers</h3>
-        <p>We may use third-party map tile providers for offline maps:</p>
+        <h3>9.3 Mapbox</h3>
+        <p>Maps in the App are provided by Mapbox, and the maps you download for offline use are fetched from Mapbox's servers:</p>
         <ul>
-            <li>Map tiles are downloaded and cached locally on your device</li>
-            <li>No personal information is shared with map providers</li>
-            <li>Map usage may be subject to provider terms of service</li>
+            <li>Mapbox receives the technical information that accompanies any internet request, such as your IP address and device details</li>
+            <li>Mapbox's software collects anonymous location and map-usage data to improve its maps, unless you opt out. You can opt out using the information (i) button on the map. See <a href="https://www.mapbox.com/telemetry" target="_blank">https://www.mapbox.com/telemetry</a></li>
+            <li>Mapbox Privacy Policy: <a href="https://www.mapbox.com/legal/privacy" target="_blank">https://www.mapbox.com/legal/privacy</a></li>
+        </ul>
+
+        <h3>9.4 Cloudflare and Neon</h3>
+        <p>Our servers run on Cloudflare, which also stores the trek files the App downloads, and our database is hosted by Neon. They process data on our behalf to run the service:</p>
+        <ul>
+            <li>Cloudflare Privacy Policy: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank">https://www.cloudflare.com/privacypolicy/</a></li>
         </ul>
 
         <h2>10. Changes to This Privacy Policy</h2>
         <p>We may update this Privacy Policy from time to time to reflect changes in our practices or for legal, operational, or regulatory reasons. We will notify you of any material changes by:</p>
         <ul>
-            <li>Posting the updated policy in the App</li>
             <li>Updating the "Last Updated" date at the top of this policy</li>
             <li>Sending an email notification (for significant changes)</li>
         </ul>
@@ -420,8 +426,8 @@
         <ul>
             <li>The collection and use of information as described in this Privacy Policy</li>
             <li>The processing of your location data for trek tracking and navigation</li>
-            <li>The syncing of your trek paths to our servers for history and cross-device access</li>
-            <li>The use of cookies and similar technologies (if applicable)</li>
+            <li>The upload of your recorded trek paths, with sensor readings, to our servers</li>
+            <li>The collection of usage and crash diagnostics described in Section 1.5</li>
         </ul>
         
         <p>You can withdraw your consent at any time by:</p>
@@ -437,16 +443,16 @@
             <h3>What We Collect:</h3>
             <ul>
                 <li>Google account info (email, name, photo)</li>
-                <li>GPS location during treks</li>
-                <li>Sensor data (accelerometer, gyroscope, barometer)</li>
-                <li>Trek activity and statistics</li>
+                <li>GPS location, sensor readings and battery level while you record a trek</li>
+                <li>Messages you send us (trek requests and feedback)</li>
+                <li>Usage and crash diagnostics (Firebase Analytics and Crashlytics)</li>
             </ul>
 
             <h3>How We Use It:</h3>
             <ul>
                 <li>Authentication and profile display</li>
-                <li>Real-time navigation and trek tracking</li>
-                <li>Trek history and statistics</li>
+                <li>Real-time navigation and trek recording</li>
+                <li>Improving trek routes and elevation data</li>
                 <li>Service improvement and analytics</li>
             </ul>
 
@@ -461,14 +467,14 @@
             <h3>Your Rights:</h3>
             <ul>
                 <li>Access, correct, or delete your data</li>
-                <li>Export your trek history</li>
+                <li>Request a copy of your data</li>
                 <li>Withdraw consent and delete your account</li>
                 <li>Contact us with privacy concerns</li>
             </ul>
         </div>
 
         <div class="footer">
-            <p><strong>Effective Date:</strong> July 15, 2026</p>
+            <p><strong>Effective Date:</strong> October 23, 2026</p>
             <p>This privacy policy is effective as of the date stated above and applies to all users of the ViaHimalaya mobile application.</p>
             <p>© 2026 ViaHimalaya. All rights reserved.</p>
         </div>
