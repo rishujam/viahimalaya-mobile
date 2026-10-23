@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.google.gms)
+    // After google-services: Crashlytics reads the app id it generates. Uploads
+    // the R8 mapping on release builds so crash traces are readable.
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 // Secrets come from local.properties (gitignored) or the environment for CI.
