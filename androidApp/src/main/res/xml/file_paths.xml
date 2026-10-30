@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The one folder the FileProvider may hand to another app: where the camera
+     writes a photo for "add a place". Nothing else in the app's storage is
+     reachable through it. -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+</paths>

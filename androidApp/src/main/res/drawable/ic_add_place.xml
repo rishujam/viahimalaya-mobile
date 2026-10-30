@@ -1,0 +1,7 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <!-- Map pin with a plus cut out of it. Single colour: tinted where it is used. -->
+    <path android:fillColor="#000000" android:fillType="evenOdd"
+        android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13c0,-3.87 -3.13,-7 -7,-7zM14.5,9.75h-1.75v1.75h-1.5L11.25,9.75L9.5,9.75v-1.5h1.75L11.25,6.5h1.5v1.75h1.75v1.5z"/>
+</vector>

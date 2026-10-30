@@ -30,6 +30,8 @@ import com.via.himalaya.presentation.downloads.DownloadedTrekViewModel
 import com.via.himalaya.ui.components.CarouselTrekCard
 import kotlin.math.abs
 
+//TODO Hide download button in trek detail screen when opened from downloads
+
 @Composable
 fun DownloadedTrekScreenRoot(
     viewModel: DownloadedTrekViewModel,

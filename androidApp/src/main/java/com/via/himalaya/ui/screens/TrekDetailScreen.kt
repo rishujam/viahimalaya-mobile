@@ -82,8 +82,27 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.mutableIntStateOf
 import com.via.himalaya.ui.components.TrekMap
+import android.content.ActivityNotFoundException
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.via.himalaya.domain.model.CustomPoiRules
+import com.via.himalaya.presentation.addPoi.AddPoiUiState
+import com.via.himalaya.presentation.addPoi.AddPoiViewModel
+import com.via.himalaya.ui.components.AddPlaceButton
+import com.via.himalaya.ui.components.AddPoiActions
+import com.via.himalaya.ui.components.AddPoiDialog
+import com.via.himalaya.ui.components.PoiLocationPicker
+import com.via.himalaya.util.CameraFiles
+import org.koin.androidx.compose.koinViewModel
 
 private const val TAG = "TrekDetailScreenTag"
+
+/**
+ * The map sits this far above the bottom of the screen, so the detail sheet does
+ * not cover its logo. The pin picker has to use the same figure: the map's centre
+ * is what the pin stands on, and it moves when this does.
+ */
+private val MAP_BOTTOM_PADDING = 64.dp
 
 @Composable
 fun TrekDetailScreenRoot(
@@ -91,10 +110,12 @@ fun TrekDetailScreenRoot(
     trekId: String,
     coordinateUrl: String,
     onBackClick: () -> Unit = {},
-    onPlanClick: () -> Unit = {}
+    onPlanClick: () -> Unit = {},
+    addPoiViewModel: AddPoiViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
+    val addPoiState by addPoiViewModel.state.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
     var showPermissionSettingsDialog by remember { mutableStateOf(false) }
 
@@ -179,6 +200,68 @@ fun TrekDetailScreenRoot(
         }
     }
     
+    // "Add a place". The phone's own camera app and Android's photo picker do the
+    // picking, so the app needs no camera or storage permission.
+    val pickPhotoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) addPoiViewModel.onPhotoChosen(uri.toString())
+    }
+    // Remembered across process death: low-memory phones kill the app while the
+    // camera is up, and the result arrives with nothing else to say where it went.
+    var cameraUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val takePhotoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { saved ->
+        val uri = cameraUri
+        if (saved && uri != null) addPoiViewModel.onPhotoChosen(uri.toString())
+    }
+
+    LaunchedEffect(addPoiState.message) {
+        addPoiState.message?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            addPoiViewModel.clearMessage()
+        }
+    }
+
+    val addPoiActions = AddPoiActions(
+        onAddClick = {
+            state.trek?.let { trek ->
+                addPoiViewModel.open(
+                    trekId = trekId,
+                    boundingBox = trek.boundingBox,
+                    knownLocation = state.liveLocation,
+                    canUseLocation = PermissionUtil.hasLocationPermission(context)
+                )
+            }
+        },
+        onDismiss = addPoiViewModel::dismiss,
+        onTakePhoto = {
+            try {
+                val uri = CameraFiles.newPhotoUri(context)
+                cameraUri = uri
+                takePhotoLauncher.launch(uri)
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(context, "No camera app found on this phone", Toast.LENGTH_SHORT).show()
+            }
+        },
+        onPickPhoto = {
+            pickPhotoLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        onNoteChange = addPoiViewModel::onNoteChanged,
+        onEditLocation = addPoiViewModel::startPicking,
+        onUseCurrentLocation = {
+            addPoiViewModel.useCurrentLocation(PermissionUtil.hasLocationPermission(context))
+        },
+        onTermsChecked = addPoiViewModel::onTermsChecked,
+        onOpenTerms = { openDetailsLink(context, CustomPoiRules.CONTENT_TERMS_URL) },
+        onSave = addPoiViewModel::save,
+        onCancelPicking = addPoiViewModel::cancelPicking,
+        onLocationPicked = addPoiViewModel::onLocationPicked
+    )
+
     TrekDetailScreen(
         state = state,
         onBackClick = onBackClick,
@@ -216,7 +299,9 @@ fun TrekDetailScreenRoot(
                 }
             }
         },
-        snackbarHostState = snackBarHostState
+        snackbarHostState = snackBarHostState,
+        addPoiState = addPoiState,
+        addPoiActions = addPoiActions
     )
 
     if (showPermissionSettingsDialog) {
@@ -263,7 +348,9 @@ fun TrekDetailScreen(
     onStopHike: () -> Unit = {},
     onDownloadHikeClick: () -> Unit,
     onPlanClick: () -> Unit = {},
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    addPoiState: AddPoiUiState = AddPoiUiState(),
+    addPoiActions: AddPoiActions = AddPoiActions()
 ) {
     val context = LocalContext.current
     var selectedPoi by remember { mutableStateOf<TrekPoi?>(null) }
@@ -308,6 +395,21 @@ fun TrekDetailScreen(
         }
     }
 
+    // Placing a pin starts from where the place already is, zoomed in far enough
+    // to be precise. With no location yet the camera stays on the whole trek and
+    // the user finds the spot themselves.
+    LaunchedEffect(addPoiState.isPicking) {
+        if (!addPoiState.isPicking) return@LaunchedEffect
+        addPoiState.location?.let { start ->
+            mapViewportState.setCameraOptions(
+                CameraOptions.Builder()
+                    .center(Point.fromLngLat(start.lon, start.lat))
+                    .zoom(15.0)
+                    .build()
+            )
+        }
+    }
+
     Box (
         modifier = Modifier
             .fillMaxSize(),
@@ -338,7 +440,7 @@ fun TrekDetailScreen(
                     geoJson = geoJsonString,
                     boundingBox = boundingBox,
                     mapViewportState = mapViewportState,
-                    modifier = Modifier.fillMaxSize().padding(bottom = 64.dp),
+                    modifier = Modifier.fillMaxSize().padding(bottom = MAP_BOTTOM_PADDING),
                     // A card anchored to a marker has to go when the map is
                     // tapped elsewhere, and when the marker slides out from
                     // under it on a pan.
@@ -396,7 +498,10 @@ fun TrekDetailScreen(
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(Color.White)
-                    .clickable { onBackClick() },
+                    // While a pin is being placed, back means "never mind the pin".
+                    .clickable {
+                        if (addPoiState.isPicking) addPoiActions.onCancelPicking() else onBackClick()
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -411,7 +516,9 @@ fun TrekDetailScreen(
         // Runs from the top of the screen down to the detail sheet. Declared
         // after the map so it sits above it and wins the touch, and before the
         // sheet so the sheet still draws over the bottom of the track.
-        if (elevationPoints.isNotEmpty()) {
+        // Everything that is not the map or the pin gets out of the way while a
+        // pin is being placed: the slider, the POI card, the banner and the sheet.
+        if (elevationPoints.isNotEmpty() && !addPoiState.isPicking) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -437,7 +544,7 @@ fun TrekDetailScreen(
         }
 
         // Tapped POI takes the top slot, pushing the trekking-area banner aside.
-        selectedPoi?.let { poi ->
+        selectedPoi?.takeIf { !addPoiState.isPicking }?.let { poi ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -452,7 +559,7 @@ fun TrekDetailScreen(
         }
 
         // Show message when NOT trekking and not in bounding box
-        if (!state.isTrekking && !state.isNearTrekStart && selectedPoi == null) {
+        if (!state.isTrekking && !state.isNearTrekStart && selectedPoi == null && !addPoiState.isPicking) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -475,7 +582,7 @@ fun TrekDetailScreen(
             }
         }
         
-        Box(
+        if (!addPoiState.isPicking) Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .onSizeChanged { sheetHeightPx = it.height }
@@ -572,6 +679,42 @@ fun TrekDetailScreen(
             }
         }
         
+        // "Add a place" sits just above the sheet, on the side the elevation
+        // slider is not. Waits for the trek: without its bounds there is no
+        // trekking area to check a location against.
+        if (!addPoiState.isPicking) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 16.dp, bottom = sheetHeight + 12.dp),
+                contentAlignment = Alignment.BottomStart
+            ) {
+                AddPlaceButton(
+                    onClick = addPoiActions.onAddClick,
+                    enabled = state.trek != null
+                )
+            }
+        }
+
+        if (addPoiState.isPicking) {
+            PoiLocationPicker(
+                mapViewportState = mapViewportState,
+                boundingBox = state.trek?.boundingBox.orEmpty(),
+                mapBottomPadding = MAP_BOTTOM_PADDING,
+                onConfirm = addPoiActions.onLocationPicked,
+                onCancel = addPoiActions.onCancelPicking
+            )
+        }
+
+        // Hidden, not dismissed, while the pin is placed: the form is in the
+        // ViewModel and comes back as it was.
+        if (addPoiState.isDialogVisible) {
+            AddPoiDialog(
+                state = addPoiState,
+                actions = addPoiActions
+            )
+        }
+
         // Snackbar for error messages
         SnackbarHost(
             hostState = snackbarHostState,

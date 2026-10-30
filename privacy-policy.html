@@ -165,7 +165,7 @@
 <body>
     <div class="container">
         <h1>Privacy Policy for ViaHimalaya</h1>
-        <p class="last-updated"><strong>Last Updated:</strong> October 23, 2026</p>
+        <p class="last-updated"><strong>Last Updated:</strong> October 29, 2026</p>
         
         <p>ViaHimalaya ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application (the "App").</p>
         
@@ -233,6 +233,17 @@
         <h3>1.6 Messages You Send Us</h3>
         <p>If you use the in-app form to request a trek or send feedback, we store your message together with your email address and the time you sent it. We use it to read and respond to your request and to decide which treks to add.</p>
 
+        <h3>1.7 Places and Photos You Add</h3>
+        <p>The App lets you add a place to a trek, such as a campsite or a source of water, with a photo, an optional short note (up to 300 characters) and a position. When you tap Save, we store:</p>
+        <ul>
+            <li><strong>The photo</strong> - Shrunk on your device before it is sent. The location and camera details that phones record inside photos are removed from the copy we keep</li>
+            <li><strong>The note</strong> - If you wrote one</li>
+            <li><strong>The position</strong> - Either your phone's location when you saved, with the GPS accuracy if your phone reported one, or the spot you chose on the map; we record which of the two it was</li>
+            <li><strong>Details of the submission</strong> - The trek it was added to, the time, your account's user ID, and the version of our <a href="https://viahimalaya.com/content-terms.html" target="_blank">Content Terms</a> you agreed to</li>
+        </ul>
+        <p>If you save with no internet connection, the place waits on your device and is sent automatically when the App next has a connection.</p>
+        <p>Photos are kept in private storage. Nobody else can see a place you add until we have looked at it and approved it, and we may reject any place. Once a place is approved, other users of the App may see its photo, note and position. We do not show your name or email address with it.</p>
+
         <h2>2. How We Use Your Information</h2>
         
         <h3>2.1 Core Functionality</h3>
@@ -257,12 +268,18 @@
             <li><strong>Requests and Feedback</strong> - To read and respond to the trek requests and feedback you send us</li>
         </ul>
 
+        <h3>2.4 Places You Add</h3>
+        <ul>
+            <li><strong>Review and Display</strong> - To check the places and photos you add and, once approved, to show them to other users of the App</li>
+            <li><strong>Trek Information</strong> - To improve our trek data, for example the location of campsites and water</li>
+        </ul>
+
         <h2>3. How We Share Your Information</h2>
         
         <h3>3.1 We DO NOT Share Your Information With:</h3>
         <div class="warning">
             <ul>
-                <li>❌ Other users of the App</li>
+                <li>❌ Other users of the App (except the places and photos you choose to add - see 3.3)</li>
                 <li>❌ Social media platforms</li>
                 <li>❌ Advertising networks</li>
                 <li>❌ Data brokers or third-party marketers</li>
@@ -275,7 +292,7 @@
         <ul>
             <li><strong>Google (Firebase)</strong> - Authentication, analytics and crash reporting</li>
             <li><strong>Cloudflare</strong> - Hosting, content delivery and file storage for our servers</li>
-            <li><strong>Neon</strong> - Hosting for the database that stores your recorded treks and messages</li>
+            <li><strong>Neon</strong> - Hosting for the database that stores your recorded treks, messages and the places you add</li>
             <li><strong>Mapbox</strong> - Map display and offline map downloads</li>
         </ul>
         <p>Cloudflare and Neon process data on our behalf to run the service. Google and Mapbox also collect some data under their own privacy policies; see Section 9.</p>
@@ -289,12 +306,15 @@
             <li>Protect user safety</li>
         </ul>
 
+        <h3>3.3 Places and Photos You Add</h3>
+        <p>The photo, note and position of a place you add can be shown to other users of the App once we have approved it. They are not shown with your name or email address. You can ask us to remove a place at any time (see Section 5.2). By adding a place you agree to our <a href="https://viahimalaya.com/content-terms.html" target="_blank">Content Terms</a>.</p>
+
         <h2>4. Data Storage and Security</h2>
         
         <h3>4.1 Where Your Data is Stored</h3>
         <ul>
             <li><strong>Local Storage:</strong> Trek maps, downloaded routes, your recorded trek paths, and cached data are stored locally on your device</li>
-            <li><strong>Cloud Storage:</strong> Your sign-in account is held by Firebase Authentication (Google). A copy of your recorded trek paths and the messages you send us are stored in our database, which is hosted by Neon; our servers run on Cloudflare</li>
+            <li><strong>Cloud Storage:</strong> Your sign-in account is held by Firebase Authentication (Google). A copy of your recorded trek paths, the messages you send us and the details of places you add are stored in our database, which is hosted by Neon; our servers run on Cloudflare, which also holds the photos of places you add in private storage</li>
         </ul>
 
         <h3>4.2 Security Measures</h3>
@@ -318,6 +338,7 @@
             <li><strong>Account Information:</strong> Retained as long as your account is active</li>
             <li><strong>Recorded Trek Paths and Sensor Data:</strong> Retained on our servers, linked to your email address, until you ask us to delete them</li>
             <li><strong>Messages You Send Us:</strong> Retained, linked to your email address, until you ask us to delete them</li>
+            <li><strong>Places and Photos You Add:</strong> Retained, linked to your account's user ID, until you ask us to delete them or we remove them</li>
             <li><strong>Analytics and Crash Data:</strong> Held by Google and kept for the periods set in Google's own policies</li>
             <li><strong>Cached Data:</strong> Local device data is retained until you clear app data or uninstall</li>
         </ul>
@@ -329,6 +350,7 @@
         <ul>
             <li>Delete your account information within 30 days</li>
             <li>Remove your recorded trek paths, sensor data and messages from our database</li>
+            <li>Remove the places and photos you added from our database and storage</li>
             <li>Delete the analytics data associated with your user ID where Google's tools allow it</li>
         </ul>
         
@@ -428,8 +450,9 @@
             <li>The processing of your location data for trek tracking and navigation</li>
             <li>The upload of your recorded trek paths, with sensor readings, to our servers</li>
             <li>The collection of usage and crash diagnostics described in Section 1.5</li>
+            <li>The upload of the places and photos you choose to add, and their being shown to other users once approved (Section 1.7)</li>
         </ul>
-        
+
         <p>You can withdraw your consent at any time by:</p>
         <ul>
             <li>Disabling location permissions in your device settings</li>
@@ -445,6 +468,7 @@
                 <li>Google account info (email, name, photo)</li>
                 <li>GPS location, sensor readings and battery level while you record a trek</li>
                 <li>Messages you send us (trek requests and feedback)</li>
+                <li>Photos, notes and positions of places you choose to add</li>
                 <li>Usage and crash diagnostics (Firebase Analytics and Crashlytics)</li>
             </ul>
 
@@ -453,12 +477,13 @@
                 <li>Authentication and profile display</li>
                 <li>Real-time navigation and trek recording</li>
                 <li>Improving trek routes and elevation data</li>
+                <li>Showing the places you add to other users, once we have approved them</li>
                 <li>Service improvement and analytics</li>
             </ul>
 
             <h3>What We DON'T Do:</h3>
             <ul>
-                <li>❌ Share your location with other users</li>
+                <li>❌ Share your live location or recorded trek paths with other users</li>
                 <li>❌ Sell your data to third parties</li>
                 <li>❌ Use your data for advertising</li>
                 <li>❌ Track you when not using the App</li>
@@ -474,7 +499,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>Effective Date:</strong> October 23, 2026</p>
+            <p><strong>Effective Date:</strong> October 29, 2026</p>
             <p>This privacy policy is effective as of the date stated above and applies to all users of the ViaHimalaya mobile application.</p>
             <p>© 2026 ViaHimalaya. All rights reserved.</p>
         </div>

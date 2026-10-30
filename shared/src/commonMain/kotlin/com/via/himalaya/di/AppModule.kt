@@ -10,9 +10,11 @@ import com.via.himalaya.data.local.UserPreferencesImpl
 import com.via.himalaya.data.remote.HttpClientFactory
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.data.repository.AppConfigRepositoryImpl
+import com.via.himalaya.data.repository.CustomPoiRepositoryImpl
 import com.via.himalaya.data.repository.FeedbackRepositoryImpl
 import com.via.himalaya.data.repository.TrekPlanRepositoryImpl
 import com.via.himalaya.domain.repo.AppConfigRepository
+import com.via.himalaya.domain.repo.CustomPoiRepository
 import com.via.himalaya.domain.repo.FeedbackRepository
 import com.via.himalaya.domain.repo.TrekPlanRepository
 import com.via.himalaya.presentation.trekPlan.TrekPlanViewModel
@@ -29,6 +31,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import com.via.himalaya.presentation.addPoi.AddPoiViewModel
 import com.via.himalaya.presentation.auth.AuthViewModel
 import com.via.himalaya.presentation.explore.ExploreViewModel
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
@@ -48,7 +51,8 @@ val sharedModule = module {
             .addMigrations(
                 TrekDatabase.MIGRATION_1_2,
                 TrekDatabase.MIGRATION_2_3,
-                TrekDatabase.MIGRATION_3_4
+                TrekDatabase.MIGRATION_3_4,
+                TrekDatabase.MIGRATION_4_5
             )
             .setDriver(BundledSQLiteDriver())
             .build()
@@ -56,6 +60,7 @@ val sharedModule = module {
 
     single { get<TrekDatabase>().trekDao }
     single { get<TrekDatabase>().trekPlanDao }
+    single { get<TrekDatabase>().customPoiDao }
 
     single {
         get<NavigatorDatabaseFactory>()
@@ -73,8 +78,10 @@ val sharedModule = module {
     singleOf(::TrekPlanRepositoryImpl).bind<TrekPlanRepository>()
     singleOf(::AppConfigRepositoryImpl).bind<AppConfigRepository>()
     singleOf(::FeedbackRepositoryImpl).bind<FeedbackRepository>()
+    singleOf(::CustomPoiRepositoryImpl).bind<CustomPoiRepository>()
     viewModelOf(::ExploreViewModel)
     viewModelOf(::TrekDetailViewModel)
+    viewModelOf(::AddPoiViewModel)
     viewModelOf(::TrekPlanViewModel)
     singleOf(::FirebaseAuthRepository).bind<AuthRepository>()
     viewModelOf(::AuthViewModel)

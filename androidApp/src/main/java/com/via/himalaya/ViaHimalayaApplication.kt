@@ -4,14 +4,19 @@ import android.app.Application
 import android.util.Log
 import com.via.himalaya.data.remote.ApiConfig
 import com.via.himalaya.di.initKoin
+import com.via.himalaya.domain.NetworkMonitor
+import com.via.himalaya.domain.PhotoStore
 import com.via.himalaya.domain.Tracker
 import com.via.himalaya.domain.repo.AuthRepository
+import com.via.himalaya.util.AndroidPhotoStore
+import com.via.himalaya.util.NetworkUtil
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -36,6 +41,12 @@ class ViaHimalayaApplication : Application() {
                             baseUrl = BuildConfig.API_BASE_URL,
                             apiKey = BuildConfig.API_KEY
                         )
+                    }
+                    // Android-only work behind the "add a place" feature: shrinking
+                    // and keeping photos, and asking whether there is a connection.
+                    single<PhotoStore> { AndroidPhotoStore(androidApplication()) }
+                    single<NetworkMonitor> {
+                        NetworkMonitor { NetworkUtil.isInternetAvailable(androidApplication()) }
                     }
                 }
             )

@@ -50,5 +50,19 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Where the camera app writes a photo for "add a place". Only
+             cache/camera is shared (res/xml/file_paths.xml), and the app never
+             needs the CAMERA permission: the phone's own camera app takes the
+             picture. The authority must equal CameraFiles.authority(). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest> 

@@ -23,6 +23,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.via.himalaya.domain.repo.AppConfigRepository
+import com.via.himalaya.domain.repo.CustomPoiRepository
 import com.via.himalaya.navigation.Route
 import com.via.himalaya.navigation.bottomNavItems
 import com.via.himalaya.presentation.auth.AuthViewModel
@@ -40,6 +41,7 @@ import com.via.himalaya.ui.screens.SignInScreenRoot
 import com.via.himalaya.ui.screens.TrekDetailScreenRoot
 import com.via.himalaya.ui.screens.TrekPlanScreenRoot
 import com.via.himalaya.util.NetworkUtil
+import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -71,7 +73,19 @@ import org.koin.compose.koinInject
 //TODO - GeoFencing for sending notifications
 
 class MainActivity : ComponentActivity() {
-    
+
+    private val customPoiRepository: CustomPoiRepository by inject()
+
+    override fun onStart() {
+        super.onStart()
+        // Places the user added with no signal are waiting in the local database.
+        // Every time the app comes to the foreground - a cold start included - is
+        // a chance they can go. It returns at once and does nothing when there is
+        // nothing queued, no connection, or nobody signed in; the upload itself
+        // runs on the repository's own scope, off the startup path.
+        customPoiRepository.requestSync()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         
