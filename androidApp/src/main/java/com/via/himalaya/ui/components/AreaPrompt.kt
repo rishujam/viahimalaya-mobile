@@ -37,12 +37,11 @@ private const val FADE_MS = 300
  * the view model sets it on entry when the fix is outside the area and on Start
  * Hike pressed outside it. It fades out after a few seconds, or can be swiped
  * away either side; either way [onGone] tells the view model to clear [show], so
- * the next press can set it again. While [allowed] is false (hiking, inside the
- * area, a POI card or the pin picker up) it is hidden and the timer keeps running.
+ * the next press can set it again.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AreaPrompt(show: Boolean, onGone: () -> Unit, allowed: Boolean, modifier: Modifier = Modifier) {
+fun AreaPrompt(show: Boolean, onGone: () -> Unit, modifier: Modifier = Modifier) {
     var visible by remember { mutableStateOf(false) }
     // Bumped per showing, so each one gets a fresh swipe state below.
     var showing by remember { mutableIntStateOf(0) }
@@ -59,7 +58,7 @@ fun AreaPrompt(show: Boolean, onGone: () -> Unit, allowed: Boolean, modifier: Mo
     }
 
     AnimatedVisibility(
-        visible = visible && allowed,
+        visible = visible,
         enter = fadeIn(tween(FADE_MS)),
         exit = fadeOut(tween(FADE_MS)),
         modifier = modifier

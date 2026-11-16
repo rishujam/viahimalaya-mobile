@@ -562,10 +562,8 @@ fun TrekDetailScreen(
             }
         }
 
-        // Not trekking and not in the area: a prompt for a few seconds at a time,
-        // on entry and on each Start Hike pressed outside the area. Always
-        // composed and hidden through `allowed`, so closing a POI card does not
-        // replay it.
+        // Shown once whenever the view model asks: on entry outside the area and
+        // on each Start Hike pressed outside it.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -574,9 +572,7 @@ fun TrekDetailScreen(
         ) {
             AreaPrompt(
                 show = state.showAreaPrompt,
-                onGone = onAreaPromptGone,
-                allowed = !state.isTrekking && !state.isNearTrekStart &&
-                    selectedPoi == null && !addPoiState.isPicking
+                onGone = onAreaPromptGone
             )
         }
         
