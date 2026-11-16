@@ -1,5 +1,15 @@
 package com.via.himalaya.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.draw.rotate
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -379,6 +389,13 @@ fun TrekDetailScreen(
     // tall as its contents - so measure it rather than guessing a height that
     // would drift the moment a line of text wraps.
     var sheetHeightPx by remember { mutableIntStateOf(0) }
+    // Kept across rotation. Collapsed shows only the trek name and the chevron.
+    var isSheetExpanded by rememberSaveable { mutableStateOf(true) }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (isSheetExpanded) 0f else 180f,
+        animationSpec = tween(SHEET_ANIM_MS),
+        label = "sheet chevron"
+    )
     val sheetHeight = with(LocalDensity.current) { sheetHeightPx.toDp() }
 
     // Hoisted out of the map block so the elevation slider can drive the camera
@@ -584,93 +601,118 @@ fun TrekDetailScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                Text(
-                    modifier = Modifier.padding(top = 20.dp),
-                    text = state.trek?.name.orEmpty(),
-                    fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    modifier = Modifier.padding(top = 2.dp),
-                    text = state.trek?.location.orEmpty(),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // Replaces a three-column box with dividers and a background.
-                // Two or three facts do not need that furniture, and dropping it
-                // gave back around 90dp - which the elevation slider inherits,
-                // since its travel is bounded by the height of this sheet.
-                //
-                // Built from whatever is actually present: climb needs a profile,
-                // and a trek without one still shows distance and max.
-                val stats = buildList {
-                    state.trek?.distance?.takeIf { it.isNotBlank() }?.let { add(it) }
-                    totalClimbM?.let { add("↑ %,d m".format(it)) }
-                    state.trek?.elevation?.takeIf { it.isNotBlank() }
-                        // "4,283 m" alone reads as though it might be the climb.
-                        ?.let { add("Max $it") }
-                }
-                if (stats.isNotEmpty()) {
+                // Name and the collapse chevron are all a collapsed sheet shows.
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        modifier = Modifier.padding(top = 10.dp),
-                        text = stats.joinToString("   ·   "),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        modifier = Modifier.weight(1f),
+                        text = state.trek?.name.orEmpty(),
+                        fontSize = 24.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
                     )
+                    IconButton(onClick = { isSheetExpanded = !isSheetExpanded }) {
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = if (isSheetExpanded) "Collapse" else "Expand",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            // Down when open (fold away), up when folded (bring back).
+                            modifier = Modifier.rotate(chevronRotation)
+                        )
+                    }
                 }
+                // The slider and the Add-a-place button sit on this sheet's measured
+                // height, so they follow the animation frame by frame.
+                AnimatedVisibility(
+                    visible = isSheetExpanded,
+                    enter = expandVertically(tween(SHEET_ANIM_MS)) + fadeIn(tween(SHEET_ANIM_MS)),
+                    exit = shrinkVertically(tween(SHEET_ANIM_MS)) + fadeOut(tween(SHEET_ANIM_MS))
+                ) {
+                    Column {
+                        Text(
+                            modifier = Modifier.padding(top = 2.dp),
+                            text = state.trek?.location.orEmpty(),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                // Hidden entirely when the trek has no write-up, rather than
-                // showing a dead link.
-                state.trek?.detailsUrl?.takeIf { it.isNotBlank() }?.let { url ->
-                    Text(
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .clickable { openDetailsLink(context, url) },
-                        text = "View details",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF1A73E8),
-                        textDecoration = TextDecoration.Underline
-                    )
-                }
-                Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
-                PrimaryButton(
-                    text = if (state.isTrekking) "Stop Hike" else "Start Hike",
-                    onClick = {
-                        if (state.isTrekking) {
-                            onStopHike()
-                        } else {
-                            onStartHike()
+                        // Replaces a three-column box with dividers and a background.
+                        // Two or three facts do not need that furniture, and dropping it
+                        // gave back around 90dp - which the elevation slider inherits,
+                        // since its travel is bounded by the height of this sheet.
+                        //
+                        // Built from whatever is actually present: climb needs a profile,
+                        // and a trek without one still shows distance and max.
+                        val stats = buildList {
+                            state.trek?.distance?.takeIf { it.isNotBlank() }?.let { add(it) }
+                            totalClimbM?.let { add("↑ %,d m".format(it)) }
+                            state.trek?.elevation?.takeIf { it.isNotBlank() }
+                                // "4,283 m" alone reads as though it might be the climb.
+                                ?.let { add("Max $it") }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if(!state.isTrekking) {
-                    Spacer(modifier = Modifier.fillMaxWidth().height(16.dp))
-                    // Side by side rather than stacked: a third full-width button
-                    // would grow this sheet, and the sheet's height is what caps
-                    // the elevation slider's travel.
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Switched remotely (app config `features.planner`). Off,
-                        // Download takes the whole row.
-                        if (state.isPlannerEnabled) {
-                            SecondaryButton(
-                                text = "Plan",
-                                onClick = { onPlanClick() },
-                                modifier = Modifier.weight(1f)
+                        if (stats.isNotEmpty()) {
+                            Text(
+                                modifier = Modifier.padding(top = 10.dp),
+                                text = stats.joinToString("   ·   "),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
-                        SecondaryButton(
-                            text = "Download",
-                            onClick = { onDownloadHikeClick() },
-                            modifier = Modifier.weight(1f)
+
+                        // Hidden entirely when the trek has no write-up, rather than
+                        // showing a dead link.
+                        state.trek?.detailsUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                            Text(
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .clickable { openDetailsLink(context, url) },
+                                text = "View details",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF1A73E8),
+                                textDecoration = TextDecoration.Underline
+                            )
+                        }
+                        Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
+                        PrimaryButton(
+                            text = if (state.isTrekking) "Stop Hike" else "Start Hike",
+                            onClick = {
+                                if (state.isTrekking) {
+                                    onStopHike()
+                                } else {
+                                    onStartHike()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
                         )
+                        if(!state.isTrekking) {
+                            Spacer(modifier = Modifier.fillMaxWidth().height(16.dp))
+                            // Side by side rather than stacked: a third full-width button
+                            // would grow this sheet, and the sheet's height is what caps
+                            // the elevation slider's travel.
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Switched remotely (app config `features.planner`). Off,
+                                // Download takes the whole row.
+                                if (state.isPlannerEnabled) {
+                                    SecondaryButton(
+                                        text = "Plan",
+                                        onClick = { onPlanClick() },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                SecondaryButton(
+                                    text = "Download",
+                                    onClick = { onDownloadHikeClick() },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.fillMaxWidth().height(20.dp))
@@ -931,3 +973,5 @@ private fun openDetailsLink(context: Context, url: String) {
         }
     }
 }
+
+private const val SHEET_ANIM_MS = 220
