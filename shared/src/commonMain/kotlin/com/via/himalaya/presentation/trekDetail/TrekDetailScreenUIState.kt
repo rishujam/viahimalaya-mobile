@@ -19,6 +19,12 @@ data class TrekDetailScreenUIState(
     val liveLocation: Loc? = null,
     val isNearTrekStart: Boolean = false,
     val isTrekking: Boolean = false,
+    /**
+     * Show the "not in the trekking area" prompt once: set when the location fix
+     * lands outside the area and on Start Hike pressed outside it, cleared by the
+     * screen (ClearAreaPrompt) when the prompt has gone.
+     */
+    val showAreaPrompt: Boolean = false,
     val userEmail: String? = null,
     /** Remote switch (app config `features.planner`); starts at the in-app default. */
     val isPlannerEnabled: Boolean = Feature.PLANNER.default

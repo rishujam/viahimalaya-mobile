@@ -184,7 +184,10 @@ class TrekDetailViewModel(
                         "isInBox=$isInBox, boundingBox=$boundingBox"
             )
             _state.update {
-                it.copy(isNearTrekStart = isInBox)
+                it.copy(
+                    isNearTrekStart = isInBox,
+                    showAreaPrompt = it.showAreaPrompt || (!isInBox && !it.isTrekking)
+                )
             }
         } else {
             _state.update {
@@ -213,13 +216,18 @@ class TrekDetailViewModel(
         }
     }
 
-    fun startTrekking(trekId: String) {
-        sensorListener.startListening()
+    private fun startTrekking(trekId: String) {
         val geoData = _state.value.geoData ?: return
         val coordinates = geoData.geometry.getFlattenedCoordinates()
 
         if (coordinates.isEmpty()) return
-        if (!_state.value.isNearTrekStart) return
+        if (!_state.value.isNearTrekStart) {
+            _state.update { it.copy(showAreaPrompt = true) }
+            return
+        }
+        // Only once the hike is really starting: it used to run before the
+        // checks, so a press outside the area left the sensors listening.
+        sensorListener.startListening()
 
         _state.update { it.copy(isTrekking = true) }
         val user = _state.value.userEmail
@@ -285,7 +293,7 @@ class TrekDetailViewModel(
         return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon
     }
 
-    fun stopTrekking() {
+    private fun stopTrekking() {
         locationJob?.cancel()
         locationJob = null
         _state.update {
@@ -325,8 +333,17 @@ class TrekDetailViewModel(
             }
         }
 
-    fun clearErrorToast() {
-        _state.update { it.copy(errorToast = null) }
+    fun onEvent(event: TrekDetailScreenUIEvent) {
+        when (event) {
+            is TrekDetailScreenUIEvent.OnStartHike -> startTrekking(event.trekId)
+            is TrekDetailScreenUIEvent.OnStopHike -> stopTrekking()
+            is TrekDetailScreenUIEvent.ClearErrorToast -> {
+                _state.update { it.copy(errorToast = null) }
+            }
+            is TrekDetailScreenUIEvent.ClearAreaPrompt -> {
+                _state.update { it.copy(showAreaPrompt = false) }
+            }
+        }
     }
 
     override fun onCleared() {

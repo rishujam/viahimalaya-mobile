@@ -72,6 +72,7 @@ import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.toGeoJsonString
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
+import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIEvent
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.service.TrekDownloadService
 import com.via.himalaya.ui.components.PrimaryButton
@@ -89,6 +90,7 @@ import com.via.himalaya.domain.model.CustomPoiRules
 import com.via.himalaya.presentation.addPoi.AddPoiUiState
 import com.via.himalaya.presentation.addPoi.AddPoiViewModel
 import com.via.himalaya.ui.components.AddPlaceButton
+import com.via.himalaya.ui.components.AreaPrompt
 import com.via.himalaya.ui.components.AddPoiActions
 import com.via.himalaya.ui.components.AddPoiDialog
 import com.via.himalaya.ui.components.PoiLocationPicker
@@ -167,7 +169,7 @@ fun TrekDetailScreenRoot(
                 message = errorMessage,
                 withDismissAction = true
             )
-            viewModel.clearErrorToast()
+            viewModel.onEvent(TrekDetailScreenUIEvent.ClearErrorToast)
         }
     }
 
@@ -267,7 +269,7 @@ fun TrekDetailScreenRoot(
         onBackClick = onBackClick,
         onStartHike = {
             if(PermissionUtil.hasLocationPermission(context)) {
-                viewModel.startTrekking(trekId)
+                viewModel.onEvent(TrekDetailScreenUIEvent.OnStartHike(trekId))
             } else {
                 Toast.makeText(
                     context,
@@ -282,7 +284,8 @@ fun TrekDetailScreenRoot(
                 )
             }
         },
-        onStopHike = { viewModel.stopTrekking() },
+        onStopHike = { viewModel.onEvent(TrekDetailScreenUIEvent.OnStopHike) },
+        onAreaPromptGone = { viewModel.onEvent(TrekDetailScreenUIEvent.ClearAreaPrompt) },
         onPlanClick = onPlanClick,
         onDownloadHikeClick = {
             viewModel.validateAndStartDownload { trek ->
@@ -346,6 +349,7 @@ fun TrekDetailScreen(
     onBackClick: () -> Unit = {},
     onStartHike: () -> Unit = {},
     onStopHike: () -> Unit = {},
+    onAreaPromptGone: () -> Unit = {},
     onDownloadHikeClick: () -> Unit,
     onPlanClick: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -558,28 +562,22 @@ fun TrekDetailScreen(
             }
         }
 
-        // Show message when NOT trekking and not in bounding box
-        if (!state.isTrekking && !state.isNearTrekStart && selectedPoi == null && !addPoiState.isPicking) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 80.dp, start = 16.dp, end = 16.dp),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFFF9800))
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    Text(
-                        text = "You are not in the trekking area",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
+        // Not trekking and not in the area: a prompt for a few seconds at a time,
+        // on entry and on each Start Hike pressed outside the area. Always
+        // composed and hidden through `allowed`, so closing a POI card does not
+        // replay it.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 80.dp, start = 16.dp, end = 16.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            AreaPrompt(
+                show = state.showAreaPrompt,
+                onGone = onAreaPromptGone,
+                allowed = !state.isTrekking && !state.isNearTrekStart &&
+                    selectedPoi == null && !addPoiState.isPicking
+            )
         }
         
         if (!addPoiState.isPicking) Box(
