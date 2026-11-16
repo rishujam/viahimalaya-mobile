@@ -663,11 +663,15 @@ fun TrekDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        SecondaryButton(
-                            text = "Plan",
-                            onClick = { onPlanClick() },
-                            modifier = Modifier.weight(1f)
-                        )
+                        // Switched remotely (app config `features.planner`). Off,
+                        // Download takes the whole row.
+                        if (state.isPlannerEnabled) {
+                            SecondaryButton(
+                                text = "Plan",
+                                onClick = { onPlanClick() },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                         SecondaryButton(
                             text = "Download",
                             onClick = { onDownloadHikeClick() },

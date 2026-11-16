@@ -1,7 +1,6 @@
 package com.via.himalaya
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -13,6 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -22,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.via.himalaya.domain.model.UpdateNeed
 import com.via.himalaya.domain.repo.AppConfigRepository
 import com.via.himalaya.domain.repo.CustomPoiRepository
 import com.via.himalaya.navigation.Route
@@ -33,6 +36,9 @@ import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.presentation.trekPlan.TrekPlanViewModel
 import com.via.himalaya.ui.MyApplicationTheme
 import com.via.himalaya.ui.components.BottomNavigationBar
+import com.via.himalaya.ui.components.UpdateAvailableDialog
+import com.via.himalaya.ui.components.UpdateRequiredScreen
+import com.via.himalaya.ui.components.openStoreListing
 import com.via.himalaya.ui.screens.AboutScreenRoot
 import com.via.himalaya.ui.screens.DownloadedTrekScreenRoot
 import com.via.himalaya.ui.screens.ExploreScreenRoot
@@ -119,6 +125,32 @@ fun ViaHimalayaApp(
     val appConfigRepository = koinInject<AppConfigRepository>()
     LaunchedEffect(Unit) {
         appConfigRepository.refresh()
+    }
+
+    // Force update (app_config `app_update`). Config lives in memory only, so
+    // this stays NONE until the fetch returns: offline at launch, nobody is
+    // blocked. A required update replaces the whole app, splash included.
+    val appConfig by appConfigRepository.config.collectAsState()
+    val updateNeed = appConfig.updateNeed(BuildConfig.VERSION_CODE)
+    if (updateNeed == UpdateNeed.REQUIRED) {
+        onAuthCheckComplete()
+        UpdateRequiredScreen(
+            message = appConfig.update?.message,
+            onUpdate = { openStoreListing(context) }
+        )
+        return
+    }
+    // Once per process: "Later" holds until the app is next started.
+    var updateOfferDismissed by rememberSaveable { mutableStateOf(false) }
+    if (updateNeed == UpdateNeed.OPTIONAL && !updateOfferDismissed) {
+        UpdateAvailableDialog(
+            message = appConfig.update?.message,
+            onUpdate = {
+                updateOfferDismissed = true
+                openStoreListing(context)
+            },
+            onLater = { updateOfferDismissed = true }
+        )
     }
 
     val authViewModel = koinViewModel<AuthViewModel>()

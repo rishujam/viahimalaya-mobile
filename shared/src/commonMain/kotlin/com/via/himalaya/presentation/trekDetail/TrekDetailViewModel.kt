@@ -11,9 +11,11 @@ import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
 import com.via.himalaya.domain.SensorListener
+import com.via.himalaya.domain.model.Feature
 import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.calculateBoundingBox
 import com.via.himalaya.domain.model.getFlattenedCoordinates
+import com.via.himalaya.domain.repo.AppConfigRepository
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.Result
 import kotlinx.coroutines.Dispatchers
@@ -30,13 +32,29 @@ class TrekDetailViewModel(
     private val trekRepository: TrekRepository,
     private val locationEmitter: LocationEmitter,
     private val sensorListener: SensorListener,
-    private val authRepository: FirebaseAuthRepository
+    private val authRepository: FirebaseAuthRepository,
+    private val appConfigRepository: AppConfigRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TrekDetailScreenUIState())
     val state: StateFlow<TrekDetailScreenUIState> = _state.asStateFlow()
 
     private var locationJob: Job? = null
+
+    init {
+        observeFeatures()
+    }
+
+    /**
+     * Mirrors the remote feature switches into this screen. Config is fetched
+     * once at launch and may arrive after the screen opens, so this keeps
+     * collecting rather than reading once.
+     */
+    private fun observeFeatures() = viewModelScope.launch {
+        appConfigRepository.config.collect { config ->
+            _state.update { it.copy(isPlannerEnabled = config.isEnabled(Feature.PLANNER)) }
+        }
+    }
 
     fun setInitialData(
         coordinatesUrl: String,

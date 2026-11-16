@@ -3,6 +3,7 @@ package com.via.himalaya.presentation.trekDetail
 import com.via.himalaya.data.models.Loc
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.models.TrekPoi
+import com.via.himalaya.domain.model.Feature
 import com.via.himalaya.domain.model.LocationResponse
 import com.via.himalaya.domain.model.TrekGeoData
 
@@ -18,5 +19,7 @@ data class TrekDetailScreenUIState(
     val liveLocation: Loc? = null,
     val isNearTrekStart: Boolean = false,
     val isTrekking: Boolean = false,
-    val userEmail: String? = null
+    val userEmail: String? = null,
+    /** Remote switch (app config `features.planner`); starts at the in-app default. */
+    val isPlannerEnabled: Boolean = Feature.PLANNER.default
 )
