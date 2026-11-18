@@ -52,7 +52,8 @@ val sharedModule = module {
                 TrekDatabase.MIGRATION_1_2,
                 TrekDatabase.MIGRATION_2_3,
                 TrekDatabase.MIGRATION_3_4,
-                TrekDatabase.MIGRATION_4_5
+                TrekDatabase.MIGRATION_4_5,
+                TrekDatabase.MIGRATION_5_6
             )
             .setDriver(BundledSQLiteDriver())
             .build()

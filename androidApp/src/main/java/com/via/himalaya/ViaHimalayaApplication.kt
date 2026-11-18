@@ -8,6 +8,7 @@ import com.via.himalaya.domain.NetworkMonitor
 import com.via.himalaya.domain.PhotoStore
 import com.via.himalaya.domain.Tracker
 import com.via.himalaya.domain.repo.AuthRepository
+import com.via.himalaya.service.TrekUpgradeJobService
 import com.via.himalaya.util.AndroidPhotoStore
 import com.via.himalaya.util.NetworkUtil
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -51,6 +52,11 @@ class ViaHimalayaApplication : Application() {
                 }
             )
         }
+
+        // Normally queued by AppUpdatedReceiver straight after an update. Queued
+        // here too, in case that broadcast never came (an app that was force
+        // stopped does not get it); with nothing to upgrade the job ends at once.
+        TrekUpgradeJobService.schedule(this)
 
         // Fire-and-forget startup bookkeeping. A scope with no handler turns any
         // exception inside it into a process crash, and nothing in here is worth

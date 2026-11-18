@@ -62,7 +62,7 @@ import com.via.himalaya.data.models.PoiCategory
 import com.via.himalaya.data.models.TrekElevationPoint
 import com.via.himalaya.data.models.TrekPlan
 import com.via.himalaya.data.models.TrekPoi
-import com.via.himalaya.domain.model.toGeoJsonString
+import com.via.himalaya.presentation.trekDetail.lineGeoJson
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
 import com.via.himalaya.presentation.trekPlan.TrekPlanScreenUIState
@@ -182,7 +182,6 @@ fun TrekPlanScreenRoot(
     viewModel: TrekDetailViewModel,
     planViewModel: TrekPlanViewModel,
     trekId: String,
-    coordinateUrl: String,
     onBackClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -190,7 +189,7 @@ fun TrekPlanScreenRoot(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        viewModel.setInitialData(coordinateUrl, trekId)
+        viewModel.setInitialData(trekId)
         planViewModel.load(trekId)
     }
 
@@ -225,12 +224,17 @@ fun TrekPlanScreen(
 
     // Off-route entries sit beside a trailhead rather than on the walk, so they
     // cannot end a day. Sorting by distance puts them in walking order.
-    val camps = remember(state.pois) {
+    // Camps beside a path the route does not take are left out too: their
+    // distance is not on this route at all.
+    val camps = remember(state.pois, state.offRoutePoiIds) {
         state.pois
             .filter { it.category in CAMPABLE && it.offRoute == null && it.offsetM <= MAX_OFFSET_M }
+            .filter { it.id !in state.offRoutePoiIds }
             .sortedBy { it.distAlongKm }
     }
-    val profile = state.trek?.elevationProfile.orEmpty()
+    // The planner plans the route the detail screen opens with: the default.
+    // Its POIs' dist_along_km are already measured along it (placePois).
+    val profile = state.routeView?.profile.orEmpty()
 
     // A stack: days are appended, and only the last one comes off. That removes
     // every re-validation question an editable middle would raise.
@@ -392,7 +396,7 @@ fun TrekPlanScreen(
                 .fillMaxSize()
                 .onSizeChanged { containerHeightPx = it.height }
         ) {
-            val geoJson = state.geoData?.geometry?.toGeoJsonString()
+            val geoJson = state.routeView?.line?.let { remember(it) { lineGeoJson(it) } }
 
             if (geoJson != null) {
                 TrekMap(

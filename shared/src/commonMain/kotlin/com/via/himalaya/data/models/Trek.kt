@@ -7,7 +7,6 @@ data class Trek(
     val distance: String,
     val elevation: String,
     val boundingBox: List<Double>,
-    val coordinateUrl: String,
     val imageUrl: String? = null,
     val poiUrl: String? = null,
     val poiUpdatedAt: String? = null,

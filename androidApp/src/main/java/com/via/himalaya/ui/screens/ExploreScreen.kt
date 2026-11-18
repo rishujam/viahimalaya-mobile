@@ -36,6 +36,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -154,13 +155,19 @@ fun ExploreScreen(
         }
     }
 
-    LaunchedEffect(searchQuery, state.isSearching) {
-        if (searchQuery.isBlank()) {
+    // Searches a second after typing stops, every time the text changes. It used
+    // to search only while no search was showing, so once "kedar" had gone out the
+    // rest of "kedarkantha" was ignored until the box was emptied. Each keystroke
+    // restarts this effect, which cancels the pending delay - that is the debounce.
+    val appliedQuery by rememberUpdatedState(state.searchQuery)
+    LaunchedEffect(searchQuery) {
+        val query = searchQuery.trim()
+        if (query.isEmpty()) {
             onEvent(ExploreScreenUIEvent.OnClearSearch)
-        } else if (!state.isSearching) {
-            delay(1000)
-            onEvent(ExploreScreenUIEvent.OnSearchTrek(searchQuery.trim()))
+            return@LaunchedEffect
         }
+        delay(1000)
+        if (query != appliedQuery) onEvent(ExploreScreenUIEvent.OnSearchTrek(query))
     }
 
     // Pagination logic (existing)
@@ -262,41 +269,57 @@ fun ExploreScreen(
                 // Card height = available height - peek space for next card
                 val cardHeight = availableHeight - 60.dp
 
-                LazyColumn(
-                    state = listState,
-                    // One card at a time: releasing the drag settles on whichever
-                    // card is showing more of itself, so the list never rests
-                    // between two. SnapPosition.Start keeps the settled card at
-                    // offset 0, which means firstVisibleItemIndex, the snap
-                    // target and the focused card are always the same item — so
-                    // the position saved on the way to a trek restores to a card
-                    // that is unambiguously in focus on the way back.
-                    flingBehavior = rememberSnapFlingBehavior(snapLayoutInfoProvider),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    itemsIndexed(state.treks) { index, trek ->
-                        val isFocused = index == focusedIndex
-                        CarouselTrekCard(
-                            trek = trek,
-                            isFocused = isFocused,
-                            onClick = { onTrekClicked(trek) },
-                            cardHeight = cardHeight
+                // While a search is on its way, a spinner under the search bar
+                // instead of the list, so the old cards are not read as results.
+                if (state.isSearchLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 32.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        // One card at a time: releasing the drag settles on whichever
+                        // card is showing more of itself, so the list never rests
+                        // between two. SnapPosition.Start keeps the settled card at
+                        // offset 0, which means firstVisibleItemIndex, the snap
+                        // target and the focused card are always the same item — so
+                        // the position saved on the way to a trek restores to a card
+                        // that is unambiguously in focus on the way back.
+                        flingBehavior = rememberSnapFlingBehavior(snapLayoutInfoProvider),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        itemsIndexed(state.treks) { index, trek ->
+                            val isFocused = index == focusedIndex
+                            CarouselTrekCard(
+                                trek = trek,
+                                isFocused = isFocused,
+                                onClick = { onTrekClicked(trek) },
+                                cardHeight = cardHeight
+                            )
+                        }
 
-                    // Loading indicator at the bottom when paginating
-                    if (state.isLoading) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(32.dp),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                        // Loading indicator at the bottom when paginating
+                        if (state.isLoading) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(32.dp),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }

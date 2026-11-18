@@ -14,8 +14,10 @@ import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
 import com.via.himalaya.data.local.OfflineMapManager
 import com.via.himalaya.data.remote.ApiConfig
+import com.via.himalaya.domain.model.RouteNetwork
 import com.via.himalaya.domain.model.TrekGeoData
 import com.via.himalaya.domain.model.TrekGeometry
+import com.via.himalaya.domain.model.TrekRoutes
 import com.via.himalaya.domain.model.Treks
 import com.via.himalaya.domain.model.getFlattenedCoordinates
 import com.via.himalaya.domain.repo.TrekRepository
@@ -31,7 +33,14 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.datetime.Instant
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -70,13 +79,25 @@ class TrekRepositoryImpl(
 
         /** POIs live beside the coordinates file, which is keyed on the bare trek id. */
         private fun poiFileName(trekId: String) = "${trekId}_pois"
+
+        /** The routes file, beside the POIs. */
+        private fun routesFileName(trekId: String) = "${trekId}_routes"
+
+        /**
+         * The coordinate file older builds saved, under the bare trek id. Never
+         * read any more; deleted when a download is redone or removed.
+         */
+        private fun retiredCoordinatesFileName(trekId: String) = trekId
     }
 
     /**
-     * Tolerant of new fields so a bundle regenerated with extra keys does not
-     * crash an older build.
+     * Tolerant of new fields so a bundle or routes file regenerated with extra
+     * keys does not crash an older build.
      */
-    private val poiJson = Json { ignoreUnknownKeys = true }
+    private val lenientJson = Json { ignoreUnknownKeys = true }
+
+    /** Serialises the upgrade of old downloads: the background job and an open trek can both start one. */
+    private val upgradeLock = Mutex()
 
     override suspend fun getTreks(
         page: Int,
@@ -113,109 +134,95 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun getTrekCoordinates(
-        coordinateUrl: String,
-        trekId: String
-    ): Result<TrekGeoData> {
-        return try {
-            if (fileDownloader.fileExists(trekId)) {
-                println("TrekRepository: Loading coordinates from local storage for trek: $trekId")
-                val localData = fileDownloader.readFile(trekId)
-                if (localData != null) {
-                    try {
-                        val geoData = Json.decodeFromString<TrekGeoData>(localData)
-                        println("TrekRepository: Successfully loaded coordinates from local storage")
-                        return Result.Success(geoData)
-                    } catch (e: Exception) {
-                        println("TrekRepository: Failed to parse local coordinates: ${e.message}")
-                    }
-                }
-            }
-
-            println("TrekRepository: Fetching coordinates from network for trek: $trekId")
-            val response = apiClient.get(coordinateUrl) {
-                contentType(ContentType.Application.Json)
-                headers {
-                    append(HttpHeaders.Accept, ContentType.Application.Json.toString())
-                }
-            }
-            if (response.status.value == 200) {
-                val geoData = response.body<TrekGeoData>()
-                try {
-                    fileDownloader.downloadFile(coordinateUrl, trekId)
-                    println("TrekRepository: Coordinates cached locally for trek: $trekId")
-                } catch (e: Exception) {
-                    println("TrekRepository: Failed to cache coordinates: ${e.message}")
-                }
-
-                Result.Success(geoData)
-            } else {
-                Result.Error("Failed to fetch coordinates: ${response.status.description}", response.status.value)
-            }
-        } catch (e: Exception) {
-            Result.Error("Error fetching coordinates: ${e.message}", 500)
-        }
-    }
+    override suspend fun getTrekRoutes(
+        routesUrl: String,
+        trekId: String,
+        routesUpdatedAt: String?
+    ): Result<TrekRoutes> = getCachedJson(
+        what = "routes",
+        url = routesUrl,
+        fileName = routesFileName(trekId),
+        wantedVersion = routesUpdatedAt,
+        versionOf = { it.generatedAt },
+        decode = { lenientJson.decodeFromString<TrekRoutes>(it) }
+    )
 
     override suspend fun getTrekPois(
         poiUrl: String,
         trekId: String,
         poiUpdatedAt: String?
-    ): Result<TrekPoiBundle> {
-        val fileName = poiFileName(trekId)
+    ): Result<TrekPoiBundle> = getCachedJson(
+        what = "POIs",
+        url = poiUrl,
+        fileName = poiFileName(trekId),
+        wantedVersion = poiUpdatedAt,
+        versionOf = { it.generatedAt },
+        decode = { lenientJson.decodeFromString<TrekPoiBundle>(it) }
+    )
 
+    /**
+     * A JSON file from R2, kept on disk under [fileName]. The R2 key never changes,
+     * so the copy on disk is used while its own version ([versionOf]) matches
+     * [wantedVersion], the one the treks table carries. Otherwise it is fetched
+     * again - and when that fails, offline say, the old copy is served anyway: the
+     * trek is being walked right now and the trail has not moved.
+     */
+    private suspend fun <T> getCachedJson(
+        what: String,
+        url: String,
+        fileName: String,
+        wantedVersion: String?,
+        versionOf: (T) -> String?,
+        decode: (String) -> T
+    ): Result<T> {
         // Read the cache up front so it can still serve as a fallback if the
         // network is unreachable, even when it looks out of date.
-        val cached: TrekPoiBundle? = if (fileDownloader.fileExists(fileName)) {
+        val cached: T? = if (fileDownloader.fileExists(fileName)) {
             try {
-                fileDownloader.readFile(fileName)
-                    ?.let { poiJson.decodeFromString<TrekPoiBundle>(it) }
+                fileDownloader.readFile(fileName)?.let(decode)
             } catch (e: Exception) {
-                println("TrekRepository: Failed to parse local POIs: ${e.message}")
+                println("TrekRepository: Failed to parse local $what ($fileName): ${e.message}")
                 null
             }
         } else null
 
-        if (cached != null && isSameInstant(cached.generatedAt, poiUpdatedAt)) {
-            println("TrekRepository: Loaded ${cached.pois.size} POIs from local storage for trek: $trekId")
+        if (cached != null && isSameInstant(versionOf(cached), wantedVersion)) {
+            println("TrekRepository: Loaded $what from local storage ($fileName)")
             return Result.Success(cached)
         }
         if (cached != null) {
-            println("TrekRepository: Cached POIs may be stale for trek: $trekId (have ${cached.generatedAt}, want $poiUpdatedAt)")
+            println("TrekRepository: Cached $what may be stale ($fileName): have ${versionOf(cached)}, want $wantedVersion")
         }
 
         return try {
-            println("TrekRepository: Fetching POIs from network for trek: $trekId")
-            val response = apiClient.get(poiUrl) {
+            println("TrekRepository: Fetching $what from network ($fileName)")
+            val response = apiClient.get(url) {
                 contentType(ContentType.Application.Json)
                 headers {
                     append(HttpHeaders.Accept, ContentType.Application.Json.toString())
                 }
             }
             if (response.status.value == 200) {
-                val body = response.body<String>()
-                val bundle = poiJson.decodeFromString<TrekPoiBundle>(body)
+                val data = decode(response.body<String>())
                 try {
-                    fileDownloader.downloadFile(poiUrl, fileName)
-                    println("TrekRepository: POIs cached locally for trek: $trekId")
+                    fileDownloader.downloadFile(url, fileName)
+                    println("TrekRepository: $what cached locally ($fileName)")
                 } catch (e: Exception) {
-                    println("TrekRepository: Failed to cache POIs: ${e.message}")
+                    println("TrekRepository: Failed to cache $what: ${e.message}")
                 }
-                Result.Success(bundle)
+                Result.Success(data)
             } else if (cached != null) {
-                println("TrekRepository: POI fetch returned ${response.status.value}, serving cached bundle")
+                println("TrekRepository: $what fetch returned ${response.status.value}, serving cached copy")
                 Result.Success(cached)
             } else {
-                Result.Error("Failed to fetch POIs: ${response.status.description}", response.status.value)
+                Result.Error("Failed to fetch $what: ${response.status.description}", response.status.value)
             }
         } catch (e: Exception) {
-            // Offline. A stale bundle beats no bundle - the trek is being walked
-            // right now and those water points are still where they were.
             if (cached != null) {
-                println("TrekRepository: POI fetch failed (${e.message}), serving cached bundle for trek: $trekId")
+                println("TrekRepository: $what fetch failed (${e.message}), serving cached copy ($fileName)")
                 Result.Success(cached)
             } else {
-                Result.Error("Error fetching POIs: ${e.message}", 500)
+                Result.Error("Error fetching $what: ${e.message}", 500)
             }
         }
     }
@@ -254,33 +261,37 @@ class TrekRepositoryImpl(
         }
     }
 
+    /**
+     * A downloaded trek is read from Room, unless it was saved before routes
+     * existed: then the API's fresh copy is returned, so the screen can draw it
+     * while the download itself is redone. Offline, the old row is returned and
+     * the screen asks for a connection (its routesUrl is null).
+     */
     override suspend fun getTrek(id: String): Result<TrekDetail> {
+        val local = try {
+            trekDao.getTrek(id)
+        } catch (e: Exception) {
+            null
+        }
+        if (local != null && local.routesUrl != null) return Result.Success(local)
+        val remote = fetchTrek(id)
+        return if (remote is Result.Success || local == null) remote else Result.Success(local)
+    }
+
+    private suspend fun fetchTrek(id: String): Result<TrekDetail> {
         return try {
-            val localTrek = trekDao.getTrek(id)
-            localTrek?.let {
-                Result.Success(localTrek)
-            } ?: run {
-                val response = apiClient.get("${apiConfig.baseUrl}/api/treks/$id") {
-                    contentType(ContentType.Application.Json)
-                    headers {
-                        append(HttpHeaders.Accept, ContentType.Application.Json.toString())
-                        append(HttpHeaders.Authorization, "Bearer ${apiConfig.apiKey}")
-                    }
-                }
-                return when (response.status.value) {
-                    200 -> {
-                        val trekDetailData = response.body<VResponse<TrekDetailData>>().data
-                        Result.Success(trekDetailData.toTrekDetail())
-                    }
-                    404 -> {
-                        Result.Error("Trek not found", 404)
-                    }
-                    else -> {
-                        Result.Error(response.status.description, response.status.value)
-                    }
+            val response = apiClient.get("${apiConfig.baseUrl}/api/treks/$id") {
+                contentType(ContentType.Application.Json)
+                headers {
+                    append(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                    append(HttpHeaders.Authorization, "Bearer ${apiConfig.apiKey}")
                 }
             }
-
+            when (response.status.value) {
+                200 -> Result.Success(response.body<VResponse<TrekDetailData>>().data.toTrekDetail())
+                404 -> Result.Error("Trek not found", 404)
+                else -> Result.Error(response.status.description, response.status.value)
+            }
         } catch (e: Exception) {
             Result.Error("Error fetching trek details: ${e.message}", 500)
         }
@@ -307,15 +318,16 @@ class TrekRepositoryImpl(
             println("TrekRepository: Starting offline download for trek: ${trek.id}")
             onProgress(0.1f)
             if (offlineMapManager != null) {
-                val coordinatesResult = getTrekCoordinates(trek.coordinateUrl, trek.id)
-                if (coordinatesResult !is Result.Success) {
-                    return Result.Error(
-                        "Failed to download coordinates: ${(coordinatesResult as? Result.Error)?.message}",
+                val routesUrl = trek.routesUrl
+                    ?: return Result.Error("This trek has no routes file yet", 500)
+                val routesResult = getTrekRoutes(routesUrl, trek.id, trek.routesUpdatedAt)
+                val routes = (routesResult as? Result.Success)?.data
+                    ?: return Result.Error(
+                        "Failed to download routes: ${(routesResult as? Result.Error)?.message}",
                         500
                     )
-                }
                 onProgress(0.2f)
-                println("TrekRepository: Trek coordinates downloaded")
+                println("TrekRepository: Trek routes downloaded")
 
                 // POIs are small and optional - a failure here must not block the
                 // download, the trail is still perfectly usable without them.
@@ -349,11 +361,11 @@ class TrekRepositoryImpl(
                 onProgress(0.3f)
                 println("TrekRepository: Style pack ready")
 
-                val coordinatesJson = fileDownloader.readFile(trek.id)
-                    ?: return Result.Error("Failed to read coordinates file for tile download", 500)
+                // Tiles for every section, not just the default: a trekker who
+                // switches to an alternative offline still has its map.
                 val tilesResult = offlineMapManager.downloadTrekTiles(
                     trekId = trek.id,
-                    coordinatesJson = coordinatesJson,
+                    coordinatesJson = routesGeoJson(routes),
                     minZoom = MIN_ZOOM,
                     maxZoom = MAX_ZOOM,
                     onProgress = { tileProgress ->
@@ -363,6 +375,7 @@ class TrekRepositoryImpl(
                 if (tilesResult.isSuccess) {
                     onProgress(0.9f)
                     trekDao.insert(trek)
+                    fileDownloader.deleteFile(retiredCoordinatesFileName(trek.id))
                     onProgress(1.0f)
                     println("TrekRepository: Trek tiles downloaded successfully")
                     Result.Success(true)
@@ -388,8 +401,9 @@ class TrekRepositoryImpl(
             val result = offlineMapManager?.removeTrekTiles(trekId)
             if(result?.isSuccess == true) {
                 println("TrekRepository: Offline data removed for trek: $trekId")
-                fileDownloader.deleteFile(trekId)
+                fileDownloader.deleteFile(retiredCoordinatesFileName(trekId))
                 fileDownloader.deleteFile(poiFileName(trekId))
+                fileDownloader.deleteFile(routesFileName(trekId))
                 trekDao.deleteTrek(trekId)
                 println("TrekRepository: removed trek: $trekId")
                 Result.Success(true)
@@ -404,8 +418,10 @@ class TrekRepositoryImpl(
 
     override suspend fun isTrekFullyDownloaded(trekId: String): Boolean {
         return try {
+            // A row without routesUrl is a download from before routes: it still
+            // counts as downloaded (it is being upgraded), but has no routes file.
             val hasMetadata = trekDao.getTrek(trekId) != null
-            val hasCoordinates = fileDownloader.fileExists(trekId)
+            val hasCoordinates = fileDownloader.fileExists(routesFileName(trekId))
             val hasTiles = offlineMapManager?.isTrekDownloaded(trekId) ?: true // true if no manager (iOS)
             // Tiles render nothing without the style. Builds before the style
             // fix downloaded tiles but no style pack, so this reports them as
@@ -421,6 +437,47 @@ class TrekRepositoryImpl(
             false
         }
     }
+
+    override suspend fun upgradeDownloadedTrek(trekId: String): Result<Boolean> = upgradeLock.withLock {
+        val local = trekDao.getTrek(trekId)
+            ?: return@withLock Result.Success(false)        // removed in the meantime
+        if (local.routesUrl != null) return@withLock Result.Success(true)   // done already
+
+        val fresh = fetchTrek(trekId)
+        val trek = (fresh as? Result.Success)?.data
+            ?: return@withLock Result.Error(fresh.message ?: "Could not fetch the trek", fresh.code ?: 500)
+        if (trek.routesUrl == null) {
+            return@withLock Result.Error("The trek has no routes file on the server yet", 404)
+        }
+        println("TrekRepository: Upgrading old download of $trekId to routes")
+        val result = downloadTrekOffline(trek) { }
+        if (result is Result.Success) println("TrekRepository: Upgraded $trekId")
+        result
+    }
+
+    override suspend fun upgradeDownloadedTreks(): Boolean {
+        val old = try {
+            trekDao.getTreks().orEmpty().filter { it.routesUrl == null }
+        } catch (e: Exception) {
+            return false
+        }
+        var allDone = true
+        old.forEach { if (upgradeDownloadedTrek(it.id) !is Result.Success) allDone = false }
+        return allDone
+    }
+
+    /**
+     * Every section as one MultiLineString, in the shape the tile download reads
+     * (a feature with a geometry), so the tiles cover alternatives and side trips.
+     */
+    private fun routesGeoJson(routes: TrekRoutes): String = buildJsonObject {
+        putJsonObject("geometry") {
+            put("type", "MultiLineString")
+            put("coordinates", JsonArray(RouteNetwork(routes).allLines().map { line ->
+                JsonArray(line.map { p -> JsonArray(p.map { JsonPrimitive(it) }) })
+            }))
+        }
+    }.toString()
 
     override suspend fun saveNavigatorTrek(navigatorTrek: NavigatorTrek) {
         navigatorDao.insertTrek(navigatorTrek)

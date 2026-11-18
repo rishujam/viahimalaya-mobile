@@ -66,6 +66,7 @@ import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import com.google.android.gms.common.api.ResolvableApiException
 import androidx.compose.ui.input.pointer.pointerInput
 import com.mapbox.geojson.Point
+import androidx.compose.ui.text.style.TextAlign
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotation
@@ -80,7 +81,8 @@ import com.via.himalaya.data.models.PoiCategory
 import com.via.himalaya.data.models.TrekPoi
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.domain.model.LocationResponse
-import com.via.himalaya.domain.model.toGeoJsonString
+import com.via.himalaya.presentation.trekDetail.lineGeoJson
+import com.via.himalaya.presentation.trekDetail.sectionsGeoJson
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIState
 import com.via.himalaya.presentation.trekDetail.TrekDetailScreenUIEvent
 import com.via.himalaya.presentation.trekDetail.TrekDetailViewModel
@@ -120,7 +122,6 @@ private val MAP_BOTTOM_PADDING = 64.dp
 fun TrekDetailScreenRoot(
     viewModel: TrekDetailViewModel,
     trekId: String,
-    coordinateUrl: String,
     onBackClick: () -> Unit = {},
     onPlanClick: () -> Unit = {},
     addPoiViewModel: AddPoiViewModel = koinViewModel()
@@ -185,7 +186,7 @@ fun TrekDetailScreenRoot(
 
     LaunchedEffect(Unit) {
         println("$TAG, calling initial data setup onetime")
-        viewModel.setInitialData(coordinateUrl, trekId)
+        viewModel.setInitialData(trekId)
         if(PermissionUtil.hasLocationPermission(context)) {
             println("$TAG, has location permission getting initial location")
             viewModel.getInitialLocation()
@@ -296,6 +297,11 @@ fun TrekDetailScreenRoot(
         },
         onStopHike = { viewModel.onEvent(TrekDetailScreenUIEvent.OnStopHike) },
         onAreaPromptGone = { viewModel.onEvent(TrekDetailScreenUIEvent.ClearAreaPrompt) },
+        onMapTap = { point, toleranceM ->
+            viewModel.onEvent(
+                TrekDetailScreenUIEvent.OnMapTap(point.longitude(), point.latitude(), toleranceM)
+            )
+        },
         onPlanClick = onPlanClick,
         onDownloadHikeClick = {
             viewModel.validateAndStartDownload { trek ->
@@ -360,6 +366,7 @@ fun TrekDetailScreen(
     onStartHike: () -> Unit = {},
     onStopHike: () -> Unit = {},
     onAreaPromptGone: () -> Unit = {},
+    onMapTap: (point: Point, toleranceM: Double) -> Unit = { _, _ -> },
     onDownloadHikeClick: () -> Unit,
     onPlanClick: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -369,19 +376,15 @@ fun TrekDetailScreen(
     val context = LocalContext.current
     var selectedPoi by remember { mutableStateOf<TrekPoi?>(null) }
 
-    // Empty for treks the backend has not profiled yet, and for treks downloaded
-    // before the Room column existed. Both cases mean the same thing: no slider.
-    val elevationPoints = state.trek?.elevationProfile.orEmpty()
+    // The route showing: the default, or whatever the user's taps made of it.
+    // The slider, the climb, the distance and the highest point all follow it.
+    val routeView = state.routeView
+    val elevationPoints = routeView?.profile.orEmpty()
 
-    // Total ascent, summed from the profile we already ship - no schema or API
-    // change needed. This is the number that separates 25 flat kilometres from
-    // 25 hard ones, which max elevation on its own cannot say.
-    val totalClimbM = remember(elevationPoints) {
-        if (elevationPoints.size < 2) null
-        else elevationPoints
-            .zipWithNext { a, b -> (b.elevationM - a.elevationM).coerceAtLeast(0) }
-            .sum()
-    }
+    // Total ascent of the route showing. This is the number that separates 25
+    // flat kilometres from 25 hard ones, which max elevation on its own cannot say.
+    val totalClimbM = routeView?.climbM?.takeIf { elevationPoints.size >= 2 }
+    val highestM = remember(elevationPoints) { elevationPoints.maxOfOrNull { it.elevationM } }
     var elevationIndex by remember(elevationPoints) { mutableIntStateOf(0) }
     var isScrubbing by remember { mutableStateOf(false) }
 
@@ -437,11 +440,12 @@ fun TrekDetailScreen(
         contentAlignment = Alignment.BottomCenter
     ) {
 
-        if (state.geoData != null && state.trek != null) {
-            val geoJsonString = state.geoData?.geometry?.toGeoJsonString()
+        if (routeView != null && state.trek != null) {
+            val geoJsonString = remember(routeView.line) { lineGeoJson(routeView.line) }
+            val otherPathsGeoJson = remember(routeView.others) { sectionsGeoJson(routeView.others) }
             val boundingBox = state.trek?.boundingBox
 
-            geoJsonString?.let {
+            geoJsonString.let {
                 LaunchedEffect(state.initialLocation, state.isNearTrekStart) {
                     if (state.isNearTrekStart && state.initialLocation is LocationResponse.Location) {
                         (state.initialLocation as? LocationResponse.Location)?.loc?.let { location ->
@@ -462,10 +466,16 @@ fun TrekDetailScreen(
                     boundingBox = boundingBox,
                     mapViewportState = mapViewportState,
                     modifier = Modifier.fillMaxSize().padding(bottom = MAP_BOTTOM_PADDING),
+                    // The other paths, lighter. A tap near one adds it to the
+                    // route or swaps it in.
+                    otherPathsGeoJson = otherPathsGeoJson,
                     // A card anchored to a marker has to go when the map is
                     // tapped elsewhere, and when the marker slides out from
                     // under it on a pan.
-                    onMapTap = { selectedPoi = null },
+                    onMapTap = { point, toleranceM ->
+                        selectedPoi = null
+                        if (!isScrubbing && !addPoiState.isPicking) onMapTap(point, toleranceM)
+                    },
                     onMapPan = { selectedPoi = null }
                 ) {
                     // Scrubbing and browsing are mutually exclusive: leaving the
@@ -474,6 +484,7 @@ fun TrekDetailScreen(
                     if (!isScrubbing) {
                         PoiMarkers(
                             pois = state.pois,
+                            offRouteIds = state.offRoutePoiIds,
                             onPoiClick = { selectedPoi = it }
                         )
                     } else {
@@ -592,6 +603,26 @@ fun TrekDetailScreen(
                 onGone = onAreaPromptGone
             )
         }
+
+        // A download from before routes, opened with no signal: nothing to draw
+        // until it has been updated once.
+        if (state.needsConnection) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    text = "Connect to the internet once to update this trek",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
         
         if (!addPoiState.isPicking) Box(
             modifier = Modifier
@@ -646,11 +677,10 @@ fun TrekDetailScreen(
                         // Built from whatever is actually present: climb needs a profile,
                         // and a trek without one still shows distance and max.
                         val stats = buildList {
-                            state.trek?.distance?.takeIf { it.isNotBlank() }?.let { add(it) }
+                            routeView?.km?.let { add("%.1f km".format(it)) }
                             totalClimbM?.let { add("↑ %,d m".format(it)) }
-                            state.trek?.elevation?.takeIf { it.isNotBlank() }
-                                // "4,283 m" alone reads as though it might be the climb.
-                                ?.let { add("Max $it") }
+                            // "4,283 m" alone reads as though it might be the climb.
+                            highestM?.let { add("Max %,d m".format(it)) }
                         }
                         if (stats.isNotEmpty()) {
                             Text(
@@ -783,7 +813,6 @@ fun TrekDetailScreenPreview() {
                 name = "Triund Trek",
                 location = "Dharamshala, Himachal Pradesh",
                 distance = "9 Km",
-                coordinateUrl = "xyz.com",
                 elevation = "800 m",
                 boundingBox = emptyList()
             )
@@ -820,6 +849,7 @@ internal fun poiIconRes(category: String): Int = when (category) {
 @Composable
 private fun MapboxMapScope.PoiMarkers(
     pois: List<TrekPoi>,
+    offRouteIds: Set<String> = emptySet(),
     onPoiClick: (TrekPoi) -> Unit
 ) {
     if (pois.isEmpty()) return
@@ -836,8 +866,9 @@ private fun MapboxMapScope.PoiMarkers(
         inCategory.forEach { poi ->
             PointAnnotation(point = Point.fromLngLat(poi.lon, poi.lat)) {
                 iconImage = icon
-                // Things beyond the trailhead are context, not part of the walk.
-                iconOpacity = if (poi.isOnRoute) 1.0 else 0.55
+                // Things beyond the trailhead, or beside a path the route does not
+                // take, are context, not part of the walk.
+                iconOpacity = if (poi.isOnRoute && poi.id !in offRouteIds) 1.0 else 0.55
                 interactionsState.onClicked {
                     onPoiClick(poi)
                     true

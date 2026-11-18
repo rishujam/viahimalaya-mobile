@@ -212,7 +212,7 @@ fun ViaHimalayaApp(
                         ExploreScreenRoot(
                             onTrekClicked = { trek ->
                                 navController.navigate(
-                                    Route.TrekDetail(trek.id, trek.coordinateUrl)
+                                    Route.TrekDetail(trek.id)
                                 )
                             },
                             viewModel = viewModel
@@ -245,11 +245,10 @@ fun ViaHimalayaApp(
                         TrekDetailScreenRoot(
                             viewModel,
                             args.trekId,
-                            args.coordinateUrl,
                             onBackClick = { navController.navigateUp() },
                             onPlanClick = {
                                 navController.navigate(
-                                    Route.TrekPlan(args.trekId, args.coordinateUrl)
+                                    Route.TrekPlan(args.trekId)
                                 )
                             }
                         )
@@ -265,7 +264,6 @@ fun ViaHimalayaApp(
                             viewModel = viewModel,
                             planViewModel = planViewModel,
                             trekId = args.trekId,
-                            coordinateUrl = args.coordinateUrl,
                             onBackClick = { navController.navigateUp() }
                         )
                     }
@@ -275,7 +273,7 @@ fun ViaHimalayaApp(
                             viewModel = viewModel,
                             onTrekClicked = { trek ->
                                 navController.navigate(
-                                    Route.TrekDetail(trek.id, trek.coordinateUrl)
+                                    Route.TrekDetail(trek.id)
                                 )
                             },
                             onDeleteTrek = { trek ->

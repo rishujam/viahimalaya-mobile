@@ -8,13 +8,13 @@ import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.RawSensors
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
+import com.via.himalaya.data.models.TrekPoi
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
 import com.via.himalaya.domain.SensorListener
 import com.via.himalaya.domain.model.Feature
 import com.via.himalaya.domain.model.LocationResponse
-import com.via.himalaya.domain.model.calculateBoundingBox
-import com.via.himalaya.domain.model.getFlattenedCoordinates
+import com.via.himalaya.domain.model.RouteNetwork
 import com.via.himalaya.domain.repo.AppConfigRepository
 import com.via.himalaya.domain.repo.TrekRepository
 import com.via.himalaya.util.Result
@@ -41,6 +41,9 @@ class TrekDetailViewModel(
 
     private var locationJob: Job? = null
 
+    /** The bundle's POIs as delivered, before they are measured along a route. */
+    private var bundlePois: List<TrekPoi> = emptyList()
+
     init {
         observeFeatures()
     }
@@ -56,10 +59,7 @@ class TrekDetailViewModel(
         }
     }
 
-    fun setInitialData(
-        coordinatesUrl: String,
-        trekId: String
-    ) = viewModelScope.launch(Dispatchers.IO) {
+    fun setInitialData(trekId: String) = viewModelScope.launch(Dispatchers.IO) {
         launch {
             val user = authRepository.getCurrentUser()
             _state.update {
@@ -69,8 +69,10 @@ class TrekDetailViewModel(
         launch {
             getTrekMeta(trekId)
         }
+        // A download saved before routes existed is redone now, if the background
+        // job has not done it yet. Returns at once for anything else.
         launch {
-            getCoordinates(coordinatesUrl, trekId)
+            trekRepository.upgradeDownloadedTrek(trekId)
         }
     }
 
@@ -131,6 +133,7 @@ class TrekDetailViewModel(
                     trek = trek.data
                 )
             }
+            getRoutes(trek.data)
             getPois(trek.data)
             val currentLocation = _state.value.initialLocation
             if(currentLocation is LocationResponse.Location) {
@@ -158,9 +161,9 @@ class TrekDetailViewModel(
         }
         when (val result = trekRepository.getTrekPois(poiUrl, trek.id, trek.poiUpdatedAt)) {
             is Result.Success -> {
-                val pois = result.data?.pois.orEmpty()
-                println("TrekDetailViewModel: Loaded ${pois.size} POIs for trek ${trek.id}")
-                _state.update { it.copy(pois = pois) }
+                bundlePois = result.data?.pois.orEmpty()
+                println("TrekDetailViewModel: Loaded ${bundlePois.size} POIs for trek ${trek.id}")
+                _state.update { placed(it) }
             }
             else -> println("TrekDetailViewModel: Failed to load POIs: ${result.message}")
         }
@@ -196,31 +199,69 @@ class TrekDetailViewModel(
         }
     }
 
-    private fun getCoordinates(url: String, trekId: String) = viewModelScope.launch {
+    /**
+     * The routes file, which replaced the coordinate file: the map, the slider and
+     * every distance come from it. There is no fallback to the old file - a trek
+     * without one cannot be drawn. That only happens to a download from before
+     * routes, opened offline, and the screen says so.
+     */
+    private fun getRoutes(trek: TrekDetail) = viewModelScope.launch(Dispatchers.IO) {
+        val routesUrl = trek.routesUrl
+        if (routesUrl.isNullOrBlank()) {
+            _state.update { it.copy(needsConnection = true) }
+            return@launch
+        }
         _state.update { it.copy(isLoading = true) }
-        val coordinates = trekRepository.getTrekCoordinates(url, trekId)
-        if (coordinates is Result.Success && coordinates.data != null) {
+        val result = trekRepository.getTrekRoutes(routesUrl, trek.id, trek.routesUpdatedAt)
+        val network = result.data?.let(::RouteNetwork)
+        val default = network?.defaultRoute()
+        if (network == null || default == null) {
             _state.update {
                 it.copy(
                     isLoading = false,
-                    geoData = coordinates.data
+                    errorToast = if (network == null) result.message else "Could not read this trek's route"
                 )
             }
-        } else {
-            _state.update {
+            return@launch
+        }
+        _state.update {
+            placed(
                 it.copy(
                     isLoading = false,
-                    errorToast = coordinates.message
+                    needsConnection = false,
+                    network = network,
+                    routeView = RouteView.of(network, default)
                 )
-            }
+            )
         }
     }
 
-    private fun startTrekking(trekId: String) {
-        val geoData = _state.value.geoData ?: return
-        val coordinates = geoData.geometry.getFlattenedCoordinates()
+    /** A tap on the map, near a path: add it to the route or swap it in. */
+    private fun onMapTap(lon: Double, lat: Double, toleranceM: Double) {
+        val current = _state.value
+        val network = current.network ?: return
+        val view = current.routeView ?: return
+        // A light path first, so a tap near a junction picks the path the user
+        // can see is tappable; then any path, so an added side trip can come off.
+        val sectionId = network.nearestSection(lon, lat, toleranceM, view.others)
+            ?: network.nearestSection(lon, lat, toleranceM, network.routes.sections)
+            ?: return
+        val steps = network.tap(view.steps, sectionId) ?: return
+        _state.update { placed(it.copy(routeView = RouteView.of(network, steps))) }
+    }
 
-        if (coordinates.isEmpty()) return
+    /** [state] with its POIs measured along its route. */
+    private fun placed(state: TrekDetailScreenUIState): TrekDetailScreenUIState {
+        val network = state.network
+        val view = state.routeView
+        if (network == null || view == null) return state.copy(pois = bundlePois)
+        val (pois, offRoute) = placePois(bundlePois, network, view.steps)
+        return state.copy(pois = pois, offRoutePoiIds = offRoute)
+    }
+
+    private fun startTrekking(trekId: String) {
+        val line = _state.value.routeView?.line.orEmpty()
+        if (line.isEmpty()) return
         if (!_state.value.isNearTrekStart) {
             _state.update { it.copy(showAreaPrompt = true) }
             return
@@ -343,6 +384,7 @@ class TrekDetailViewModel(
             is TrekDetailScreenUIEvent.ClearAreaPrompt -> {
                 _state.update { it.copy(showAreaPrompt = false) }
             }
+            is TrekDetailScreenUIEvent.OnMapTap -> onMapTap(event.lon, event.lat, event.toleranceM)
         }
     }
 

@@ -8,6 +8,9 @@ import com.via.himalaya.domain.repo.FeedbackRepository
 import com.via.himalaya.domain.repo.TrekRepository
 import kotlinx.datetime.Clock
 import com.via.himalaya.util.Result
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -150,34 +153,52 @@ class ExploreViewModel(
         }
     }
 
-    private fun searchTrek(query: String) = viewModelScope.launch {
+    /**
+     * The search in flight. A new search or a clear cancels it, so a slow reply
+     * for "kedar" cannot land after, and overwrite, the one for "kedarkantha".
+     */
+    private var searchJob: Job? = null
+
+    private fun searchTrek(query: String) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch { runSearch(query) }
+    }
+
+    private suspend fun runSearch(query: String) {
         _state.update {
-            it.copy(isLoading = true, isSearching = true, searchQuery = query)
+            it.copy(isSearchLoading = true, isSearching = true, searchQuery = query)
         }
         val result = trekRepository.searchTreks(query)
+        // searchTreks catches every exception, cancellation included, and hands
+        // it back as an error. A search replaced by a newer one must stop here,
+        // not show "No treks found".
+        currentCoroutineContext().ensureActive()
         if(result is Result.Success) {
             _state.update {
                 it.copy(
                     tempTreks = if (state.value.tempTreks.isEmpty()) state.value.treks else state.value.tempTreks,
                     treks = result.data ?: emptyList(),
-                    isLoading = false
+                    isSearchLoading = false
                 )
             }
         } else {
             _state.update {
                 it.copy(
-                    isLoading = false,
+                    isSearchLoading = false,
                     errorToast = "No treks found: ${result.message}"
                 )
             }
         }
     }
 
-    private fun clearSearchedTreks() = viewModelScope.launch {
+    private fun clearSearchedTreks() {
+        searchJob?.cancel()
+        searchJob = null
         _state.update {
             it.copy(
                 treks = if (state.value.tempTreks.isNotEmpty()) state.value.tempTreks else state.value.treks,
                 tempTreks = emptyList(),
+                isSearchLoading = false,
                 isSearching = false,
                 searchQuery = ""
             )

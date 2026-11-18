@@ -50,8 +50,13 @@ data class TrekDto(
     val elevation: String,
     @SerialName("bounding_box")
     val boundingBox: List<Double> = emptyList(),
+    /**
+     * The old single-line coordinate file. Retired: this build draws the trek from
+     * [routesUrl] and never reads it. Optional so the app keeps parsing treks once
+     * the column is dropped (HANDOFF section 53 item 4).
+     */
     @SerialName("coordinate_url")
-    val coordinateUrl: String,
+    val coordinateUrl: String? = null,
     @SerialName("created_at")
     val createdAt: String,
     @SerialName("image_url")
@@ -62,13 +67,12 @@ data class TrekDto(
     val poiUpdatedAt: String? = null,
     @SerialName("details_url")
     val detailsUrl: String? = null,
-    /**
-     * Samples every 100 m as [lat, lon, metres]. Only the detail endpoint sends
-     * this - the list and search endpoints leave it out to stay small - so it is
-     * null on every trek that came from a list.
-     */
-    @SerialName("elevation_profile")
-    val elevationProfile: List<List<Double>>? = null
+    /** The routes file on R2: every section of the trek, the default route, POI positions. */
+    @SerialName("routes_url")
+    val routesUrl: String? = null,
+    /** When the routes file was regenerated; the cached copy is replaced when this changes. */
+    @SerialName("routes_updated_at")
+    val routesUpdatedAt: String? = null
 ) {
     fun toTrek(): Trek {
         return Trek(
@@ -78,7 +82,6 @@ data class TrekDto(
             distance = distance,
             elevation = elevation,
             boundingBox = boundingBox,
-            coordinateUrl = coordinateUrl,
             imageUrl = imageUrl,
             poiUrl = poiUrl,
             poiUpdatedAt = poiUpdatedAt,
@@ -114,12 +117,12 @@ data class TrekDetailData(
             distance = trek.distance,
             elevation = trek.elevation,
             boundingBox = trek.boundingBox,
-            coordinateUrl = trek.coordinateUrl,
             imageUrl = trek.imageUrl,
             poiUrl = trek.poiUrl,
             poiUpdatedAt = trek.poiUpdatedAt,
             detailsUrl = trek.detailsUrl,
-            elevationProfile = trek.elevationProfile?.toElevationPoints()
+            routesUrl = trek.routesUrl,
+            routesUpdatedAt = trek.routesUpdatedAt
         )
     }
 }

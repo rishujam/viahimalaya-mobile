@@ -11,15 +11,15 @@ sealed interface Route {
     data object Explore : Route
 
     @Serializable
-    data class TrekDetail(val trekId: String, val coordinateUrl: String) : Route
+    data class TrekDetail(val trekId: String) : Route
 
     /**
-     * Multi-day planning for a trek. Carries the same two arguments as
-     * [TrekDetail] because it loads the same geometry - planning is a different
-     * question about the same trail, not a different trail.
+     * Multi-day planning for a trek. Carries the same argument as [TrekDetail]
+     * because it loads the same trek - planning is a different question about
+     * the same trail, not a different trail.
      */
     @Serializable
-    data class TrekPlan(val trekId: String, val coordinateUrl: String) : Route
+    data class TrekPlan(val trekId: String) : Route
 
     @Serializable
     data object Profile : Route

@@ -5,16 +5,30 @@ import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.models.TrekPoi
 import com.via.himalaya.domain.model.Feature
 import com.via.himalaya.domain.model.LocationResponse
-import com.via.himalaya.domain.model.TrekGeoData
+import com.via.himalaya.domain.model.RouteNetwork
 
 data class TrekDetailScreenUIState(
     val trek: TrekDetail? = null,
     val isLoading: Boolean = false,
     val errorToast: String? = null,
     val messageDisplay: String? = null,
-    val geoData: TrekGeoData? = null,
-    /** Sorted by distance along the trail. Empty until the bundle loads, or if the trek has none. */
+    /** The trek's sections, from its routes file. Null until it loads. */
+    val network: RouteNetwork? = null,
+    /** The route showing: the default at first, then whatever taps made of it. */
+    val routeView: RouteView? = null,
+    /**
+     * Sorted by distance along the route showing, which is what their
+     * dist_along_km now holds. Empty until the bundle loads, or if the trek has none.
+     */
     val pois: List<TrekPoi> = emptyList(),
+    /** POIs beside a section the route does not use: faded on the map. */
+    val offRoutePoiIds: Set<String> = emptySet(),
+    /**
+     * The trek has no routes file to show - a download saved before routes
+     * existed, opened offline. The screen asks for a connection instead of an
+     * empty map; the download is redone the next time there is one.
+     */
+    val needsConnection: Boolean = false,
     val initialLocation: LocationResponse? = null,
     val liveLocation: Loc? = null,
     val isNearTrekStart: Boolean = false,

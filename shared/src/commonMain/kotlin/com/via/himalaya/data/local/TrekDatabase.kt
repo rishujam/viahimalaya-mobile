@@ -12,7 +12,7 @@ import com.via.himalaya.data.models.TrekPlan
 
 @Database(
     entities = [TrekDetail::class, TrekPlan::class, CustomPoi::class],
-    version = 5
+    version = 6
 )
 @TypeConverters(
     DoubleListTypeConverter::class,
@@ -121,6 +121,23 @@ abstract class TrekDatabase : RoomDatabase() {
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_CustomPoi_status ON CustomPoi (status)"
                 )
+            }
+        }
+
+        /**
+         * Adds the routes file pointers, which replace the coordinate file.
+         *
+         * Nullable and left empty for existing rows. A downloaded trek with no
+         * routesUrl is one saved before routes existed: TrekRepository redoes that
+         * download in the background after the update (TrekUpgradeJobService), or
+         * on the next open with signal. The old coordinateUrl and elevationProfile
+         * columns stay - dropping a column means rebuilding the table - but
+         * nothing reads them any more.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN routesUrl TEXT")
+                connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN routesUpdatedAt TEXT")
             }
         }
     }

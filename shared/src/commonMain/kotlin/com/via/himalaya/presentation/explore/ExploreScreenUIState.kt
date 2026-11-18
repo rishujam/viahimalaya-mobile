@@ -10,6 +10,12 @@ data class ExploreScreenUIState(
     val messageDisplay: String? = null,
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
+    /**
+     * A search is on its way. Separate from [isLoading], which also means "the
+     * next page is loading": while this is true the list is hidden behind a
+     * spinner, so the old results are not mistaken for the new ones.
+     */
+    val isSearchLoading: Boolean = false,
     val searchQuery: String = "",
     val page: Int = 0,
     val seed: String? = null,

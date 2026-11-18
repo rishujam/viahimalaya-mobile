@@ -57,8 +57,7 @@ fun TrekCardPreview() {
             location = "Location",
             distance = "10 km",
             elevation = "2000 m",
-            boundingBox = emptyList(),
-            coordinateUrl = ""
+            boundingBox = emptyList()
         ),
         onClick = {},
         cardHeight = 600.dp
