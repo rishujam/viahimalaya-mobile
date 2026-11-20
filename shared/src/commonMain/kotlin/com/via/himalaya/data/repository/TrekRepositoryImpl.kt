@@ -8,7 +8,6 @@ import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
 import com.via.himalaya.data.models.TrekDetailData
-import com.via.himalaya.data.models.TrekPoiBundle
 import com.via.himalaya.data.models.TrekSearchData
 import com.via.himalaya.data.models.TreksData
 import com.via.himalaya.data.models.VResponse
@@ -77,7 +76,10 @@ class TrekRepositoryImpl(
         // and there is nothing we can do about it.
         private const val MAX_ZOOM = 16
 
-        /** POIs live beside the coordinates file, which is keyed on the bare trek id. */
+        /**
+         * The POI file older builds saved. POIs now come inside the routes file,
+         * so it is never read; deleted when a download is redone or removed.
+         */
         private fun poiFileName(trekId: String) = "${trekId}_pois"
 
         /** The routes file, beside the POIs. */
@@ -147,19 +149,6 @@ class TrekRepositoryImpl(
         decode = { lenientJson.decodeFromString<TrekRoutes>(it) }
     )
 
-    override suspend fun getTrekPois(
-        poiUrl: String,
-        trekId: String,
-        poiUpdatedAt: String?
-    ): Result<TrekPoiBundle> = getCachedJson(
-        what = "POIs",
-        url = poiUrl,
-        fileName = poiFileName(trekId),
-        wantedVersion = poiUpdatedAt,
-        versionOf = { it.generatedAt },
-        decode = { lenientJson.decodeFromString<TrekPoiBundle>(it) }
-    )
-
     /**
      * A JSON file from R2, kept on disk under [fileName]. The R2 key never changes,
      * so the copy on disk is used while its own version ([versionOf]) matches
@@ -203,12 +192,14 @@ class TrekRepositoryImpl(
                 }
             }
             if (response.status.value == 200) {
-                val data = decode(response.body<String>())
-                try {
-                    fileDownloader.downloadFile(url, fileName)
+                val text = response.body<String>()
+                val data = decode(text)
+                // The text just fetched is what goes on disk - decoded first, so
+                // a broken file never replaces a good copy.
+                if (fileDownloader.writeFile(fileName, text)) {
                     println("TrekRepository: $what cached locally ($fileName)")
-                } catch (e: Exception) {
-                    println("TrekRepository: Failed to cache $what: ${e.message}")
+                } else {
+                    println("TrekRepository: Failed to cache $what ($fileName)")
                 }
                 Result.Success(data)
             } else if (cached != null) {
@@ -329,16 +320,7 @@ class TrekRepositoryImpl(
                 onProgress(0.2f)
                 println("TrekRepository: Trek routes downloaded")
 
-                // POIs are small and optional - a failure here must not block the
-                // download, the trail is still perfectly usable without them.
-                trek.poiUrl?.let { poiUrl ->
-                    val poisResult = getTrekPois(poiUrl, trek.id, trek.poiUpdatedAt)
-                    if (poisResult is Result.Success) {
-                        println("TrekRepository: Cached ${poisResult.data?.pois?.size ?: 0} POIs for trek: ${trek.id}")
-                    } else {
-                        println("TrekRepository: POI download failed, continuing: ${(poisResult as? Result.Error)?.message}")
-                    }
-                }
+                // POIs come inside the routes file, so there is nothing else to fetch.
 
                 // Fonts, sprites and the style JSON itself. Without these the
                 // style cannot load offline at all and the map comes up blank,
@@ -376,6 +358,7 @@ class TrekRepositoryImpl(
                     onProgress(0.9f)
                     trekDao.insert(trek)
                     fileDownloader.deleteFile(retiredCoordinatesFileName(trek.id))
+                    fileDownloader.deleteFile(poiFileName(trek.id))
                     onProgress(1.0f)
                     println("TrekRepository: Trek tiles downloaded successfully")
                     Result.Success(true)

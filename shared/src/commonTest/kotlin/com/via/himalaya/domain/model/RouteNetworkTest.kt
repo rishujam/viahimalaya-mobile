@@ -51,12 +51,19 @@ class RouteNetworkTest {
             section("s8", "n6", "n5", 1.0, climb = 0, descent = 120)
         ),
         defaultRoute = listOf("s1", "s2", "s3", "s4", "s5"),
-        pois = mapOf(
-            "hargaon" to PoiPlacement("s6", 1.0, 10),
-            "camp" to PoiPlacement("s7", 0.2, 5),
-            "base" to PoiPlacement("s4", 0.0, 50)
+        pois = listOf(
+            poi("hargaon", "s6", 1.0, 10),
+            poi("camp", "s7", 0.2, 5),
+            poi("base", "s4", 0.0, 50)
         )
     )
+    private fun poi(id: String, section: String, atKm: Double, offsetM: Int) = RoutePoi(
+        id = id, category = "camp_site", type = "camp_site", lat = 0.0, lon = 0.0,
+        section = section, atKm = atKm, offsetM = offsetM
+    )
+
+    private fun at(id: String) = routes.pois.first { it.id == id }.let { it.section to it.atKm }
+
     private val net = RouteNetwork(routes)
     private val default = assertNotNull(net.defaultRoute())
 
@@ -154,11 +161,26 @@ class RouteNetworkTest {
 
     @Test
     fun `poi distance is the sections before it plus how far into it`() {
-        assertEquals(3.0, net.kmAlong(default, routes.pois.getValue("base")))
-        assertNull(net.kmAlong(default, routes.pois.getValue("hargaon")))
+        fun km(steps: List<RouteStep>, id: String) = at(id).let { (s, k) -> net.kmAlong(steps, s, k) }
+        assertEquals(3.0, km(default, "base"))
+        assertNull(km(default, "hargaon"))
         val hargaon = net.tap(default, "s6")!!
-        assertEquals(2.0, net.kmAlong(hargaon, routes.pois.getValue("hargaon")))
-        assertEquals(4.0, net.kmAlong(hargaon, routes.pois.getValue("base")))
+        assertEquals(2.0, km(hargaon, "hargaon"))
+        assertEquals(4.0, km(hargaon, "base"))
+    }
+
+    @Test
+    fun `pois are placed along the route showing, and those on unused sections listed`() {
+        val (onDefault, off) = com.via.himalaya.presentation.trekDetail.placePois(net, default)
+        // the spur to the camp is not on the default either, until it is tapped
+        assertEquals(setOf("hargaon", "camp"), off)
+        assertEquals(3.0, onDefault.first { it.id == "base" }.distAlongKm)
+        val (withCamp, off1) = com.via.himalaya.presentation.trekDetail.placePois(net, net.tap(default, "s7")!!)
+        assertEquals(setOf("hargaon"), off1)
+        assertEquals(2.2, withCamp.first { it.id == "camp" }.distAlongKm)
+        val (onHargaon, off2) = com.via.himalaya.presentation.trekDetail.placePois(net, net.tap(default, "s6")!!)
+        assertEquals(setOf("camp"), off2)
+        assertEquals(2.0, onHargaon.first { it.id == "hargaon" }.distAlongKm)
     }
 
     @Test
@@ -181,10 +203,16 @@ class RouteNetworkTest {
             """{"trek_id":"k","generated_at":"2026-11-17T10:00:00+00:00","nodes":[{"id":"n1","lon":78.1,"lat":31.0,"name":null}],
                "sections":[{"id":"s1","from":"n1","to":"n2","km":1.373,"climb_m":339,"descent_m":0,
                "coords":[[78.19,31.07],[78.18,31.06]],"profile":[[31.07,78.19,1966,0.0],[31.06,78.18,2305,1.373]]}],
-               "default":["s1"],"pois":{"node/1":{"section":"s1","at_km":0.5,"offset_m":12}},"future":1}"""
+               "default":["s1"],"pois":[{"id":"node/1","category":"water","type":"spring","name":"Spring",
+               "lat":31.07,"lon":78.19,"section":"s1","at_km":0.5,"offset_m":12,"off_route":"start",
+               "ele_m":2100.0,"tags":{"name":"Spring"},"later":true}],"future":1}"""
         )
         assertEquals(listOf("s1"), decoded.defaultRoute)
         assertEquals(339, decoded.sections[0].climbM)
-        assertEquals(0.5, decoded.pois.getValue("node/1").atKm)
+        val poi = decoded.pois.single()
+        assertEquals("s1", poi.section)
+        assertEquals(0.5, poi.atKm)
+        assertEquals("start", poi.offRoute)
+        assertEquals("Spring", poi.tags["name"])
     }
 }

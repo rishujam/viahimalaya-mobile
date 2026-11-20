@@ -233,16 +233,16 @@ class RouteNetwork(val routes: TrekRoutes) {
     }
 
     /**
-     * How far along the route a placement is: the length of the steps before its
-     * section, plus how far into it. Null when the section is not on the route.
-     * A side trip is walked out and back; its POIs count on the way out.
+     * How far along the route a point [atKm] into [sectionId] is: the length of the
+     * steps before that section, plus how far into it. Null when the section is not
+     * on the route. A side trip is walked out and back; its POIs count on the way out.
      */
-    fun kmAlong(steps: List<RouteStep>, placement: PoiPlacement): Double? {
+    fun kmAlong(steps: List<RouteStep>, sectionId: String, atKm: Double): Double? {
         var before = 0.0
         for (step in steps) {
             val s = byId.getValue(step.sectionId)
-            if (step.sectionId == placement.section) {
-                val into = placement.atKm.coerceIn(0.0, s.km)
+            if (step.sectionId == sectionId) {
+                val into = atKm.coerceIn(0.0, s.km)
                 return before + if (step.reversed) s.km - into else into
             }
             before += s.km

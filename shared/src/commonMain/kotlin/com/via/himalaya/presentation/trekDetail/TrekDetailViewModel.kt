@@ -8,7 +8,6 @@ import com.via.himalaya.data.models.Point
 import com.via.himalaya.data.models.RawSensors
 import com.via.himalaya.data.models.Trek
 import com.via.himalaya.data.models.TrekDetail
-import com.via.himalaya.data.models.TrekPoi
 import com.via.himalaya.data.repository.FirebaseAuthRepository
 import com.via.himalaya.domain.LocationEmitter
 import com.via.himalaya.domain.SensorListener
@@ -40,9 +39,6 @@ class TrekDetailViewModel(
     val state: StateFlow<TrekDetailScreenUIState> = _state.asStateFlow()
 
     private var locationJob: Job? = null
-
-    /** The bundle's POIs as delivered, before they are measured along a route. */
-    private var bundlePois: List<TrekPoi> = emptyList()
 
     init {
         observeFeatures()
@@ -134,7 +130,6 @@ class TrekDetailViewModel(
                 )
             }
             getRoutes(trek.data)
-            getPois(trek.data)
             val currentLocation = _state.value.initialLocation
             if(currentLocation is LocationResponse.Location) {
                 checkLocationInBoundingBox(currentLocation.loc)
@@ -146,26 +141,6 @@ class TrekDetailViewModel(
                     errorToast = trek.message
                 )
             }
-        }
-    }
-
-    /**
-     * POIs are supplementary, so a failure is logged and swallowed - the trail
-     * still renders. Treks generated before the POI pipeline have no poiUrl.
-     */
-    private fun getPois(trek: TrekDetail) = viewModelScope.launch(Dispatchers.IO) {
-        val poiUrl = trek.poiUrl
-        if (poiUrl.isNullOrBlank()) {
-            println("TrekDetailViewModel: No POI bundle for trek ${trek.id}")
-            return@launch
-        }
-        when (val result = trekRepository.getTrekPois(poiUrl, trek.id, trek.poiUpdatedAt)) {
-            is Result.Success -> {
-                bundlePois = result.data?.pois.orEmpty()
-                println("TrekDetailViewModel: Loaded ${bundlePois.size} POIs for trek ${trek.id}")
-                _state.update { placed(it) }
-            }
-            else -> println("TrekDetailViewModel: Failed to load POIs: ${result.message}")
         }
     }
 
@@ -254,8 +229,8 @@ class TrekDetailViewModel(
     private fun placed(state: TrekDetailScreenUIState): TrekDetailScreenUIState {
         val network = state.network
         val view = state.routeView
-        if (network == null || view == null) return state.copy(pois = bundlePois)
-        val (pois, offRoute) = placePois(bundlePois, network, view.steps)
+        if (network == null || view == null) return state
+        val (pois, offRoute) = placePois(network, view.steps)
         return state.copy(pois = pois, offRoutePoiIds = offRoute)
     }
 

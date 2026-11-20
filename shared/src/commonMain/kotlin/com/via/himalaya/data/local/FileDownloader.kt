@@ -2,12 +2,13 @@ package com.via.himalaya.data.local
 
 interface FileDownloader {
     /**
-     * Downloads a file from the given URL and saves it to local storage
-     * @param url The URL to download from
-     * @param fileName The name to save the file as (without extension)
-     * @return The local file path where the file was saved, or null if failed
+     * Saves [content] to local storage as [fileName] (without extension),
+     * replacing any earlier copy. The caller already has the text from its own
+     * request; there used to be a downloadFile(url) here, which fetched every
+     * file a second time just to store it.
+     * @return true when saved
      */
-    suspend fun downloadFile(url: String, fileName: String): String?
+    suspend fun writeFile(fileName: String, content: String): Boolean
     
     /**
      * Reads a file from local storage

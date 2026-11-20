@@ -585,7 +585,8 @@ fun TrekDetailScreen(
             ) {
                 PoiDetailCard(
                     poi = poi,
-                    onDismiss = { selectedPoi = null }
+                    onDismiss = { selectedPoi = null },
+                    onOtherPath = poi.id in state.offRoutePoiIds
                 )
             }
         }
@@ -883,7 +884,9 @@ private fun MapboxMapScope.PoiMarkers(
 internal fun PoiDetailCard(
     poi: TrekPoi,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Beside a path the route showing does not take: it has no km on this route. */
+    onOtherPath: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -925,10 +928,10 @@ internal fun PoiDetailCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                val position = if (poi.isOnRoute) {
-                    "km ${poi.distAlongKm} along \u00B7 ${poi.offsetM} m off trail"
-                } else {
-                    "Near the trailhead \u00B7 ${poi.offsetM} m off trail"
+                val position = when {
+                    onOtherPath -> "On another path \u00B7 ${poi.offsetM} m from it"
+                    poi.isOnRoute -> "km ${poi.distAlongKm} along \u00B7 ${poi.offsetM} m off trail"
+                    else -> "Near the trailhead \u00B7 ${poi.offsetM} m off trail"
                 }
                 Text(
                     modifier = Modifier.padding(top = 6.dp),

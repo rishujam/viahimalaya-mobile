@@ -2,9 +2,6 @@ package com.via.himalaya.data.local
 
 import android.content.Context
 import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.utils.io.jvm.javaio.toInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -18,37 +15,27 @@ class AndroidFileDownloader(
         return context.filesDir
     }
     
-    override suspend fun downloadFile(url: String, fileName: String): String? {
+    override suspend fun writeFile(fileName: String, content: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                // Download the file using Ktor
-                val response = httpClient.get(url)
-                
-                if (response.status.value != 200) {
-                    println("FileDownloader: Failed to download file. Status: ${response.status}")
-                    return@withContext null
-                }
-                
-                // Create the file in internal storage
+                // Written beside the target and renamed over it, so a write cut
+                // short never leaves half a file where a whole one was.
                 val file = File(getFilesDir(), "$fileName.json")
-                
-                // Write the response body to the file
-                response.bodyAsChannel().toInputStream().use { input ->
-                    file.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
+                val partial = File(getFilesDir(), "$fileName.json.part")
+                partial.writeText(content)
+                if (!partial.renameTo(file)) {
+                    file.delete()
+                    if (!partial.renameTo(file)) error("could not move $partial into place")
                 }
-                
-                println("FileDownloader: File downloaded successfully to ${file.absolutePath}")
-                file.absolutePath
+                println("FileDownloader: File saved to ${file.absolutePath}")
+                true
             } catch (e: Exception) {
-                println("FileDownloader: Error downloading file: ${e.message}")
-                e.printStackTrace()
-                null
+                println("FileDownloader: Error saving file: ${e.message}")
+                false
             }
         }
     }
-    
+
     override suspend fun readFile(fileName: String): String? {
         return withContext(Dispatchers.IO) {
             try {

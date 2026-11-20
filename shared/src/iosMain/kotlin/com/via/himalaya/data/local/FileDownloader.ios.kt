@@ -25,46 +25,21 @@ class IosFileDownloader(
         return paths.first() as String
     }
     
-    override suspend fun downloadFile(url: String, fileName: String): String? {
+    override suspend fun writeFile(fileName: String, content: String): Boolean {
         return withContext(Dispatchers.Default) {
             try {
-                // Download the file using Ktor
-                val response = httpClient.get(url)
-                
-                if (response.status.value != 200) {
-                    println("FileDownloader: Failed to download file. Status: ${response.status}")
-                    return@withContext null
-                }
-                
-                // Get the file path
-                val documentsDir = getDocumentsDirectory()
-                val filePath = "$documentsDir/$fileName.json"
-                
-                // Read the response body as bytes
-                val channel = response.bodyAsChannel()
-                val bytes = mutableListOf<Byte>()
-                while (!channel.isClosedForRead) {
-                    val packet = channel.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
-                    while (packet.isNotEmpty) {
-                        bytes.add(packet.readByte())
-                    }
-                }
-                
-                // Write to file
-                val data = bytes.toByteArray()
-                val nsData = data.toNSData()
-                nsData.writeToFile(filePath, atomically = true)
-                
-                println("FileDownloader: File downloaded successfully to $filePath")
-                filePath
+                val filePath = "${getDocumentsDirectory()}/$fileName.json"
+                // atomically: written aside and moved into place by Foundation.
+                val saved = content.encodeToByteArray().toNSData().writeToFile(filePath, atomically = true)
+                println("FileDownloader: File ${if (saved) "saved" else "NOT saved"} to $filePath")
+                saved
             } catch (e: Exception) {
-                println("FileDownloader: Error downloading file: ${e.message}")
-                e.printStackTrace()
-                null
+                println("FileDownloader: Error saving file: ${e.message}")
+                false
             }
         }
     }
-    
+
     override suspend fun readFile(fileName: String): String? {
         return withContext(Dispatchers.Default) {
             try {

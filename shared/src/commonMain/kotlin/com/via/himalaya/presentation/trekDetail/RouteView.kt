@@ -40,29 +40,35 @@ data class RouteView(
 }
 
 /**
- * The bundle's POIs measured along [steps]: dist_along_km becomes the distance on
- * this route (sections before it plus how far into its own), so the detail card,
- * the planner and the camp wheel all read the route that is showing. A POI with
- * no placement in the routes file keeps the bundle's figure.
+ * The trek's POIs, from the routes file, measured along [steps]: dist_along_km is
+ * the distance on this route (sections before it plus how far into its own), so
+ * the detail card, the planner and the camp wheel all read the route showing.
  *
- * Returns the POIs, sorted along the route, and the ids of those that sit beside
- * a section the route does not use - faded on the map.
+ * Returns them sorted along the route, and the ids of those beside a section the
+ * route does not use - faded on the map, left out of the planner, and described
+ * by the card as on another path. Those have no distance on this route; they
+ * keep 0 and sort first.
  */
-fun placePois(
-    pois: List<TrekPoi>,
-    network: RouteNetwork,
-    steps: List<RouteStep>
-): Pair<List<TrekPoi>, Set<String>> {
+fun placePois(network: RouteNetwork, steps: List<RouteStep>): Pair<List<TrekPoi>, Set<String>> {
     val offRoute = mutableSetOf<String>()
-    val placed = pois.map { poi ->
-        val placement = poi.id?.let { network.routes.pois[it] } ?: return@map poi
-        val km = network.kmAlong(steps, placement)
-        if (km == null) {
-            poi.id?.let(offRoute::add)
-            poi.copy(offsetM = placement.offsetM)
-        } else {
-            poi.copy(distAlongKm = (km * 1000).toLong() / 1000.0, offsetM = placement.offsetM)
-        }
+    val placed = network.routes.pois.map { poi ->
+        val km = network.kmAlong(steps, poi.section, poi.atKm)
+        if (km == null) poi.id?.let(offRoute::add)
+        TrekPoi(
+            id = poi.id,
+            category = poi.category,
+            type = poi.type,
+            name = poi.name,
+            lat = poi.lat,
+            lon = poi.lon,
+            distAlongKm = km?.let { (it * 1000).toLong() / 1000.0 } ?: 0.0,
+            offsetM = poi.offsetM,
+            offRoute = poi.offRoute,
+            eleM = poi.eleM,
+            approxCenter = poi.approxCenter,
+            occupancyRank = poi.occupancyRank,
+            tags = poi.tags
+        )
     }
     return placed.sortedBy { it.distAlongKm } to offRoute
 }

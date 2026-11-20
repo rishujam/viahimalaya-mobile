@@ -27,8 +27,12 @@ data class TrekRoutes(
     /** The default route, as section ids in walking order. */
     @SerialName("default")
     val defaultRoute: List<String> = emptyList(),
-    /** Where each POI of the bundle sits, keyed by POI id ("node/123"). */
-    val pois: Map<String, PoiPlacement> = emptyMap()
+    /**
+     * Every POI of the trek: what it is, and where it sits on the sections. The
+     * app reads POIs from here alone; the separate POI file on R2 is kept only
+     * for app versions from before routes.
+     */
+    val pois: List<RoutePoi> = emptyList()
 )
 
 /** A junction, a dead end, or the start or end of the default route. */
@@ -59,12 +63,38 @@ data class RouteSection(
     val note: String? = null
 )
 
-/** A POI's place on one section: how far into it, and how far off it. */
+/**
+ * One POI. The same fields as the POI file's records (see TrekPoi), except that
+ * its position is a place on a section - [section], [atKm] into it, [offsetM] off
+ * it - instead of a distance along one fixed line.
+ */
 @Serializable
-data class PoiPlacement(
+data class RoutePoi(
+    /** OSM identifier, e.g. "node/9117107250". */
+    val id: String? = null,
+    /** One of PoiCategory. */
+    val category: String,
+    /** Raw OSM value: ford, spring, camp_site, village... */
+    val type: String,
+    val name: String? = null,
+    val lat: Double,
+    val lon: Double,
+    /** The section it is nearest to. */
     val section: String,
+    /** How far into that section, from its `from` node. */
     @SerialName("at_km")
     val atKm: Double,
+    /** How far off that section. */
     @SerialName("offset_m")
-    val offsetM: Int
+    val offsetM: Int,
+    /** "start" or "end" when it sits beyond the trailhead rather than on the walk. */
+    @SerialName("off_route")
+    val offRoute: String? = null,
+    @SerialName("ele_m")
+    val eleM: Double? = null,
+    @SerialName("approx_center")
+    val approxCenter: Boolean = false,
+    @SerialName("occupancy_rank")
+    val occupancyRank: Int? = null,
+    val tags: Map<String, String> = emptyMap()
 )
