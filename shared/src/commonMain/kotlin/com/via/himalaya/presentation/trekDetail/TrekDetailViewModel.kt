@@ -65,10 +65,14 @@ class TrekDetailViewModel(
         launch {
             getTrekMeta(trekId)
         }
-        // A download saved before routes existed is redone now, if the background
-        // job has not done it yet. Returns at once for anything else.
+        // A downloaded trek is read from the phone, so check the server for a newer
+        // routes file (or a download from before routes) and redo it now, if the
+        // background job has not. Returns at once for a trek that is not downloaded.
         launch {
-            trekRepository.upgradeDownloadedTrek(trekId)
+            val refreshed = trekRepository.refreshDownloadedTrek(trekId)
+            val trek = (refreshed as? Result.Success)?.data ?: return@launch
+            _state.update { it.copy(trek = trek) }
+            getRoutes(trek)
         }
     }
 

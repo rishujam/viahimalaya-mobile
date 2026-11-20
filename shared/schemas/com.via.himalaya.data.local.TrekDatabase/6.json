@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 6,
-    "identityHash": "d42c2e1734fc5e06716b380d4436249b",
+    "identityHash": "d0ed0c8b1946a451b9ef5039a2af8fea",
     "entities": [
       {
         "tableName": "TrekDetail",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `location` TEXT NOT NULL, `distance` TEXT NOT NULL, `elevation` TEXT NOT NULL, `boundingBox` TEXT NOT NULL, `coordinateUrl` TEXT NOT NULL, `imageUrl` TEXT, `poiUrl` TEXT, `poiUpdatedAt` TEXT, `detailsUrl` TEXT, `elevationProfile` TEXT, `routesUrl` TEXT, `routesUpdatedAt` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `location` TEXT NOT NULL, `distance` TEXT NOT NULL, `elevation` TEXT NOT NULL, `boundingBox` TEXT NOT NULL, `imageUrl` TEXT, `detailsUrl` TEXT, `routesUrl` TEXT, `routesUpdatedAt` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -45,34 +45,13 @@
             "notNull": true
           },
           {
-            "fieldPath": "coordinateUrl",
-            "columnName": "coordinateUrl",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
             "fieldPath": "imageUrl",
             "columnName": "imageUrl",
             "affinity": "TEXT"
           },
           {
-            "fieldPath": "poiUrl",
-            "columnName": "poiUrl",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "poiUpdatedAt",
-            "columnName": "poiUpdatedAt",
-            "affinity": "TEXT"
-          },
-          {
             "fieldPath": "detailsUrl",
             "columnName": "detailsUrl",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "elevationProfile",
-            "columnName": "elevationProfile",
             "affinity": "TEXT"
           },
           {
@@ -252,7 +231,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd42c2e1734fc5e06716b380d4436249b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd0ed0c8b1946a451b9ef5039a2af8fea')"
     ]
   }
 }

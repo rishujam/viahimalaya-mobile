@@ -50,24 +50,17 @@ data class TrekDto(
     val elevation: String,
     @SerialName("bounding_box")
     val boundingBox: List<Double> = emptyList(),
-    /**
-     * The old single-line coordinate file. Retired: this build draws the trek from
-     * [routesUrl] and never reads it. Optional so the app keeps parsing treks once
-     * the column is dropped (HANDOFF section 53 item 4).
-     */
-    @SerialName("coordinate_url")
-    val coordinateUrl: String? = null,
     @SerialName("created_at")
     val createdAt: String,
     @SerialName("image_url")
     val imageUrl: String? = null,
-    @SerialName("poi_url")
-    val poiUrl: String? = null,
-    @SerialName("poi_updated_at")
-    val poiUpdatedAt: String? = null,
     @SerialName("details_url")
     val detailsUrl: String? = null,
-    /** The routes file on R2: every section of the trek, the default route, POI positions. */
+    /**
+     * The routes file on R2: every section of the trek, the default route and its
+     * POIs. The API also still sends coordinate_url, poi_url, poi_updated_at and
+     * (detail only) elevation_profile for older apps; this build ignores them.
+     */
     @SerialName("routes_url")
     val routesUrl: String? = null,
     /** When the routes file was regenerated; the cached copy is replaced when this changes. */
@@ -83,8 +76,6 @@ data class TrekDto(
             elevation = elevation,
             boundingBox = boundingBox,
             imageUrl = imageUrl,
-            poiUrl = poiUrl,
-            poiUpdatedAt = poiUpdatedAt,
             detailsUrl = detailsUrl
         )
     }
@@ -118,8 +109,6 @@ data class TrekDetailData(
             elevation = trek.elevation,
             boundingBox = trek.boundingBox,
             imageUrl = trek.imageUrl,
-            poiUrl = trek.poiUrl,
-            poiUpdatedAt = trek.poiUpdatedAt,
             detailsUrl = trek.detailsUrl,
             routesUrl = trek.routesUrl,
             routesUpdatedAt = trek.routesUpdatedAt

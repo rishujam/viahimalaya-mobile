@@ -44,15 +44,21 @@ interface TrekRepository {
     suspend fun isTrekFullyDownloaded(trekId: String): Boolean
 
     /**
-     * Redoes a download saved before routes existed (no routesUrl in Room): fresh
-     * details, the routes file, POIs and the map tiles for every section, then
-     * the old coordinate file is deleted. Success(true) once done, or when it
-     * already was; an error leaves the old download as it was.
+     * Brings a downloaded trek up to date with the server. A download is read from
+     * the phone, never the API, so without this it would keep the routes file it
+     * was saved with forever - a trek rebuilt later (Goechala with its Dzongri
+     * path) would never reach it.
+     *
+     * Redone when the download is from before routes (no routesUrl) or the
+     * server's routes file is newer: fresh details, the routes file, and tiles for
+     * every section; old files are deleted. Success(the new details) when redone,
+     * Success(null) when there was nothing to do (not downloaded, or current);
+     * an error - offline, say - leaves the download as it was.
      */
-    suspend fun upgradeDownloadedTrek(trekId: String): Result<Boolean>
+    suspend fun refreshDownloadedTrek(trekId: String): Result<TrekDetail?>
 
-    /** [upgradeDownloadedTrek] for every such download. True when none is left. */
-    suspend fun upgradeDownloadedTreks(): Boolean
+    /** [refreshDownloadedTrek] for every download. True when none failed. */
+    suspend fun refreshDownloadedTreks(): Boolean
 
     suspend fun saveNavigatorTrek(navigatorTrek: NavigatorTrek)
 

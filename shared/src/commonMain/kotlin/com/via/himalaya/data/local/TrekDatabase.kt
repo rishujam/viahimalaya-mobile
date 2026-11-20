@@ -16,7 +16,6 @@ import com.via.himalaya.data.models.TrekPlan
 )
 @TypeConverters(
     DoubleListTypeConverter::class,
-    ElevationProfileTypeConverter::class,
     PlannedDayListTypeConverter::class
 )
 abstract class TrekDatabase : RoomDatabase() {
@@ -125,19 +124,26 @@ abstract class TrekDatabase : RoomDatabase() {
         }
 
         /**
-         * Adds the routes file pointers, which replace the coordinate file.
+         * Routes replace the coordinate file, the stored elevation profile and the
+         * POI bundle: adds the routes file pointers, drops the four columns that
+         * pointed at what it replaced.
          *
-         * Nullable and left empty for existing rows. A downloaded trek with no
-         * routesUrl is one saved before routes existed: TrekRepository redoes that
-         * download in the background after the update (TrekUpgradeJobService), or
-         * on the next open with signal. The old coordinateUrl and elevationProfile
-         * columns stay - dropping a column means rebuilding the table - but
-         * nothing reads them any more.
+         * A row without routesUrl afterwards is a download from before routes:
+         * TrekRepository redoes it in the background after the update
+         * (TrekUpgradeJobService), or on the next open with signal.
+         *
+         * DROP COLUMN needs SQLite 3.35; the app ships its own (BundledSQLiteDriver),
+         * so the phone's version does not matter. None of the four is indexed or
+         * part of a key, which DROP COLUMN would refuse.
          */
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(connection: SQLiteConnection) {
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN routesUrl TEXT")
                 connection.execSQL("ALTER TABLE TrekDetail ADD COLUMN routesUpdatedAt TEXT")
+                connection.execSQL("ALTER TABLE TrekDetail DROP COLUMN coordinateUrl")
+                connection.execSQL("ALTER TABLE TrekDetail DROP COLUMN poiUrl")
+                connection.execSQL("ALTER TABLE TrekDetail DROP COLUMN poiUpdatedAt")
+                connection.execSQL("ALTER TABLE TrekDetail DROP COLUMN elevationProfile")
             }
         }
     }

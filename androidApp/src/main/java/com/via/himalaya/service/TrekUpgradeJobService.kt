@@ -19,10 +19,11 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 /**
- * Redoes every trek downloaded before routes existed, once the phone has signal.
- *
- * Such a download has the retired coordinate file and no routes file, and this
- * build has no way to draw it (HANDOFF section 53 item 4). Scheduled straight after
+ * Brings every downloaded trek up to date, once the phone has signal: redoes a
+ * download from before routes, which has the retired coordinate file and nothing
+ * this build can draw (HANDOFF section 53 item 4), and one whose routes file the
+ * server has since rebuilt. A download that is current costs one small API call.
+ * Scheduled straight after
  * the app updates ([AppUpdatedReceiver]), so it usually runs before the user ever
  * opens the trek - the update itself tends to arrive on Wi-Fi. Android's own job
  * scheduler holds it until there is a network, app open or not, and retries with
@@ -41,12 +42,12 @@ class TrekUpgradeJobService : JobService(), KoinComponent {
     override fun onStartJob(params: JobParameters): Boolean {
         work = scope.launch {
             val allDone = try {
-                trekRepository.upgradeDownloadedTreks()
+                trekRepository.refreshDownloadedTreks()
             } catch (e: Exception) {
                 Log.w(TAG, "Upgrading old downloads failed", e)
                 false
             }
-            Log.d(TAG, if (allDone) "Old downloads are up to date" else "Some old downloads failed; retrying later")
+            Log.d(TAG, if (allDone) "Downloads are up to date" else "Some downloads failed to refresh; retrying later")
             jobFinished(params, !allDone)
         }
         return true

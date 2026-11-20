@@ -421,10 +421,9 @@ class TrekRepositoryImpl(
         }
     }
 
-    override suspend fun upgradeDownloadedTrek(trekId: String): Result<Boolean> = upgradeLock.withLock {
+    override suspend fun refreshDownloadedTrek(trekId: String): Result<TrekDetail?> = upgradeLock.withLock {
         val local = trekDao.getTrek(trekId)
-            ?: return@withLock Result.Success(false)        // removed in the meantime
-        if (local.routesUrl != null) return@withLock Result.Success(true)   // done already
+            ?: return@withLock Result.Success(null)                 // not downloaded
 
         val fresh = fetchTrek(trekId)
         val trek = (fresh as? Result.Success)?.data
@@ -432,20 +431,24 @@ class TrekRepositoryImpl(
         if (trek.routesUrl == null) {
             return@withLock Result.Error("The trek has no routes file on the server yet", 404)
         }
-        println("TrekRepository: Upgrading old download of $trekId to routes")
-        val result = downloadTrekOffline(trek) { }
-        if (result is Result.Success) println("TrekRepository: Upgraded $trekId")
-        result
+        val current = local.routesUrl != null && isSameInstant(local.routesUpdatedAt, trek.routesUpdatedAt)
+        if (current) return@withLock Result.Success(null)
+
+        println("TrekRepository: Refreshing download of $trekId (have ${local.routesUpdatedAt}, server ${trek.routesUpdatedAt})")
+        when (val result = downloadTrekOffline(trek) { }) {
+            is Result.Success -> Result.Success(trek)
+            else -> Result.Error(result.message ?: "Could not refresh $trekId", result.code ?: 500)
+        }
     }
 
-    override suspend fun upgradeDownloadedTreks(): Boolean {
-        val old = try {
-            trekDao.getTreks().orEmpty().filter { it.routesUrl == null }
+    override suspend fun refreshDownloadedTreks(): Boolean {
+        val downloads = try {
+            trekDao.getTreks().orEmpty()
         } catch (e: Exception) {
             return false
         }
         var allDone = true
-        old.forEach { if (upgradeDownloadedTrek(it.id) !is Result.Success) allDone = false }
+        downloads.forEach { if (refreshDownloadedTrek(it.id) is Result.Error) allDone = false }
         return allDone
     }
 
